@@ -1,5 +1,6 @@
 name: docker & singularity/cvmfs releases
 
+
 on:
   push:
     branches-ignore:
@@ -13,6 +14,11 @@ on:
         default: 'linux/amd64,linux/arm64/v8'
         required: false
   delete:
+
+
+env:
+  DOCKER_IMAGE_NAME: oms/tms
+
 
 jobs:
   docker:
@@ -29,7 +35,7 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: |
-          icecube/skymap_scanner
+          ${{ env.DOCKER_IMAGE_NAME }}
         tags: |
             # branches (PRs)
             type=sha,prefix={{branch}}-,enable=${{ github.ref_type == 'branch' }}
@@ -93,7 +99,7 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: |
-          icecube/skymap_scanner
+          ${{ env.DOCKER_IMAGE_NAME }}
         flavor: |
           latest=false
         tags: |
