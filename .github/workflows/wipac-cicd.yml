@@ -5,7 +5,7 @@ on: [push]
 
 
 env:
-  DOCKER_IMAGE_NAME: oms/tms
+  DOCKER_IMAGE_NAME: oms-test/tms-test
 
 
 jobs:
