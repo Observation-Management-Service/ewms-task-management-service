@@ -11,7 +11,7 @@ on:
 
 
 env:
-  DOCKER_IMAGE_NAME: ghcr.io/Observation-Management-Service/ewms-task-management-service
+  DOCKER_IMAGE_NAME: ghcr.io/observation-management-service/ewms-task-management-service
   CVMFS_DEST_SUBDIR: ewms
 
 
