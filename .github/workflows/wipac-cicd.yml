@@ -100,7 +100,7 @@ jobs:
           load: true
       - uses: eWaterCycle/setup-apptainer@v2
         with:
-          apptainer-version: 1.1.2
+          apptainer-version: 1.2.5
       - name: build singularity image
         run: |
           sudo singularity build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
