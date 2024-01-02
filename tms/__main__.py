@@ -38,6 +38,7 @@ async def watcher_loop() -> None:
 
     for task in []:
         watcher.watch(
+            task.taskforce_uuid,
             task.cluster_id,
             task.n_workers,
         )
