@@ -8,7 +8,6 @@ from pprint import pformat
 from typing import Any, AsyncIterator, Iterator
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
 from ..config import (

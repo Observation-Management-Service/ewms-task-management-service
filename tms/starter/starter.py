@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 def make_condor_logs_dir() -> Path:
     """Make the condor logs subdirectory."""
-    dpath = Path("tms-cluster")
+    dpath = Path("tms-taskforce")
     dpath.mkdir(parents=True)
     LOGGER.info(f"HTCondor will write log files to {dpath}")
     return dpath
@@ -115,7 +115,7 @@ def make_condor_job_description(
             {
                 "output": str(logs_dir / "tms-worker-$(ProcId).out"),
                 "error": str(logs_dir / "tms-worker-$(ProcId).err"),
-                "log": str(logs_dir / "tms-cluster.log"),
+                "log": str(logs_dir / "tms-taskforce.log"),
             }
         )
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
@@ -152,7 +152,7 @@ def prep(
     client_startup_json_s3_url: str,
     image: str,
 ) -> dict[str, Any]:
-    """Create objects needed for starting cluster."""
+    """Create objects needed for starting Condor cluster."""
 
     # get client args
     client_args_string = ""
@@ -192,7 +192,7 @@ def submit(
     submit_dict: dict[str, Any],
     spool: bool,
 ) -> htcondor.SubmitResult:
-    """Start cluster."""
+    """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
     LOGGER.info(submit_obj)
 

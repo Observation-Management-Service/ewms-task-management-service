@@ -54,7 +54,7 @@ async def starter_loop() -> None:
             args["taskforce_uuid"],
             ewms_taskforce_attrs,
         )
-        LOGGER.info("Sent cluster info to EWMS")
+        LOGGER.info("Sent taskforce info to EWMS")
 
 
 async def watcher_loop() -> None:
