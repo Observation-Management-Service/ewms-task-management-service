@@ -6,20 +6,7 @@ from typing import Any
 
 from rest_tools.client import RestClient
 
-from .config import ENV
-
 LOGGER = logging.getLogger(__name__)
-
-
-def connect_to_ewms() -> RestClient:
-    """Connect to EWMS REST server."""
-    ewms_rc = RestClient(
-        ENV.EWMS_ADDRESS,
-        token=ENV.EWMS_AUTH,
-    )
-
-    LOGGER.info("Connected to EWMS")
-    return ewms_rc
 
 
 def ewms_aborted_taskforce(ewms_rc: RestClient, taskforce_uuid: str) -> bool:

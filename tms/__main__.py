@@ -3,10 +3,12 @@
 
 import asyncio
 import logging
+from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
+from rest_tools.client import RestClient
 
-from .config import config_logging
+from .config import ENV, config_logging
 from .starter import starter
 from .stopper import stopper
 from .watcher import watcher
@@ -17,38 +19,67 @@ LOGGER = logging.getLogger(__name__)
 async def starter_loop() -> None:
     """Do the action."""
 
-    for task in []:
+    # make connections -- do now so we don't have any surprises downstream
+    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    LOGGER.info("Connected to EWMS")
+
+    async def next_start() -> dict[str, Any]:
+        return
+
+    while args := await next_start():
         starter.start(
-            task.taskforce_uuid,
-            task.n_workers,
-            task.spool,
-            task.worker_memory_bytes,
-            task.worker_disk_bytes,
-            task.n_cores,
-            task.max_worker_runtime,
-            task.priority,
-            task.client_args,
-            task.client_startup_json_s3_url,
-            task.image,
+            ewms_rc,
+            schedd_obj,
+            #
+            args["taskforce_uuid"],
+            args["n_workers"],
+            args["spool"],
+            args["worker_memory_bytes"],
+            args["worker_disk_bytes"],
+            args["n_cores"],
+            args["max_worker_runtime"],
+            args["priority"],
+            args["client_args"],
+            args["client_startup_json_s3_url"],
+            args["image"],
         )
 
 
 async def watcher_loop() -> None:
     """explain."""
 
-    for task in []:
+    # make connections -- do now so we don't have any surprises downstream
+    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    LOGGER.info("Connected to EWMS")
+
+    for args in []:
         watcher.watch(
-            task.taskforce_uuid,
-            task.cluster_id,
-            task.n_workers,
+            ewms_rc,
+            schedd_obj,
+            #
+            args["taskforce_uuid"],
+            args["cluster_id"],
+            args["n_workers"],
         )
 
 
 async def stopper_loop() -> None:
     """explain."""
 
-    for task in []:
-        stopper.stop(task.cluster_id)
+    # make connections -- do now so we don't have any surprises downstream
+    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    LOGGER.info("Connected to EWMS")
+
+    for args in []:
+        stopper.stop(
+            ewms_rc,
+            schedd_obj,
+            #
+            args["cluster_id"],
+        )
 
 
 def _create_loop(key: str) -> asyncio.Task[None]:

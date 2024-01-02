@@ -7,6 +7,7 @@ from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
+from rest_tools.client import RestClient
 
 from .. import utils
 from ..config import ENV
@@ -217,6 +218,9 @@ def submit(
 
 
 def start(
+    ewms_rc: RestClient,
+    schedd_obj: htcondor.Schedd,
+    #
     taskforce_uuid: str,
     #
     n_workers: int,
@@ -236,10 +240,6 @@ def start(
     LOGGER.info(
         f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
-
-    # make connections -- do now so we don't have any surprises downstream
-    ewms_rc = utils.connect_to_ewms()
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     # prep
     submit_dict = prep(

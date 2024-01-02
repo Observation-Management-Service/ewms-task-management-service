@@ -8,6 +8,7 @@ from pprint import pformat
 from typing import Any, Iterator
 
 import htcondor  # type: ignore[import-untyped]
+from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
 from .. import utils
@@ -171,6 +172,9 @@ def get_aggregate_top_task_errors(
 
 
 def watch(
+    ewms_rc: RestClient,
+    schedd_obj: htcondor.Schedd,
+    #
     taskforce_uuid: str,
     cluster_id: str,
     n_workers: int,
@@ -179,10 +183,6 @@ def watch(
     LOGGER.info(
         f"Watching EWMS taskforce workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
-
-    # make connections -- do now so we don't have any surprises downstream
-    ewms_rc = utils.connect_to_ewms()
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     job_infos: dict[int, dict[str, Any]] = {
         i: {  # NOTE - it's important that attrs reported on later are `None` to start
