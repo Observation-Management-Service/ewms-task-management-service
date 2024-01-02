@@ -14,7 +14,7 @@ from .watcher import watcher
 LOGGER = logging.getLogger(__name__)
 
 
-def starter_loop() -> None:
+async def starter_loop() -> None:
     """Do the action."""
 
     for task in []:
@@ -34,7 +34,7 @@ def starter_loop() -> None:
         )
 
 
-def watcher_loop() -> None:
+async def watcher_loop() -> None:
     """explain."""
 
     for task in []:
@@ -44,11 +44,20 @@ def watcher_loop() -> None:
         )
 
 
-def stopper_loop() -> None:
+async def stopper_loop() -> None:
     """explain."""
 
     for task in []:
         stopper.stop(task.cluster_id)
+
+
+def _create_loop(key: str) -> asyncio.Task[None]:
+    funcs = {
+        "starter": starter_loop,
+        "watcher": watcher_loop,
+        "stopper": stopper_loop,
+    }
+    return asyncio.create_task(funcs[key]())
 
 
 async def main() -> None:
@@ -58,6 +67,25 @@ async def main() -> None:
     # htcondor.param["TOOL_LOG"] = "log.txt"
     # htcondor.enable_log()
     htcondor.enable_debug()
+
+    loops = {
+        k: _create_loop(k)
+        for k in [
+            "starter",
+            "watcher",
+            "stopper",
+        ]
+    }
+
+    while True:
+        done, _ = await asyncio.wait(
+            loops.values(),
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        # restart any done tasks
+        for key in loops:
+            if loops[key] in done:
+                loops[key] = _create_loop(key)
 
 
 if __name__ == "__main__":
