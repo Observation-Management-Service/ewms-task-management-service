@@ -20,7 +20,7 @@ async def starter_loop() -> None:
     for task in []:
         starter.start(
             task.scan_id,
-            task.cluster_uuid,
+            task.taskforce_uuid,
             task.n_workers,
             task.spool,
             task.worker_memory_bytes,
@@ -29,7 +29,7 @@ async def starter_loop() -> None:
             task.max_worker_runtime,
             task.priority,
             task.client_args,
-            task.client_startup_json_s3,
+            task.client_startup_json_s3_url,
             task.image,
         )
 

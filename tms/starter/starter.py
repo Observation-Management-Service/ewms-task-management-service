@@ -8,7 +8,7 @@ from typing import Any
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
 
-from .. import condor_tools, utils
+from .. import utils
 from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def make_condor_job_description(
     priority: int,
     # skymap scanner args
     image: str,
-    client_startup_json_s3: str,
+    client_startup_json_s3_url: str,
     client_args_string: str,
 ) -> dict[str, Any]:
     """Make the condor job description (dict)."""
@@ -63,7 +63,7 @@ def make_condor_job_description(
     # write
     submit_dict = {
         "executable": "/bin/bash",
-        "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3.fname}",
+        "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3_url.fname}",
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "getenv": ", ".join(FORWARDED_ENV_VARS),
@@ -71,7 +71,7 @@ def make_condor_job_description(
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "should_transfer_files": "YES",
-        "transfer_input_files": client_startup_json_s3.url,
+        "transfer_input_files": client_startup_json_s3_url,
         "transfer_output_files": '""',  # must be quoted for "none"
         #
         # Don't transfer executable (/bin/bash) in case of
@@ -137,7 +137,7 @@ def prep(
     priority: int,
     # starter CL args -- client
     client_args: list[tuple[str, str]],
-    client_startup_json_s3: str,
+    client_startup_json_s3_url: str,
     image: str,
 ) -> dict[str, Any]:
     """Create objects needed for starting cluster."""
@@ -165,7 +165,7 @@ def prep(
         priority,
         # skymap scanner args
         image,
-        client_startup_json_s3,
+        client_startup_json_s3_url,
         client_args_string,
     )
     LOGGER.info(submit_dict)
@@ -205,7 +205,7 @@ def submit(
 
 def start(
     scan_id: str,
-    uuid: str,
+    taskforce_uuid: str,
     #
     n_workers: int,
     # starter CL args -- helper
@@ -218,7 +218,7 @@ def start(
     priority: int,
     # starter CL args -- client
     client_args: list[tuple[str, str]],
-    client_startup_json_s3: str,
+    client_startup_json_s3_url: str,
     image: str,
 ) -> None:
     LOGGER.info(
@@ -240,7 +240,7 @@ def start(
         priority=priority,
         # starter CL args -- client
         client_args=client_args,
-        client_startup_json_s3=client_startup_json_s3,
+        client_startup_json_s3_url=client_startup_json_s3_url,
         image=image,
     )
 
@@ -267,7 +267,7 @@ def start(
             "collector": ENV.COLLECTOR,
             "schedd": ENV.SCHEDD,
         },
-        uuid=uuid,
+        taskforce_uuid=taskforce_uuid,
         cluster_id=submit_result_obj.cluster(),
         n_workers=submit_result_obj.num_procs(),
         starter_info=submit_dict,

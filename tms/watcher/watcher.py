@@ -8,8 +8,8 @@ from pprint import pformat
 from typing import Any, Iterator
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import RestClient
 
+from .. import condor_tools as ct
 from .. import utils
 from ..config import (
     ENV,
@@ -17,7 +17,6 @@ from ..config import (
     WATCHER_MAX_RUNTIME,
     WATCHER_N_TOP_TASK_ERRORS,
 )
-from . import condor_tools as ct
 
 LOGGER = logging.getLogger(__name__)
 
@@ -172,12 +171,13 @@ def get_aggregate_top_task_errors(
 
 
 def watch(
+    taskforce_uuid: str,
     cluster_id: str,
     n_workers: int,
 ) -> None:
     """Main logic."""
     LOGGER.info(
-        f"Watching Skymap Scanner client workers on {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Watching Skymap Scanner client workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
     # make connections -- do now so we don't have any surprises downstream
@@ -263,7 +263,9 @@ def watch(
             LOGGER.info("sending updates to skydriver")
             utils.update_skydriver(
                 skydriver_rc,
-                **skydriver_cluster_obj,
-                statuses=aggregate_statuses,
-                top_task_errors=aggregate_top_task_errors,
+                taskforce_uuid,
+                dict(
+                    statuses=aggregate_statuses,
+                    top_task_errors=aggregate_top_task_errors,
+                ),
             )
