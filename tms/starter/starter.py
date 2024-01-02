@@ -32,7 +32,7 @@ def make_condor_job_description(
     priority: int,
     # skymap scanner args
     image: str,
-    client_startup_json_s3: S3File,
+    client_startup_json_s3: str,
     client_args_string: str,
 ) -> dict[str, Any]:
     """Make the condor job description (dict)."""
@@ -137,7 +137,7 @@ def prep(
     priority: int,
     # starter CL args -- client
     client_args: list[tuple[str, str]],
-    client_startup_json_s3: S3File,
+    client_startup_json_s3: str,
     image: str,
 ) -> dict[str, Any]:
     """Create objects needed for starting cluster."""
@@ -203,12 +203,32 @@ def submit(
     return submit_result_obj
 
 
-def start(schedd_obj: htcondor.Schedd) -> None:
+def start(
+    scan_id: str,
+    uuid: str,
+    #
+    n_workers: int,
+    # starter CL args -- helper
+    spool: bool,
+    # starter CL args -- worker
+    worker_memory_bytes: int,
+    worker_disk_bytes: int,
+    n_cores: int,
+    max_worker_runtime: int,
+    priority: int,
+    # starter CL args -- client
+    client_args: list[tuple[str, str]],
+    client_startup_json_s3: str,
+    image: str,
+) -> None:
     LOGGER.info(
-        f"Starting {n_workers} Skymap Scanner client workers on {collector} / {schedd}"
+        f"Starting {n_workers} Skymap Scanner client workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
+
     # make connections -- do now so we don't have any surprises downstream
     skydriver_rc = utils.connect_to_skydriver()
+    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+
     # prep
     submit_dict = prep(
         spool=spool,
@@ -223,13 +243,15 @@ def start(schedd_obj: htcondor.Schedd) -> None:
         client_startup_json_s3=client_startup_json_s3,
         image=image,
     )
+
     # final checks
-    if dryrun:
+    if ENV.DRYRUN:
         LOGGER.critical("Script Aborted: dryrun enabled")
         return
-    if utils.skydriver_aborted_scan(skydriver_rc):
+    if utils.skydriver_aborted_scan(skydriver_rc, scan_id):
         LOGGER.critical("Script Aborted: SkyDriver aborted scan")
         return
+
     # submit
     submit_result_obj = submit(
         schedd_obj=schedd_obj,
@@ -237,12 +259,13 @@ def start(schedd_obj: htcondor.Schedd) -> None:
         submit_dict=submit_dict,
         spool=spool,
     )
+
     # report to SkyDriver
     skydriver_cluster_obj = dict(
         orchestrator="condor",
         location={
-            "collector": collector,
-            "schedd": schedd,
+            "collector": ENV.COLLECTOR,
+            "schedd": ENV.SCHEDD,
         },
         uuid=uuid,
         cluster_id=submit_result_obj.cluster(),

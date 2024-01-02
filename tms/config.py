@@ -17,9 +17,13 @@ class EnvConfig:
 
     # pylint:disable=invalid-name
 
+    COLLECTOR: str
+    SCHEDD: str
+
     SKYDRIVER_ADDRESS: str = ""
     SKYDRIVER_AUTH: str = ""
 
+    DRYRUN: bool = False
     CI_TEST: bool = False
     LOG_LEVEL: str = "DEBUG"
     LOG_LEVEL_THIRD_PARTY: str = "WARNING"

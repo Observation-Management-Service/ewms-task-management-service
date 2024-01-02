@@ -11,7 +11,12 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import utils
-from ..config import WATCHER_INTERVAL, WATCHER_MAX_RUNTIME, WATCHER_N_TOP_TASK_ERRORS
+from ..config import (
+    ENV,
+    WATCHER_INTERVAL,
+    WATCHER_MAX_RUNTIME,
+    WATCHER_N_TOP_TASK_ERRORS,
+)
 from . import condor_tools as ct
 
 LOGGER = logging.getLogger(__name__)
@@ -167,19 +172,17 @@ def get_aggregate_top_task_errors(
 
 
 def watch(
-    collector: str,
-    schedd: str,
     cluster_id: str,
-    schedd_obj: htcondor.Schedd,
     n_workers: int,
-    #
-    skydriver_rc: RestClient,
-    skydriver_cluster_obj: dict[str, Any],
 ) -> None:
     """Main logic."""
     LOGGER.info(
-        f"Watching Skymap Scanner client workers on {cluster_id} / {collector} / {schedd}"
+        f"Watching Skymap Scanner client workers on {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
+
+    # make connections -- do now so we don't have any surprises downstream
+    skydriver_rc = utils.connect_to_skydriver()
+    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     job_infos: dict[int, dict[str, Any]] = {
         i: {  # NOTE - it's important that attrs reported on later are `None` to start
