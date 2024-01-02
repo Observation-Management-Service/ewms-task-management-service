@@ -1,4 +1,4 @@
-"""For watching Skymap Scanner clients on an HTCondor cluster."""
+"""For watching EWMS taskforce workers on an HTCondor cluster."""
 
 
 import collections
@@ -177,11 +177,11 @@ def watch(
 ) -> None:
     """Main logic."""
     LOGGER.info(
-        f"Watching Skymap Scanner client workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Watching EWMS taskforce workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
     # make connections -- do now so we don't have any surprises downstream
-    skydriver_rc = utils.connect_to_skydriver()
+    ewms_rc = utils.connect_to_ewms()
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     job_infos: dict[int, dict[str, Any]] = {
@@ -260,9 +260,9 @@ def watch(
             LOGGER.info("no updates")
         else:
             # send updates
-            LOGGER.info("sending updates to skydriver")
-            utils.update_skydriver(
-                skydriver_rc,
+            LOGGER.info("sending updates to EWMS")
+            utils.update_ewms_taskforce(
+                ewms_rc,
                 taskforce_uuid,
                 dict(
                     statuses=aggregate_statuses,

@@ -20,8 +20,8 @@ class EnvConfig:
     COLLECTOR: str
     SCHEDD: str
 
-    SKYDRIVER_ADDRESS: str = ""
-    SKYDRIVER_AUTH: str = ""
+    EWMS_ADDRESS: str = ""
+    EWMS_AUTH: str = ""
 
     DRYRUN: bool = False
     CI_TEST: bool = False

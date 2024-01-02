@@ -11,36 +11,36 @@ from .config import ENV
 LOGGER = logging.getLogger(__name__)
 
 
-def connect_to_skydriver() -> RestClient:
-    """Connect to SkyDriver REST server & check scan id."""
-    skydriver_rc = RestClient(
-        ENV.SKYDRIVER_ADDRESS,
-        token=ENV.SKYDRIVER_AUTH,
+def connect_to_ewms() -> RestClient:
+    """Connect to EWMS REST server."""
+    ewms_rc = RestClient(
+        ENV.EWMS_ADDRESS,
+        token=ENV.EWMS_AUTH,
     )
 
-    LOGGER.info("Connected to SkyDriver")
-    return skydriver_rc
+    LOGGER.info("Connected to EWMS")
+    return ewms_rc
 
 
-def skydriver_aborted_scan(skydriver_rc: RestClient, scan_id: str) -> bool:
-    """Return whether the scan has been signaled for deletion."""
-    ret = skydriver_rc.request_seq(
+def ewms_aborted_taskforce(ewms_rc: RestClient, taskforce_uuid: str) -> bool:
+    """Return whether the taskforce has been signaled for removal."""
+    ret = ewms_rc.request_seq(
         "GET",
-        f"/scan/{scan_id}/manifest",
+        f"/taskforce/{taskforce_uuid}",
     )
     return ret["is_deleted"]  # type: ignore[no-any-return]
 
 
-def update_skydriver(
-    skydriver_rc: RestClient,
+def update_ewms_taskforce(
+    ewms_rc: RestClient,
     taskforce_uuid: str,
     patch_attrs: dict[str, Any],
 ) -> None:
-    """Send SkyDriver updates from the `submit_result`."""
+    """Send EWMS updates from the `submit_result`."""
     if not patch_attrs:
         return
 
-    skydriver_rc.request_seq(
+    ewms_rc.request_seq(
         "PATCH",
         f"/taskforce/{taskforce_uuid}",
         patch_attrs,

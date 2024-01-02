@@ -19,7 +19,6 @@ async def starter_loop() -> None:
 
     for task in []:
         starter.start(
-            task.scan_id,
             task.taskforce_uuid,
             task.n_workers,
             task.spool,

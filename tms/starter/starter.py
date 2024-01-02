@@ -1,4 +1,4 @@
-"""For starting Skymap Scanner clients on an HTCondor cluster."""
+"""For starting EWMS Taskforce clients on an HTCondor cluster."""
 
 
 import logging
@@ -30,7 +30,7 @@ def make_condor_job_description(
     n_cores: int,
     max_worker_runtime: int,
     priority: int,
-    # skymap scanner args
+    # taskforce args
     image: str,
     client_startup_json_s3_url: str,
     client_args_string: str,
@@ -63,6 +63,7 @@ def make_condor_job_description(
     # write
     submit_dict = {
         "executable": "/bin/bash",
+        # TODO - grab args from task
         "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3_url.fname}",
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
@@ -163,7 +164,7 @@ def prep(
         n_cores,
         max_worker_runtime,
         priority,
-        # skymap scanner args
+        # taskforce args
         image,
         client_startup_json_s3_url,
         client_args_string,
@@ -204,7 +205,6 @@ def submit(
 
 
 def start(
-    scan_id: str,
     taskforce_uuid: str,
     #
     n_workers: int,
@@ -222,11 +222,11 @@ def start(
     image: str,
 ) -> None:
     LOGGER.info(
-        f"Starting {n_workers} Skymap Scanner client workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
     # make connections -- do now so we don't have any surprises downstream
-    skydriver_rc = utils.connect_to_skydriver()
+    ewms_rc = utils.connect_to_ewms()
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     # prep
@@ -248,8 +248,8 @@ def start(
     if ENV.DRYRUN:
         LOGGER.critical("Script Aborted: dryrun enabled")
         return
-    if utils.skydriver_aborted_scan(skydriver_rc, scan_id):
-        LOGGER.critical("Script Aborted: SkyDriver aborted scan")
+    if utils.ewms_aborted_taskforce(ewms_rc, taskforce_uuid):
+        LOGGER.critical(f"Script Aborted: EWMS aborted taskforce: {taskforce_uuid}")
         return
 
     # submit
@@ -260,8 +260,8 @@ def start(
         spool=spool,
     )
 
-    # report to SkyDriver
-    skydriver_cluster_obj = dict(
+    # report to EWMS
+    ewms_taskforce_attrs = dict(
         orchestrator="condor",
         location={
             "collector": ENV.COLLECTOR,
@@ -272,5 +272,5 @@ def start(
         n_workers=submit_result_obj.num_procs(),
         starter_info=submit_dict,
     )
-    utils.update_skydriver(skydriver_rc, **skydriver_cluster_obj)
-    LOGGER.info("Sent cluster info to SkyDriver")
+    utils.update_ewms_taskforce(ewms_rc, taskforce_uuid, ewms_taskforce_attrs)
+    LOGGER.info("Sent cluster info to EWMS")

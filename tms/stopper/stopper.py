@@ -1,4 +1,4 @@
-"""For stopping Skymap Scanner clients on an HTCondor cluster."""
+"""For stopping EWMS taskforce workers on an HTCondor cluster."""
 
 
 import logging
@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 def stop(cluster_id: str) -> None:
     """Main logic."""
     LOGGER.info(
-        f"Stopping Skymap Scanner client workers on {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Stopping EWMS taskforce workers on {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
     schedd_obj = htcondor.Schedd()
@@ -23,7 +23,7 @@ def stop(cluster_id: str) -> None:
     act_obj = schedd_obj.act(
         htcondor.JobAction.Remove,
         f"ClusterId == {cluster_id}",
-        reason="Requested by SkyDriver",
+        reason="Requested by EWMS",
     )
     LOGGER.debug(act_obj)
     LOGGER.info(f"Removed {act_obj['TotalSuccess']} workers")
