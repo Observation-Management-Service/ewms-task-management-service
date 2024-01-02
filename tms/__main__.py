@@ -3,11 +3,12 @@
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, AsyncIterator
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
+from . import utils
 from .config import ENV, config_logging
 from .starter import starter
 from .stopper import stopper
@@ -24,13 +25,17 @@ async def starter_loop() -> None:
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
     LOGGER.info("Connected to EWMS")
 
-    async def next_start() -> dict[str, Any]:
-        return
+    async def next_one() -> dict[str, Any]:
+        return await ewms_rc.request(  # type: ignore[no-any-return]
+            "GET",
+            "/taskforce/next",
+            {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
+        )
 
-    while args := await next_start():
-        starter.start(
-            ewms_rc,
+    while args := await next_one():
+        ewms_taskforce_attrs = await starter.start(
             schedd_obj,
+            utils.ewms_aborted_taskforce(ewms_rc, args["taskforce_uuid"]),
             #
             args["taskforce_uuid"],
             args["n_workers"],
@@ -44,6 +49,12 @@ async def starter_loop() -> None:
             args["client_startup_json_s3_url"],
             args["image"],
         )
+        await utils.update_ewms_taskforce(
+            ewms_rc,
+            args["taskforce_uuid"],
+            ewms_taskforce_attrs,
+        )
+        LOGGER.info("Sent cluster info to EWMS")
 
 
 async def watcher_loop() -> None:
@@ -54,15 +65,31 @@ async def watcher_loop() -> None:
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
     LOGGER.info("Connected to EWMS")
 
-    for args in []:
-        watcher.watch(
-            ewms_rc,
+    async def iter_live_taskforces() -> AsyncIterator[dict[str, Any]]:
+        while True:
+            for one in await ewms_rc.request(
+                "GET",
+                "/taskforce/live",
+                {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
+            ):
+                yield one
+
+    async for args in iter_live_taskforces():
+        # TODO - figure managing multiple taskforces and remain stateless
+        async for update in watcher.watch(
             schedd_obj,
             #
             args["taskforce_uuid"],
             args["cluster_id"],
             args["n_workers"],
-        )
+        ):
+            if not update:
+                continue
+            await utils.update_ewms_taskforce(
+                ewms_rc,
+                args["taskforce_uuid"],
+                update,
+            )
 
 
 async def stopper_loop() -> None:
@@ -73,13 +100,20 @@ async def stopper_loop() -> None:
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
     LOGGER.info("Connected to EWMS")
 
-    for args in []:
+    async def next_one() -> dict[str, Any]:
+        return await ewms_rc.request(  # type: ignore[no-any-return]
+            "GET",
+            "/taskforce/abort",
+            {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
+        )
+
+    while args := await next_one():
         stopper.stop(
-            ewms_rc,
             schedd_obj,
-            #
             args["cluster_id"],
         )
+        # TODO - confirm stop (otherwise ewms will request again -- good for stateless)
+        # await utils.update_ewms_taskforce(ewms_rc, args["taskforce_uuid"])
 
 
 def _create_loop(key: str) -> asyncio.Task[None]:

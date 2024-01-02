@@ -4,7 +4,6 @@
 import logging
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import RestClient
 
 from ..config import ENV
 
@@ -12,7 +11,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 def stop(
-    ewms_rc: RestClient,
     schedd_obj: htcondor.Schedd,
     #
     cluster_id: str,

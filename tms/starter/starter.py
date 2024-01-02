@@ -3,13 +3,11 @@
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Awaitable
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
-from rest_tools.client import RestClient
 
-from .. import utils
 from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -217,9 +215,9 @@ def submit(
     return submit_result_obj
 
 
-def start(
-    ewms_rc: RestClient,
+async def start(
     schedd_obj: htcondor.Schedd,
+    is_aborted_callback: Awaitable[[None], bool],
     #
     taskforce_uuid: str,
     #
@@ -236,7 +234,7 @@ def start(
     client_args: list[tuple[str, str]],
     client_startup_json_s3_url: str,
     image: str,
-) -> None:
+) -> dict[str, Any]:
     LOGGER.info(
         f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
@@ -260,7 +258,7 @@ def start(
     if ENV.DRYRUN:
         LOGGER.critical("Script Aborted: dryrun enabled")
         return
-    if utils.ewms_aborted_taskforce(ewms_rc, taskforce_uuid):
+    if await is_aborted_callback():
         LOGGER.critical(f"Script Aborted: EWMS aborted taskforce: {taskforce_uuid}")
         return
 
@@ -284,5 +282,4 @@ def start(
         n_workers=submit_result_obj.num_procs(),
         starter_info=submit_dict,
     )
-    utils.update_ewms_taskforce(ewms_rc, taskforce_uuid, ewms_taskforce_attrs)
-    LOGGER.info("Sent cluster info to EWMS")
+    return ewms_taskforce_attrs

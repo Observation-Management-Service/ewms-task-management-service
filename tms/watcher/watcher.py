@@ -5,13 +5,12 @@ import collections
 import logging
 import time
 from pprint import pformat
-from typing import Any, Iterator
+from typing import Any, AsyncIterator, Iterator
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
-from .. import utils
 from ..config import (
     ENV,
     WATCHER_INTERVAL,
@@ -171,14 +170,13 @@ def get_aggregate_top_task_errors(
     return errors, errors != previous  # type: ignore[return-value]
 
 
-def watch(
-    ewms_rc: RestClient,
+async def watch(
     schedd_obj: htcondor.Schedd,
     #
     taskforce_uuid: str,
     cluster_id: str,
     n_workers: int,
-) -> None:
+) -> AsyncIterator[None | dict[str, Any]]:
     """Main logic."""
     LOGGER.info(
         f"Watching EWMS taskforce workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
@@ -258,14 +256,11 @@ def watch(
         # figure updates
         if not has_new_statuses and not has_new_errors:
             LOGGER.info("no updates")
+            yield None
         else:
             # send updates
             LOGGER.info("sending updates to EWMS")
-            utils.update_ewms_taskforce(
-                ewms_rc,
-                taskforce_uuid,
-                dict(
-                    statuses=aggregate_statuses,
-                    top_task_errors=aggregate_top_task_errors,
-                ),
+            yield dict(
+                statuses=aggregate_statuses,
+                top_task_errors=aggregate_top_task_errors,
             )
