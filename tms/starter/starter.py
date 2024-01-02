@@ -1,4 +1,4 @@
-"""For starting EWMS Taskforce clients on an HTCondor cluster."""
+"""For starting EWMS taskforce workers on an HTCondor cluster."""
 
 
 import logging
@@ -60,11 +60,23 @@ def make_condor_job_description(
         env_vars.append(f"{prefix}I3_DATA=/cvmfs/icecube.opensciencegrid.org/data")
     environment = " ".join(env_vars)
 
+    # TODO
+    import os
+
+    _FORWARDED_ENV_VAR_PREFIXES = ["SKYSCAN_", "EWMS_"]
+    _NONFORWARDED_ENV_VAR_PREFIXES = ["EWMS_TMS_"]
+    FORWARDED_ENV_VARS = [
+        var
+        for var in os.environ
+        if not any(var.startswith(p) for p in _NONFORWARDED_ENV_VAR_PREFIXES)
+        and any(var.startswith(p) for p in _FORWARDED_ENV_VAR_PREFIXES)
+    ]
+
     # write
     submit_dict = {
         "executable": "/bin/bash",
         # TODO - grab args from task
-        "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3_url.fname}",
+        "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3_url}.fname",
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "getenv": ", ".join(FORWARDED_ENV_VARS),
