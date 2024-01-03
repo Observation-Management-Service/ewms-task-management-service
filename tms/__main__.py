@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-import time
+from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
@@ -50,73 +50,25 @@ async def starter_loop() -> None:
             args["client_startup_json_s3_url"],
             args["image"],
         )
-        await utils.update_ewms_taskforce(
-            ewms_rc,
-            args["taskforce_uuid"],
+        await ewms_rc.request(
+            "PATCH",
+            f"/taskforce/{args['taskforce_uuid']}",
             ewms_taskforce_attrs,
         )
         LOGGER.info("Sent taskforce info to EWMS")
 
 
-class EveryXSeconds:
-    """Keep track of durations."""
-
-    def __init__(self, seconds: float) -> None:
-        self.seconds = seconds
-        self._last_time = time.time()
-
-    def has_been_x_seconds(self) -> bool:
-        """Has it been at least `self.seconds` since last time?"""
-        yes = time.time() - self._last_time >= self.seconds
-        if yes:
-            self._last_time = time.time()
-        return yes
-
-
 async def watcher_loop() -> None:
-    """explain."""
-
-    # make connections -- do now so we don't have any surprises downstream
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
-    LOGGER.info("Connected to EWMS")
-
-    statuses: dict[str, Any] = {}
-    time_tracker = EveryXSeconds(60)
-
-    jel_fpath = "bar"
-    jel = htcondor.JobEventLog(jel_fpath)
-    jel_index = -1
+    """Watch over all job event log files."""
+    in_progress: dict[Path, asyncio.Task[None]] = {}
 
     while True:
-        # wait for job log to populate (more)
-        while not time_tracker.has_been_x_seconds():
-            await asyncio.sleep(1)
-
-        # get events -- exit when no more events, or took too long
-        for event in jel.events(stop_after=0):  # 0 -> only get currently available
-            jel_index += 1
-            taskforce_uuid = "foo"
-            taskforce_update = watcher.translate(
-                statuses.get(taskforce_uuid, None),
-                event,
-            )
-            statuses.update({taskforce_uuid: taskforce_update})
-            if time_tracker.has_been_x_seconds():
-                break
-            await asyncio.sleep(0)  # since htcondor is not async
-
-        # send -- TODO do one big update? that way it won't intermittently fail
-        for taskforce_uuid in statuses:
-            taskforce_update = statuses.pop(taskforce_uuid)
-            if not taskforce_update:
+        for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
+            if jel_fpath in in_progress:
                 continue
-            taskforce_update.update({"jel_index": jel_index})
-            await utils.update_ewms_taskforce(
-                ewms_rc,
-                taskforce_uuid,
-                taskforce_update,
-            )
+            task = asyncio.create_task(watcher.watch_job_event_log(jel_fpath))
+            in_progress[jel_fpath] = task
+        await asyncio.sleep(60)
 
 
 async def stopper_loop() -> None:
@@ -143,7 +95,7 @@ async def stopper_loop() -> None:
         # await utils.update_ewms_taskforce(ewms_rc, args["taskforce_uuid"])
 
 
-def _create_loop(key: str) -> asyncio.Task[None]:
+def _create_loop_task(key: str) -> asyncio.Task[None]:
     funcs = {
         "starter": starter_loop,
         "watcher": watcher_loop,
@@ -161,7 +113,7 @@ async def main() -> None:
     htcondor.enable_debug()
 
     loops = {
-        k: _create_loop(k)
+        k: _create_loop_task(k)
         for k in [
             "starter",
             "watcher",
@@ -177,7 +129,7 @@ async def main() -> None:
         # restart any done tasks
         for key in loops:
             if loops[key] in done:
-                loops[key] = _create_loop(key)
+                loops[key] = _create_loop_task(key)
 
 
 if __name__ == "__main__":

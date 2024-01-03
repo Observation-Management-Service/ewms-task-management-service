@@ -1,13 +1,16 @@
 """For watching EWMS taskforce workers on an HTCondor cluster."""
 
 
+import asyncio
 import collections
 import logging
 import time
+from pathlib import Path
 from pprint import pformat
 from typing import Any, AsyncIterator, Iterator
 
 import htcondor  # type: ignore[import-untyped]
+from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
 from ..config import (
@@ -263,3 +266,69 @@ async def watch(
                 statuses=aggregate_statuses,
                 top_task_errors=aggregate_top_task_errors,
             )
+
+
+def translate(
+    taskforce_status: dict[str, str],
+    job_event: htcondor.JobEvent,
+) -> dict[str, str]:
+    """explain."""
+
+
+class EveryXSeconds:
+    """Keep track of durations."""
+
+    def __init__(self, seconds: float) -> None:
+        self.seconds = seconds
+        self._last_time = time.time()
+
+    def has_been_x_seconds(self) -> bool:
+        """Has it been at least `self.seconds` since last time?"""
+        yes = time.time() - self._last_time >= self.seconds
+        if yes:
+            self._last_time = time.time()
+        return yes
+
+
+async def watch_job_event_log(jel_fpath: Path) -> None:
+    """Watch over one job event log file."""
+
+    # make connections -- do now so we don't have any surprises downstream
+    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    LOGGER.info("Connected to EWMS")
+
+    statuses: dict[str, Any] = {}
+    time_tracker = EveryXSeconds(60)
+
+    jel = htcondor.JobEventLog(str(jel_fpath))
+    jel_index = -1
+
+    while True:
+        # wait for job log to populate (more)
+        while not time_tracker.has_been_x_seconds():
+            await asyncio.sleep(1)
+
+        # get events -- exit when no more events, or took too long
+        for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
+            jel_index += 1
+            taskforce_uuid = "foo"  # TODO -- map cluster id to tf-uuid
+            taskforce_update = translate(
+                statuses.get(taskforce_uuid, None),
+                job_event,
+            )
+            statuses.update({taskforce_uuid: taskforce_update})
+            if time_tracker.has_been_x_seconds():
+                break
+            await asyncio.sleep(0)  # since htcondor is not async
+
+        # send -- one big update that way it won't intermittently fail
+        await ewms_rc.request(
+            "PATCH",
+            "/taskforce/many",
+            {
+                "jel_index": jel_index,
+                "statuses": statuses,
+            },
+        )
+
+    # TODO -- delete file

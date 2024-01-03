@@ -3,6 +3,7 @@
 
 import dataclasses as dc
 import logging
+from pathlib import Path
 
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
@@ -19,6 +20,7 @@ class EnvConfig:
 
     COLLECTOR: str
     SCHEDD: str
+    JOB_EVENT_LOG_DIR: Path
 
     EWMS_ADDRESS: str = ""
     EWMS_AUTH: str = ""
