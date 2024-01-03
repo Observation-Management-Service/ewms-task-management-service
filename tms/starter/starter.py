@@ -217,7 +217,7 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    is_aborted_callback: Awaitable[[None], bool],
+    is_aborted_awaitable: Awaitable[bool],
     #
     taskforce_uuid: str,
     #
@@ -257,10 +257,10 @@ async def start(
     # final checks
     if ENV.DRYRUN:
         LOGGER.critical("Script Aborted: dryrun enabled")
-        return
-    if await is_aborted_callback():
+        return {}
+    if await is_aborted_awaitable:
         LOGGER.critical(f"Script Aborted: EWMS aborted taskforce: {taskforce_uuid}")
-        return
+        return {}
 
     # submit
     submit_result_obj = submit(
