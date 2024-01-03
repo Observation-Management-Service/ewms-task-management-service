@@ -10,7 +10,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from . import utils
-from .config import ENV, config_logging
+from .config import ENV, OUTER_LOOP_WAIT, config_logging
 from .starter import starter
 from .stopper import stopper
 from .watcher import watcher
@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def starter_loop() -> None:
-    """Do the action."""
+    """Listen to EWMS and start designated taskforces."""
 
     # make connections -- do now so we don't have any surprises downstream
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
@@ -29,37 +29,40 @@ async def starter_loop() -> None:
     async def next_one() -> dict[str, Any]:
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/next",
+            "/taskforce/start/next",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
-    while args := await next_one():
-        ewms_taskforce_attrs = await starter.start(
-            schedd_obj,
-            utils.ewms_aborted_taskforce(ewms_rc, args["taskforce_uuid"]),
-            #
-            args["taskforce_uuid"],
-            args["n_workers"],
-            args["spool"],
-            args["worker_memory_bytes"],
-            args["worker_disk_bytes"],
-            args["n_cores"],
-            args["max_worker_runtime"],
-            args["priority"],
-            args["client_args"],
-            args["client_startup_json_s3_url"],
-            args["image"],
-        )
-        await ewms_rc.request(
-            "PATCH",
-            f"/taskforce/{args['taskforce_uuid']}",
-            ewms_taskforce_attrs,
-        )
-        LOGGER.info("Sent taskforce info to EWMS")
+    while True:
+        while args := await next_one():
+            ewms_taskforce_attrs = await starter.start(
+                schedd_obj,
+                utils.ewms_aborted_taskforce(ewms_rc, args["taskforce_uuid"]),
+                #
+                args["taskforce_uuid"],
+                args["n_workers"],
+                args["spool"],
+                args["worker_memory_bytes"],
+                args["worker_disk_bytes"],
+                args["n_cores"],
+                args["max_worker_runtime"],
+                args["priority"],
+                args["client_args"],
+                args["client_startup_json_s3_url"],
+                args["image"],
+            )
+            await ewms_rc.request(
+                "PATCH",
+                f"/taskforce/{args['taskforce_uuid']}",
+                ewms_taskforce_attrs,
+            )
+            LOGGER.info("Sent taskforce info to EWMS")
+
+        await asyncio.sleep(OUTER_LOOP_WAIT)
 
 
 async def watcher_loop() -> None:
-    """Watch over all job event log files."""
+    """Watch over all job event log files and send EWMS taskforce updates."""
     in_progress: dict[Path, asyncio.Task[None]] = {}
 
     while True:
@@ -68,11 +71,12 @@ async def watcher_loop() -> None:
                 continue
             task = asyncio.create_task(watcher.watch_job_event_log(jel_fpath))
             in_progress[jel_fpath] = task
-        await asyncio.sleep(60)
+
+        await asyncio.sleep(OUTER_LOOP_WAIT)
 
 
 async def stopper_loop() -> None:
-    """explain."""
+    """Listen to EWMS and stop designated taskforces."""
 
     # make connections -- do now so we don't have any surprises downstream
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
@@ -82,17 +86,28 @@ async def stopper_loop() -> None:
     async def next_one() -> dict[str, Any]:
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/abort",
+            "/taskforce/stop/next",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
-    while args := await next_one():
-        stopper.stop(
-            schedd_obj,
-            args["cluster_id"],
-        )
-        # TODO - confirm stop (otherwise ewms will request again -- good for stateless)
-        # await utils.update_ewms_taskforce(ewms_rc, args["taskforce_uuid"])
+    while True:
+        while args := await next_one():
+            stopper.stop(
+                schedd_obj,
+                args["cluster_id"],
+            )
+            # confirm stop (otherwise ewms will request again -- good for stateless)
+            await ewms_rc.request(
+                "DELETE",
+                "/taskforce/stop/next",
+                {
+                    "collector": ENV.COLLECTOR,
+                    "schedd": ENV.SCHEDD,
+                    "taskforce_uuid": args["taskforce_uuid"],
+                },
+            )
+
+        await asyncio.sleep(OUTER_LOOP_WAIT)
 
 
 def _create_loop_task(key: str) -> asyncio.Task[None]:
