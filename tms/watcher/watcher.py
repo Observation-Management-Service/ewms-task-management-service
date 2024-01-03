@@ -72,46 +72,46 @@ def _translate_special_attrs(job_ad: dict[str, Any]) -> None:
         LOGGER.exception(e)
 
 
-def update_stored_job_infos(
-    job_infos: dict[int, dict[str, Any]],
+def update_stored_cluster_info(
+    cluster_info: dict[int, dict[str, Any]],
     classad: Any,
     source: str,
 ) -> None:
-    """Update the job's classad attrs in `job_infos`."""
+    """Update the job's classad attrs in `cluster_info`."""
     procid = int(classad["ProcId"])
-    job_infos[procid]["source"] = source
-    job_infos[procid].update(dict(classad))  # start with everything
-    _translate_special_attrs(job_infos[procid])
+    cluster_info[procid]["source"] = source
+    cluster_info[procid].update(dict(classad))  # start with everything
+    _translate_special_attrs(cluster_info[procid])
 
 
-def iter_job_classads(
-    schedd_obj: htcondor.Schedd,
-    constraint: str,
-    projection: list[str],
-) -> Iterator[tuple[htcondor.classad.ClassAd, str]]:
-    """Get the job class ads, trying various sources.
+# def iter_job_classads(
+#     schedd_obj: htcondor.Schedd,
+#     constraint: str,
+#     projection: list[str],
+# ) -> Iterator[tuple[htcondor.classad.ClassAd, str]]:
+#     """Get the job class ads, trying various sources.
 
-    May not get all of them.
-    """
-    for call in [
-        schedd_obj.query,
-        schedd_obj.history,
-        schedd_obj.jobEpochHistory,
-    ]:
-        try:
-            for classad in call(constraint, projection):
-                if "ProcId" not in classad:
-                    continue
-                # LOGGER.info(f"looking at job {classad['ProcId']}")
-                # LOGGER.debug(str(call))
-                # LOGGER.debug(classad)
-                yield classad, call.__name__
-        except Exception as e:
-            LOGGER.exception(e)
+#     May not get all of them.
+#     """
+#     for call in [
+#         schedd_obj.query,
+#         schedd_obj.history,
+#         schedd_obj.jobEpochHistory,
+#     ]:
+#         try:
+#             for classad in call(constraint, projection):
+#                 if "ProcId" not in classad:
+#                     continue
+#                 # LOGGER.info(f"looking at job {classad['ProcId']}")
+#                 # LOGGER.debug(str(call))
+#                 # LOGGER.debug(classad)
+#                 yield classad, call.__name__
+#         except Exception as e:
+#             LOGGER.exception(e)
 
 
 def get_aggregate_statuses(
-    job_infos: dict[int, dict[str, Any]],
+    cluster_info: dict[int, dict[str, Any]],
     previous: dict[str, dict[str, int]],
 ) -> tuple[dict[str, dict[str, int]], bool]:
     """Aggregate statuses of jobs & return whether this is an new value."""
@@ -138,19 +138,20 @@ def get_aggregate_statuses(
 
     statuses: dict[str, dict[str, int]] = {
         k: {}
-        for k in set(transform_job_status_val(info) for info in job_infos.values())
+        for k in set(transform_job_status_val(info) for info in cluster_info.values())
     }
 
     for job_status in statuses:
-        ids_for_this_job_status = [  # subset of job_infos ids
+        ids_for_this_job_status = [  # subset of cluster_info ids
             i
-            for i, info in job_infos.items()
+            for i, info in cluster_info.items()
             if transform_job_status_val(info) == job_status
         ]
         # NOTE - if the pilot did not send a status (ex: Held job), it is `None`
         statuses[job_status] = dict(
             collections.Counter(
-                job_infos[i]["HTChirpEWMSPilotStatus"] for i in ids_for_this_job_status
+                cluster_info[i]["HTChirpEWMSPilotStatus"]
+                for i in ids_for_this_job_status
             )
         )
 
@@ -158,13 +159,13 @@ def get_aggregate_statuses(
 
 
 def get_aggregate_top_task_errors(
-    job_infos: dict[int, dict[str, Any]],
+    cluster_info: dict[int, dict[str, Any]],
     n_top_task_errors: int,
     previous: dict[str, int],
 ) -> tuple[dict[str, int], bool]:
     """Aggregate top X errors of jobs & return whether this is an new value."""
     counts = collections.Counter(
-        dicto.get("HTChirpEWMSPilotError") for dicto in job_infos.values()
+        dicto.get("HTChirpEWMSPilotError") for dicto in cluster_info.values()
     )
     counts.pop(None, None)  # remove counts of "no error"
 
@@ -184,7 +185,7 @@ async def watch(
         f"Watching EWMS taskforce workers on {taskforce_uuid} / {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
-    job_infos: dict[int, dict[str, Any]] = {
+    cluster_info: dict[int, dict[str, Any]] = {
         i: {  # NOTE - it's important that attrs reported on later are `None` to start
             "JobStatus": None,
             "HTChirpEWMSPilotStatus": None,
@@ -203,7 +204,7 @@ async def watch(
         all jobs are done, since there may be more attrs to be updated.
         """
         if not any(  # if no done jobs, then keep going always
-            job_infos[j]["JobStatus"] in DONE_JOB_STATUSES for j in job_infos
+            cluster_info[j]["JobStatus"] in DONE_JOB_STATUSES for j in cluster_info
         ):
             return True
         else:
@@ -233,16 +234,16 @@ async def watch(
         non_response_ct += 1  # just in case
         for ad, source in classads:
             non_response_ct = 0
-            update_stored_job_infos(job_infos, ad, source)
+            update_stored_cluster_info(cluster_info, ad, source)
             # NOTE - if memory becomes an issue, switch to an in-iterator design
 
         # aggregate
         aggregate_statuses, has_new_statuses = get_aggregate_statuses(
-            job_infos,
+            cluster_info,
             aggregate_statuses,
         )
         aggregate_top_task_errors, has_new_errors = get_aggregate_top_task_errors(
-            job_infos,
+            cluster_info,
             WATCHER_N_TOP_TASK_ERRORS,
             aggregate_top_task_errors,
         )
@@ -268,11 +269,34 @@ async def watch(
             )
 
 
-def translate(
-    taskforce_status: dict[str, str],
+class UnknownEvent(Exception):
+    """Raise when the job event is not valid for these purposes."""
+
+
+def update_from_event(
+    cluster_info: dict[int, dict[str, Any]],
     job_event: htcondor.JobEvent,
-) -> dict[str, str]:
-    """explain."""
+) -> None:
+    """Extract the meaningful info from the event for the cluster."""
+    #
+    # CHIRP
+    if job_event.type == htcondor.JobEvent.GENERIC:
+        if not (info := job_event.get("info", None)):
+            raise UnknownEvent()
+        # ex: "HTChirpEWMSPilotStatus: foo bar baz"
+        if not info.startswith("HTChirpEWMSPilot"):
+            raise UnknownEvent()
+        # parse
+        attr, value = info.split(":", maxsplit=1)
+        cluster_info[job_event.proc][attr] = value.strip()
+    #
+    # JOB STATUS
+    elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
+        cluster_info[job_event.proc]["HTChirpEWMSPilotStatus"] = job_status.__name__
+    #
+    # OTHER
+    else:
+        raise UnknownEvent()
 
 
 class EveryXSeconds:
@@ -297,7 +321,8 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
     LOGGER.info("Connected to EWMS")
 
-    statuses: dict[str, Any] = {}
+    all_clusters: dict[str, dict[int, dict[str, Any]]] = {}  # LARGE
+
     time_tracker = EveryXSeconds(60)
 
     jel = htcondor.JobEventLog(str(jel_fpath))
@@ -312,14 +337,23 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
             jel_index += 1
             taskforce_uuid = "foo"  # TODO -- map cluster id to tf-uuid
-            taskforce_update = translate(
-                statuses.get(taskforce_uuid, None),
-                job_event,
-            )
-            statuses.update({taskforce_uuid: taskforce_update})
+            if taskforce_uuid not in all_clusters:
+                all_clusters[taskforce_uuid] = {}
+            update_from_event(all_clusters[taskforce_uuid], job_event)
             if time_tracker.has_been_x_seconds():
                 break
             await asyncio.sleep(0)  # since htcondor is not async
+
+        # aggregate
+        aggregate_statuses, has_new_statuses = get_aggregate_statuses(
+            cluster_info,
+            aggregate_statuses,
+        )
+        aggregate_top_task_errors, has_new_errors = get_aggregate_top_task_errors(
+            cluster_info,
+            WATCHER_N_TOP_TASK_ERRORS,
+            aggregate_top_task_errors,
+        )
 
         # send -- one big update that way it won't intermittently fail
         await ewms_rc.request(
