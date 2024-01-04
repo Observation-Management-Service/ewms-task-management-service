@@ -10,7 +10,6 @@ from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 OUTER_LOOP_WAIT = 60
 
 WATCHER_INTERVAL = 60 * 3
-WATCHER_MAX_RUNTIME = 60 * 60 * 24
 WATCHER_N_TOP_TASK_ERRORS = 10
 
 
