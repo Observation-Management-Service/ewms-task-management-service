@@ -230,33 +230,36 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
 
         # aggregate
         LOGGER.info("Getting top task errors...")
-        top_task_errors = {}
+        top_task_errors_by_cluster = {}
         for cluster_id, info in cluster_info_dict.items():
             try:
-                top_task_errors[cluster_id] = info.get_top_task_errors()
+                top_task_errors_by_cluster[cluster_id] = info.get_top_task_errors()
             except NoUpdateException:
                 pass
         LOGGER.info("Aggregating job statuses...")
-        statuses = {}
+        statuses_by_cluster = {}
         for cluster_id, info in cluster_info_dict.items():
             try:
-                statuses[cluster_id] = info.aggregate_statuses()
+                statuses_by_cluster[cluster_id] = info.aggregate_statuses()
             except NoUpdateException:
                 pass
 
         # send -- one big update that way it won't intermittently fail
-        # TODO -- map each cluster_id to taskforce_uuid (should be unique for this time period)
-        if top_task_errors or statuses:
+        if top_task_errors_by_cluster or statuses_by_cluster:
             LOGGER.info("Sending updates to EWMS...")
-            LOGGER.debug(top_task_errors)
-            LOGGER.debug(statuses)
+            LOGGER.debug(top_task_errors_by_cluster)
+            LOGGER.debug(statuses_by_cluster)
             await ewms_rc.request(
                 "PATCH",
-                "/taskforce/many",
+                "/condor-cluster/many",
                 {
+                    # we don't have the taskforce_uuid(s), but...
+                    # EWMS can map (collector + schedd + condor_id) to a taskforce_uuid
+                    "collector": ENV.COLLECTOR,
+                    "schedd": ENV.SCHEDD,
                     "jel_index": jel_index,
-                    "top_task_errors": top_task_errors,
-                    "statuses": statuses,
+                    "top_task_errors_by_cluster": top_task_errors_by_cluster,
+                    "statuses_by_cluster": statuses_by_cluster,
                 },
             )
         else:

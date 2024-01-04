@@ -27,9 +27,10 @@ async def starter_loop() -> None:
     LOGGER.info("Connected to EWMS")
 
     async def next_one() -> dict[str, Any]:
+        """Get the next taskforce requested for this collector + schedd."""
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/start/next",
+            "/taskforce/start",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
@@ -51,9 +52,10 @@ async def starter_loop() -> None:
                 args["client_startup_json_s3_url"],
                 args["image"],
             )
+            # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "PATCH",
-                f"/taskforce/{args['taskforce_uuid']}",
+                f"/taskforce/start/{args['taskforce_uuid']}",
                 ewms_taskforce_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
@@ -84,9 +86,10 @@ async def stopper_loop() -> None:
     LOGGER.info("Connected to EWMS")
 
     async def next_one() -> dict[str, Any]:
+        """Get the next taskforce requested for this collector + schedd."""
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/stop/next",
+            "/taskforce/stop",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
@@ -96,15 +99,10 @@ async def stopper_loop() -> None:
                 schedd_obj,
                 args["cluster_id"],
             )
-            # confirm stop (otherwise ewms will request again -- good for stateless)
+            # confirm stop (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "DELETE",
-                "/taskforce/stop/next",
-                {
-                    "collector": ENV.COLLECTOR,
-                    "schedd": ENV.SCHEDD,
-                    "taskforce_uuid": args["taskforce_uuid"],
-                },
+                f"/taskforce/stop/{args['taskforce_uuid']}",
             )
 
         await asyncio.sleep(OUTER_LOOP_WAIT)
