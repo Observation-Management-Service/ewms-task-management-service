@@ -12,7 +12,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
-from ..config import ENV, WATCHER_INTERVAL, WATCHER_N_TOP_TASK_ERRORS
+from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
     LOGGER.info("Connected to EWMS")
 
     cluster_info_dict: dict[str, ClusterInfo] = {}  # LARGE
-    time_tracker = EveryXSeconds(WATCHER_INTERVAL)
+    time_tracker = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:

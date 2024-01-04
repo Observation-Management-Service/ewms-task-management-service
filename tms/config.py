@@ -7,9 +7,6 @@ from pathlib import Path
 
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
-OUTER_LOOP_WAIT = 60
-
-WATCHER_INTERVAL = 60 * 3
 WATCHER_N_TOP_TASK_ERRORS = 10
 
 
@@ -23,6 +20,9 @@ class EnvConfig:
     SCHEDD: str
     JOB_EVENT_LOG_DIR: Path
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
+
+    TMS_OUTER_LOOP_WAIT = 60
+    TMS_WATCHER_INTERVAL = 60 * 3
 
     EWMS_ADDRESS: str = ""
     EWMS_AUTH: str = ""

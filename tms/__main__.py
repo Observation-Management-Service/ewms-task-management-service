@@ -10,7 +10,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from . import utils
-from .config import ENV, OUTER_LOOP_WAIT, config_logging
+from .config import ENV, config_logging
 from .starter import starter
 from .stopper import stopper
 from .watcher import watcher
@@ -60,7 +60,7 @@ async def starter_loop() -> None:
             )
             LOGGER.info("Sent taskforce info to EWMS")
 
-        await asyncio.sleep(OUTER_LOOP_WAIT)
+        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
 
 
 async def watcher_loop() -> None:
@@ -74,7 +74,7 @@ async def watcher_loop() -> None:
             task = asyncio.create_task(watcher.watch_job_event_log(jel_fpath))
             in_progress[jel_fpath] = task
 
-        await asyncio.sleep(OUTER_LOOP_WAIT)
+        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
 
 
 async def stopper_loop() -> None:
@@ -105,7 +105,7 @@ async def stopper_loop() -> None:
                 f"/tms/taskforce/stop/{args['taskforce_uuid']}",
             )
 
-        await asyncio.sleep(OUTER_LOOP_WAIT)
+        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
 
 
 def _create_loop_task(key: str) -> asyncio.Task[None]:
