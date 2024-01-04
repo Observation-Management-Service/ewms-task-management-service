@@ -12,6 +12,6 @@ async def ewms_aborted_taskforce(ewms_rc: RestClient, taskforce_uuid: str) -> bo
     """Return whether the taskforce has been signaled for removal."""
     ret = await ewms_rc.request(
         "GET",
-        f"/taskforce/{taskforce_uuid}",
+        f"/tms/taskforce/{taskforce_uuid}",
     )
     return ret["is_deleted"]  # type: ignore[no-any-return]

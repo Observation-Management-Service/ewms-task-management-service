@@ -251,7 +251,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             LOGGER.debug(statuses_by_cluster)
             await ewms_rc.request(
                 "PATCH",
-                "/condor-cluster/many",
+                "/tms/condor-cluster/many",
                 {
                     # we don't have the taskforce_uuid(s), but...
                     # EWMS can map (collector + schedd + condor_id) to a taskforce_uuid

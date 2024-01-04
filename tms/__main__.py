@@ -30,7 +30,7 @@ async def starter_loop() -> None:
         """Get the next taskforce requested for this collector + schedd."""
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/start",
+            "/tms/taskforce/start",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
@@ -55,7 +55,7 @@ async def starter_loop() -> None:
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "PATCH",
-                f"/taskforce/start/{args['taskforce_uuid']}",
+                f"/tms/taskforce/start/{args['taskforce_uuid']}",
                 ewms_taskforce_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
@@ -89,7 +89,7 @@ async def stopper_loop() -> None:
         """Get the next taskforce requested for this collector + schedd."""
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/taskforce/stop",
+            "/tms/taskforce/stop",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
@@ -102,7 +102,7 @@ async def stopper_loop() -> None:
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "DELETE",
-                f"/taskforce/stop/{args['taskforce_uuid']}",
+                f"/tms/taskforce/stop/{args['taskforce_uuid']}",
             )
 
         await asyncio.sleep(OUTER_LOOP_WAIT)
