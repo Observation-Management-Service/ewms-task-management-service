@@ -16,7 +16,7 @@ cryptography==41.0.7
 Deprecated==1.2.14
 googleapis-common-protos==1.59.1
 grpcio==1.60.0
-htcondor==23.2.0
+htcondor==23.3.0
 humanfriendly==10.0
 idna==3.6
 importlib-metadata==6.11.0
@@ -58,7 +58,7 @@ pip==23.2.1
 pipdeptree==2.13.1
 setuptools==69.0.2
 tms
-├── htcondor [required: Any, installed: 23.2.0]
+├── htcondor [required: Any, installed: 23.3.0]
 ├── wipac-dev-tools [required: Any, installed: 1.8.2]
 │   ├── requests [required: Any, installed: 2.31.0]
 │   │   ├── certifi [required: >=2017.4.17, installed: 2023.11.17]
