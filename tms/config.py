@@ -22,6 +22,7 @@ class EnvConfig:
     COLLECTOR: str
     SCHEDD: str
     JOB_EVENT_LOG_DIR: Path
+    JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
 
     EWMS_ADDRESS: str = ""
     EWMS_AUTH: str = ""

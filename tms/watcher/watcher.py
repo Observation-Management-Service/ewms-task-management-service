@@ -184,10 +184,22 @@ class EveryXSeconds:
         return yes
 
 
+def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
+    """Return whether the file was last modified longer than the expiry."""
+    diff = time.time() - jel_fpath.stat().st_mtime
+    yes = diff >= ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY
+    if yes:
+        LOGGER.warning(f"Job log file {jel_fpath} has not been updated in {diff}s")
+    return yes
+
+
 async def watch_job_event_log(jel_fpath: Path) -> None:
     """Watch over one job event log file, containing multiple taskforces.
 
-    NOTE -- a taskforce is never split among multiple files, it uses only one
+    NOTE:
+        1. a taskforce is never split among multiple files, it uses only one
+        2. if this process crashes, the file will be re-read from the top;
+            so, there's no need to track progress.
     """
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
@@ -196,11 +208,8 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
     LOGGER.info("Connected to EWMS")
 
     cluster_info_dict: dict[str, ClusterInfo] = {}  # LARGE
-
     time_tracker = EveryXSeconds(WATCHER_INTERVAL)
-
     jel = htcondor.JobEventLog(str(jel_fpath))
-    jel_index = -1
 
     while True:
         # wait for job log to populate (more)
@@ -208,18 +217,29 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             await asyncio.sleep(1)
 
         # get events -- exit when no more events, or took too long
+        got_new_events = False
         LOGGER.info(f"Reading events from {jel_fpath}...")
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
-            jel_index += 1
+            got_new_events = True
             if job_event.cluster not in cluster_info_dict:
                 cluster_info_dict[job_event.cluster] = ClusterInfo()
             try:
                 cluster_info_dict[job_event.cluster].update_from_event(job_event)
             except UnknownJobEvent as e:
                 LOGGER.exception(e)
+            await asyncio.sleep(0)  # since htcondor is not async
             if time_tracker.has_been_x_seconds():
                 break
-            await asyncio.sleep(0)  # since htcondor is not async
+
+        # end game check
+        if not got_new_events:
+            if is_file_past_modification_expiry(jel_fpath):
+                # case: file has not been updated and it's old
+                jel_fpath.unlink()  # delete file
+                return
+            else:
+                # case: file has not been updated but need to wait longer
+                continue
 
         LOGGER.info("Done reading events for now")
 
@@ -257,12 +277,9 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
                     # EWMS can map (collector + schedd + condor_id) to a taskforce_uuid
                     "collector": ENV.COLLECTOR,
                     "schedd": ENV.SCHEDD,
-                    "jel_index": jel_index,
                     "top_task_errors_by_cluster": top_task_errors_by_cluster,
                     "statuses_by_cluster": statuses_by_cluster,
                 },
             )
         else:
             LOGGER.info("No updates needed for EWMS")
-
-    # TODO -- delete file
