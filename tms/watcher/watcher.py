@@ -139,19 +139,21 @@ class ClusterInfo:
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
         #
-        # CHIRP
+        # CHIRP -- pilot status
         if job_event.type == htcondor.JobEvent.GENERIC:
-            if not (info := job_event.get("info", None)):
-                raise UnknownJobEvent()
+            if "info" not in job_event:
+                raise UnknownJobEvent("no 'info' atribute")
             # ex: "HTChirpEWMSPilotStatus: foo bar baz"
-            if not info.startswith("HTChirpEWMSPilot"):
-                raise UnknownJobEvent()
+            if not job_event["info"].startswith("HTChirpEWMSPilot"):
+                raise UnknownJobEvent("not a 'HTChirpEWMSPilot*' chirp")
             # parse
-            attr, value = info.split(":", maxsplit=1)
-            try:  # unknown chirp
+            try:
+                attr, value = job_event["info"].split(":", maxsplit=1)
                 jie = JobInfoEnum[attr]
-            except KeyError:
-                raise UnknownJobEvent()
+            except (ValueError, KeyError) as e:
+                raise UnknownJobEvent(
+                    f"invalid 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
+                ) from e
             self._jobs[job_event.proc][jie.value] = value.strip()
         #
         # JOB STATUS
@@ -162,7 +164,7 @@ class ClusterInfo:
         #
         # OTHER
         else:
-            raise UnknownJobEvent()
+            raise UnknownJobEvent(f"not an important event: {job_event.type.name}")
 
 
 class EveryXSeconds:
@@ -174,9 +176,11 @@ class EveryXSeconds:
 
     def has_been_x_seconds(self) -> bool:
         """Has it been at least `self.seconds` since last time?"""
-        yes = time.time() - self._last_time >= self.seconds
+        diff = time.time() - self._last_time
+        yes = diff >= self.seconds
         if yes:
             self._last_time = time.time()
+            LOGGER.info(f"has been at least {self.seconds}s (actually {diff}s)")
         return yes
 
 
@@ -185,6 +189,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
 
     NOTE -- a taskforce is never split among multiple files, it uses only one
     """
+    LOGGER.info(f"This watcher will read {jel_fpath}")
 
     # make connections -- do now so we don't have any surprises downstream
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
@@ -203,14 +208,20 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             await asyncio.sleep(1)
 
         # get events -- exit when no more events, or took too long
+        LOGGER.info(f"Reading events from {jel_fpath}...")
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
             jel_index += 1
             if job_event.cluster not in cluster_info_dict:
                 cluster_info_dict[job_event.cluster] = ClusterInfo()
-            cluster_info_dict[job_event.cluster].update_from_event(job_event)
+            try:
+                cluster_info_dict[job_event.cluster].update_from_event(job_event)
+            except UnknownJobEvent as e:
+                LOGGER.exception(e)
             if time_tracker.has_been_x_seconds():
                 break
             await asyncio.sleep(0)  # since htcondor is not async
+
+        LOGGER.info("Done reading events for now")
 
         # NOTE: We unfortunately cannot reduce the data after aggregating.
         #  Once we aggregate we lose job-level granularity, which is
@@ -218,12 +229,14 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
         #  Alternatively, we could re-parse the entire job log every time.
 
         # aggregate
+        LOGGER.info("Getting top task errors...")
         top_task_errors = {}
         for cluster_id, info in cluster_info_dict.items():
             try:
                 top_task_errors[cluster_id] = info.get_top_task_errors()
             except NoUpdateException:
                 pass
+        LOGGER.info("Aggregating job statuses...")
         statuses = {}
         for cluster_id, info in cluster_info_dict.items():
             try:
@@ -233,14 +246,20 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
 
         # send -- one big update that way it won't intermittently fail
         # TODO -- map each cluster_id to taskforce_uuid (should be unique for this time period)
-        await ewms_rc.request(
-            "PATCH",
-            "/taskforce/many",
-            {
-                "jel_index": jel_index,
-                "top_task_errors": top_task_errors,
-                "statuses": statuses,
-            },
-        )
+        if top_task_errors or statuses:
+            LOGGER.info("Sending updates to EWMS...")
+            LOGGER.debug(top_task_errors)
+            LOGGER.debug(statuses)
+            await ewms_rc.request(
+                "PATCH",
+                "/taskforce/many",
+                {
+                    "jel_index": jel_index,
+                    "top_task_errors": top_task_errors,
+                    "statuses": statuses,
+                },
+            )
+        else:
+            LOGGER.info("No updates needed for EWMS")
 
     # TODO -- delete file
