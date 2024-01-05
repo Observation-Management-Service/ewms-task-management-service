@@ -9,6 +9,8 @@ env:
   COLLECTOR: foo
   SCHEDD: bar
   JOB_EVENT_LOG_DIR: tests/job_event_logs
+  TMS_WATCHER_INTERVAL: 1
+  JOB_EVENT_LOG_MODIFICATION_EXPIRY: 5
 
 
 jobs:
