@@ -6,7 +6,9 @@ on: [push]
 
 env:
   DOCKER_IMAGE_NAME: oms-test/tms-test
-  CI_TEST_JOB_EVENT_LOG_FILE: tests/condor_test_logfile
+  COLLECTOR: foo
+  SCHEDD: bar
+  JOB_EVENT_LOG_DIR: tests/job_event_logs
 
 
 jobs:
