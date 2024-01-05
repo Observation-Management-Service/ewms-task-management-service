@@ -201,8 +201,6 @@ class EveryXSeconds:
         if yes:
             self._last_time = time.time()
             LOGGER.info(f"has been at least {self.seconds}s (actually {diff}s)")
-        else:
-            LOGGER.debug(f"not yet: {self.seconds}s (actually {diff}s)")
         return yes
 
 
