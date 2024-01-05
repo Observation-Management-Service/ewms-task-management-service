@@ -14,7 +14,7 @@ async def test_000() -> None:
     fpath = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
 
     rc = MagicMock()
-    rc.request = AsyncMock(side_effect={})
+    rc.request = AsyncMock(return_value={})
     await watcher.watch_job_event_log(fpath, rc)
 
     assert 0  # TODO
