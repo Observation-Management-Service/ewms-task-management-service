@@ -230,6 +230,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     while True:
         # wait for job log to populate (more)
         while not time_tracker.has_been_x_seconds():
+            LOGGER.debug("not yet")
             await asyncio.sleep(1)
 
         # get events -- exit when no more events, or took too long
