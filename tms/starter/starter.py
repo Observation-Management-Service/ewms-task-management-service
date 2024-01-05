@@ -125,9 +125,7 @@ def make_condor_job_description(
 def submit(
     schedd_obj: htcondor.Schedd,
     n_workers: int,
-    #
     submit_dict: dict[str, Any],
-    spool: bool,
 ) -> htcondor.SubmitResult:
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
@@ -137,17 +135,8 @@ def submit(
     submit_result_obj = schedd_obj.submit(
         submit_obj,
         count=n_workers,  # submit N workers
-        spool=spool,  # for transferring logs & files
     )
     LOGGER.info(submit_result_obj)
-    if spool:
-        jobs = list(
-            submit_obj.jobs(
-                count=n_workers,
-                clusterid=submit_result_obj.cluster(),
-            )
-        )
-        schedd_obj.spool(jobs)
 
     return submit_result_obj
 
@@ -204,7 +193,6 @@ async def start(
         schedd_obj=schedd_obj,
         n_workers=n_workers,
         submit_dict=submit_dict,
-        spool=spool,
     )
 
     # report to EWMS
