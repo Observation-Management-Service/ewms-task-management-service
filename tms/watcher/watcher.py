@@ -237,7 +237,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             try:
                 cluster_info_dict[job_event.cluster].update_from_event(job_event)
             except UnknownJobEvent as e:
-                LOGGER.exception(e)
+                LOGGER.debug(f"error: {e}")
             await asyncio.sleep(0)  # since htcondor is not async
             if time_tracker.has_been_x_seconds():
                 break
