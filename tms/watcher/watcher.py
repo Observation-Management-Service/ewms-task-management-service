@@ -162,7 +162,11 @@ class ClusterInfo:
             if job_event.proc not in self._jobs:
                 self._jobs[job_event.proc] = {}
             LOGGER.debug(
-                f"new job status: {job_event.cluster} / {job_event.proc} / {job_event.type.name} / {jie.name}"
+                f"new job status: "
+                f"cluster={job_event.cluster} / "
+                f"proc={job_event.proc} / "
+                f"event={job_event.type.name} / "
+                f"info-type={jie.name} -> {value}"
             )
             self._jobs[job_event.proc][jie.value] = value
 
@@ -252,6 +256,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             if is_file_past_modification_expiry(jel_fpath):
                 # case: file has not been updated and it's old
                 jel_fpath.unlink()  # delete file
+                LOGGER.warning(f"Deleted job log file {jel_fpath}")
                 return
             else:
                 # case: file has not been updated but need to wait longer
