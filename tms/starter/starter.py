@@ -22,17 +22,19 @@ def make_condor_logs_dir() -> Path:
 
 
 def make_condor_job_description(
-    spool: bool,
-    # condor args
-    worker_memory_bytes: int,
-    worker_disk_bytes: int,
-    n_cores: int,
-    max_worker_runtime: int,
-    priority: int,
     # taskforce args
     image: str,
-    client_startup_json_s3_url: str,
-    client_args_string: str,
+    arguments: str,
+    environment: dict[str, str],
+    input_files: list[str],
+    taskforce_uuid: str,
+    # condor args
+    do_transfer_output: bool,
+    max_worker_runtime: int,
+    n_cores: int,
+    priority: int,
+    worker_disk_bytes: int,
+    worker_memory_bytes: int,
 ) -> dict[str, Any]:
     """Make the condor job description (dict)."""
 
@@ -49,41 +51,20 @@ def make_condor_job_description(
     #   entrypoint, and loading the icetray env file
     #   directly from cvmfs messes up the paths" -DS
 
-    # Build the environment specification for condor
-    env_vars = ["EWMS_PILOT_HTCHIRP=True"]
-    # EWMS_* are inherited via condor `getenv`, but we have default in case these are not set.
-    if not ENV.EWMS_PILOT_QUARANTINE_TIME:
-        env_vars.append("EWMS_PILOT_QUARANTINE_TIME=1800")
-    # The container sets I3_DATA to /opt/i3-data, however `millipede_wilks` requires files (spline tables) that are not available in the image. For the time being we require CVFMS and we load I3_DATA from there. In order to override the environment variables we need to prepend APPTAINERENV_ or SINGULARITYENV_ to the variable name. There are site-dependent behaviour but these two should cover all cases. See https://github.com/icecube/skymap_scanner/issues/135#issuecomment-1449063054.
-    for prefix in ["APPTAINERENV_", "SINGULARITYENV_"]:
-        env_vars.append(f"{prefix}I3_DATA=/cvmfs/icecube.opensciencegrid.org/data")
-    environment = " ".join(env_vars)
-
-    # TODO
-    import os
-
-    _FORWARDED_ENV_VAR_PREFIXES = ["SKYSCAN_", "EWMS_"]
-    _NONFORWARDED_ENV_VAR_PREFIXES = ["EWMS_TMS_"]
-    FORWARDED_ENV_VARS = [
-        var
-        for var in os.environ
-        if not any(var.startswith(p) for p in _NONFORWARDED_ENV_VAR_PREFIXES)
-        and any(var.startswith(p) for p in _FORWARDED_ENV_VAR_PREFIXES)
-    ]
+    environment_str = " ".join(f"{k}={v}" for k, v in environment.items())
+    input_files_str = " ".join(input_files)
 
     # write
     submit_dict = {
         "executable": "/bin/bash",
-        # TODO - grab args from task
-        "arguments": f"/usr/local/icetray/env-shell.sh python -m skymap_scanner.client {client_args_string} --client-startup-json ./{client_startup_json_s3_url}.fname",
+        "arguments": arguments,
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
-        "getenv": ", ".join(FORWARDED_ENV_VARS),
-        "environment": f'"{environment}"',  # must be quoted
+        "environment": f'"{environment_str}"',  # must be quoted
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "should_transfer_files": "YES",
-        "transfer_input_files": client_startup_json_s3_url,
+        "transfer_input_files": f'"{input_files_str}"',  # must be quoted
         "transfer_output_files": '""',  # must be quoted for "none"
         #
         # Don't transfer executable (/bin/bash) in case of
@@ -105,10 +86,12 @@ def make_condor_job_description(
         "priority": int(priority),
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": max_worker_runtime,  # Execution time limit -- 1 hour default on OSG
+        #
+        "+TaskforceUUID": f'"{taskforce_uuid}"',  # must be quoted
     }
 
     # outputs
-    if spool:
+    if do_transfer_output:
         # this is the location where the files will go when/if *returned here*
         logs_dir = make_condor_logs_dir()
         submit_dict.update(
@@ -135,53 +118,7 @@ def make_condor_job_description(
         # NOTE: this needs to be removed if we ARE transferring files
         submit_dict["initialdir"] = "/tmp"
 
-    return submit_dict
-
-
-def prep(
-    # starter CL args -- helper
-    spool: bool,
-    # starter CL args -- worker
-    worker_memory_bytes: int,
-    worker_disk_bytes: int,
-    n_cores: int,
-    max_worker_runtime: int,
-    priority: int,
-    # starter CL args -- client
-    client_args: list[tuple[str, str]],
-    client_startup_json_s3_url: str,
-    image: str,
-) -> dict[str, Any]:
-    """Create objects needed for starting Condor cluster."""
-
-    # get client args
-    client_args_string = ""
-    if client_args:
-        for carg, value in client_args:
-            client_args_string += f" --{carg} {value} "
-        LOGGER.info(f"Client Args: {client_args}")
-        if "--client-startup-json" in client_args_string:
-            raise RuntimeError(
-                "The '--client-args' arg cannot include \"--client-startup-json\". "
-                "This needs to be given to this script explicitly ('--client-startup-json')."
-            )
-
-    # make condor job description
-    submit_dict = make_condor_job_description(
-        spool,
-        # condor args
-        worker_memory_bytes,
-        worker_disk_bytes,
-        n_cores,
-        max_worker_runtime,
-        priority,
-        # taskforce args
-        image,
-        client_startup_json_s3_url,
-        client_args_string,
-    )
     LOGGER.info(submit_dict)
-
     return submit_dict
 
 
@@ -219,39 +156,39 @@ async def start(
     schedd_obj: htcondor.Schedd,
     is_aborted_awaitable: Awaitable[bool],
     #
-    taskforce_uuid: str,
-    #
     n_workers: int,
-    # starter CL args -- helper
-    spool: bool,
-    # starter CL args -- worker
-    worker_memory_bytes: int,
-    worker_disk_bytes: int,
-    n_cores: int,
-    max_worker_runtime: int,
-    priority: int,
-    # starter CL args -- client
-    client_args: list[tuple[str, str]],
-    client_startup_json_s3_url: str,
+    # taskforce args
     image: str,
+    arguments: str,
+    environment: dict[str, str],
+    input_files: list[str],
+    taskforce_uuid: str,
+    # condor args
+    do_transfer_output: bool,
+    max_worker_runtime: int,
+    n_cores: int,
+    priority: int,
+    worker_disk_bytes: int,
+    worker_memory_bytes: int,
 ) -> dict[str, Any]:
     LOGGER.info(
         f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
 
     # prep
-    submit_dict = prep(
-        spool=spool,
-        # starter CL args -- worker
-        worker_memory_bytes=worker_memory_bytes,
-        worker_disk_bytes=worker_disk_bytes,
-        n_cores=n_cores,
-        max_worker_runtime=max_worker_runtime,
-        priority=priority,
-        # starter CL args -- client
-        client_args=client_args,
-        client_startup_json_s3_url=client_startup_json_s3_url,
-        image=image,
+    submit_dict = make_condor_job_description(
+        image,
+        arguments,
+        environment,
+        input_files,
+        taskforce_uuid,
+        #
+        do_transfer_output,
+        max_worker_runtime,
+        n_cores,
+        priority,
+        worker_disk_bytes,
+        worker_memory_bytes,
     )
 
     # final checks

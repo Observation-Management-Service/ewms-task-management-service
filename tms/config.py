@@ -26,7 +26,6 @@ class EnvConfig:
 
     EWMS_ADDRESS: str = ""
     EWMS_AUTH: str = ""
-    EWMS_PILOT_QUARANTINE_TIME: int = 0
 
     DRYRUN: bool = False
     CI_TEST: bool = False
