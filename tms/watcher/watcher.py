@@ -159,6 +159,9 @@ class ClusterInfo:
         def set_job_status(jie: JobInfoEnum, value: str) -> None:
             if job_event.proc not in self._jobs:
                 self._jobs[job_event.proc] = {}
+            LOGGER.debug(
+                f"new job status: {job_event.cluster} / {job_event.proc} / {job_event.type.name} / {jie.name}"
+            )
             self._jobs[job_event.proc][jie.value] = value
 
         #
