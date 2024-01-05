@@ -124,7 +124,7 @@ jobs:
           python-version: ${{ matrix.py3 }}
       - name: tests
         run: |
-          pip install .
+          pip install .[tests]
           pytest -vvv tests/unit/
 
 
