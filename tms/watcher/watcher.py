@@ -133,34 +133,45 @@ class ClusterInfo:
         self._previous_top_task_errors = errors  # type: ignore[assignment]
         return self._previous_top_task_errors
 
+    @staticmethod
+    def get_chirp_value(job_event: htcondor.JobEvent) -> tuple[JobInfoEnum, str]:
+        if "info" not in job_event:
+            raise UnknownJobEvent("no 'info' atribute")
+        # ex: "HTChirpEWMSPilotStatus: foo bar baz"
+        if not job_event["info"].startswith("HTChirpEWMSPilot"):
+            raise UnknownJobEvent("not a 'HTChirpEWMSPilot*' chirp")
+        # parse
+        try:
+            attr, value = job_event["info"].split(":", maxsplit=1)
+            jie = JobInfoEnum[attr]
+        except (ValueError, KeyError) as e:
+            raise UnknownJobEvent(
+                f"invalid 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
+            ) from e
+        return jie, value.strip()
+
     def update_from_event(
         self,
         job_event: htcondor.JobEvent,
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
+
+        def set_job_status(jie: JobInfoEnum, value: str) -> None:
+            if job_event.proc not in self._jobs:
+                self._jobs[job_event.proc] = {}
+            self._jobs[job_event.proc][jie.value] = value
+
         #
         # CHIRP -- pilot status
         if job_event.type == htcondor.JobEventType.GENERIC:
-            if "info" not in job_event:
-                raise UnknownJobEvent("no 'info' atribute")
-            # ex: "HTChirpEWMSPilotStatus: foo bar baz"
-            if not job_event["info"].startswith("HTChirpEWMSPilot"):
-                raise UnknownJobEvent("not a 'HTChirpEWMSPilot*' chirp")
-            # parse
-            try:
-                attr, value = job_event["info"].split(":", maxsplit=1)
-                jie = JobInfoEnum[attr]
-            except (ValueError, KeyError) as e:
-                raise UnknownJobEvent(
-                    f"invalid 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
-                ) from e
-            self._jobs[job_event.proc][jie.value] = value.strip()
+            jie, chirp_value = self.get_chirp_value(job_event)
+            set_job_status(jie, chirp_value)
         #
         # JOB STATUS
         elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
             jie = JobInfoEnum.JobStatus
             # TODO -- get hold reason and use that as value
-            self._jobs[job_event.proc][jie.value] = job_status.name  # str
+            set_job_status(jie, job_status.name)
         #
         # OTHER
         else:
