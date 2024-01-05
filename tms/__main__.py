@@ -38,19 +38,8 @@ async def starter_loop() -> None:
         while args := await next_one():
             ewms_taskforce_attrs = await starter.start(
                 schedd_obj,
-                utils.ewms_aborted_taskforce(ewms_rc, args["taskforce_uuid"]),
-                #
-                args["taskforce_uuid"],
-                args["n_workers"],
-                args["spool"],
-                args["worker_memory_bytes"],
-                args["worker_disk_bytes"],
-                args["n_cores"],
-                args["max_worker_runtime"],
-                args["priority"],
-                args["client_args"],
-                args["client_startup_json_s3_url"],
-                args["image"],
+                utils.is_taskforce_to_be_aborted(ewms_rc, args["taskforce_uuid"]),
+                **args,  # TODO
             )
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(

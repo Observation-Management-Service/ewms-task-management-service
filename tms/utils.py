@@ -8,7 +8,7 @@ from rest_tools.client import RestClient
 LOGGER = logging.getLogger(__name__)
 
 
-async def ewms_aborted_taskforce(ewms_rc: RestClient, taskforce_uuid: str) -> bool:
+async def is_taskforce_to_be_aborted(ewms_rc: RestClient, taskforce_uuid: str) -> bool:
     """Return whether the taskforce has been signaled for removal."""
     ret = await ewms_rc.request(
         "GET",

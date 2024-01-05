@@ -87,7 +87,8 @@ def make_condor_job_description(
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": max_worker_runtime,  # Execution time limit -- 1 hour default on OSG
         #
-        "+TaskforceUUID": f'"{taskforce_uuid}"',  # must be quoted
+        "+EWMSTaskforceUUID": f'"{taskforce_uuid}"',  # must be quoted
+        "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
 
     # outputs
@@ -195,7 +196,7 @@ async def start(
         submit_dict=submit_dict,
     )
 
-    # report to EWMS
+    # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
         orchestrator="condor",
         location={
