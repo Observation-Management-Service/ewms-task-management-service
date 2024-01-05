@@ -231,7 +231,7 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             if time_tracker.has_been_x_seconds():
                 break
 
-        # end game check
+        # endgame check
         if not got_new_events:
             if is_file_past_modification_expiry(jel_fpath):
                 # case: file has not been updated and it's old
