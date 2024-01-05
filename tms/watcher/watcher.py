@@ -140,7 +140,7 @@ class ClusterInfo:
         """Extract the meaningful info from the event for the cluster."""
         #
         # CHIRP -- pilot status
-        if job_event.type == htcondor.JobEvent.GENERIC:
+        if job_event.type == htcondor.JobEventType.GENERIC:
             if "info" not in job_event:
                 raise UnknownJobEvent("no 'info' atribute")
             # ex: "HTChirpEWMSPilotStatus: foo bar baz"
