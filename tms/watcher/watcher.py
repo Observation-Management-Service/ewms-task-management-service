@@ -213,7 +213,7 @@ def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
     return yes
 
 
-async def watch_job_event_log(jel_fpath: Path) -> None:
+async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     """Watch over one job event log file, containing multiple taskforces.
 
     NOTE:
@@ -222,10 +222,6 @@ async def watch_job_event_log(jel_fpath: Path) -> None:
             so, there's no need to track progress.
     """
     LOGGER.info(f"This watcher will read {jel_fpath}")
-
-    # make connections -- do now so we don't have any surprises downstream
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
-    LOGGER.info("Connected to EWMS")
 
     cluster_info_dict: dict[str, ClusterInfo] = {}  # LARGE
     time_tracker = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
