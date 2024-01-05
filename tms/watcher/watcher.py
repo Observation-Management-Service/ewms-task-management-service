@@ -139,7 +139,9 @@ class ClusterInfo:
             raise UnknownJobEvent("no 'info' atribute")
         # ex: "HTChirpEWMSPilotStatus: foo bar baz"
         if not job_event["info"].startswith("HTChirpEWMSPilot"):
-            raise UnknownJobEvent("not a 'HTChirpEWMSPilot*' chirp")
+            raise UnknownJobEvent(
+                f"not a 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
+            )
         # parse
         try:
             attr, value = job_event["info"].split(":", maxsplit=1)
