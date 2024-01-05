@@ -21,8 +21,8 @@ class EnvConfig:
     JOB_EVENT_LOG_DIR: Path
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
 
-    TMS_OUTER_LOOP_WAIT = 60
-    TMS_WATCHER_INTERVAL = 60 * 3
+    TMS_OUTER_LOOP_WAIT: int = 60
+    TMS_WATCHER_INTERVAL: int = 60 * 3
 
     EWMS_ADDRESS: str = ""
     EWMS_AUTH: str = ""
