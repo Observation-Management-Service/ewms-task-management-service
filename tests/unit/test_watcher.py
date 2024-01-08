@@ -18,8 +18,6 @@ async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -
     with open(src) as f:  # thread safe b/c only reading
         lines = f.readlines()
 
-    live_file.touch()  # watcher assumes file exists
-
     for i in range(n_updates):
         await asyncio.sleep(LIVE_UPDATE_SLEEP)
         with open(live_file, "w") as livef:
@@ -33,8 +31,10 @@ async def test_000() -> None:
     """Test the watcher."""
     htcondor.enable_debug()
 
+    # TODO - move to fixture
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
     fpath = Path(src.name + "-live")
+    fpath.touch()  # watcher assumes file exists
 
     # update file in background
     threading.Thread(
