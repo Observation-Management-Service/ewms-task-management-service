@@ -217,6 +217,8 @@ Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
 ...
+008 (104501503.000.000) 2024-01-05 11:56:05 HTChirpEWMSPilotStatus: Tasking
+...
 006 (104501503.000.000) 2024-01-05 11:56:06 Image size of job updated: 504
 	1  -  MemoryUsage of job (MB)
 	272  -  ResidentSetSize of job (KB)
@@ -236,6 +238,8 @@ Size = 504
 Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
+...
+008 (104501503.000.000) 2024-01-05 11:56:10 HTChirpEWMSPilotStatus: Done
 ...
 040 (104501503.000.000) 2024-01-05 11:56:21 Started transferring output files
 ...
@@ -391,6 +395,8 @@ Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
 ...
+008 (104501503.001.000) 2024-01-05 12:00:00 HTChirpEWMSPilotStatus: Tasking
+...
 006 (104501503.001.000) 2024-01-05 12:00:06 Image size of job updated: 8560
 	9  -  MemoryUsage of job (MB)
 	8200  -  ResidentSetSize of job (KB)
@@ -410,6 +416,8 @@ Size = 8560
 Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
+...
+008 (104501503.001.000) 2024-01-05 12:00:10 HTChirpEWMSPilotStatus: Done
 ...
 040 (104501503.001.000) 2024-01-05 12:00:15 Started transferring output files
 ...
@@ -567,6 +575,8 @@ TriggerEventTypeNumber = 6
 ...
 008 (104501503.002.000) 2024-01-05 12:01:51 Hello from job 3
 ...
+008 (104501503.002.000) 2024-01-05 12:01:51 HTChirpEWMSPilotStatus: Tasking
+...
 006 (104501503.002.000) 2024-01-05 12:02:51 Image size of job updated: 684
 	1  -  MemoryUsage of job (MB)
 	76  -  ResidentSetSize of job (KB)
@@ -586,6 +596,8 @@ Size = 684
 Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
+...
+008 (104501503.002.000) 2024-01-05 12:02:51 HTChirpEWMSPilotStatus: Done
 ...
 040 (104501503.002.000) 2024-01-05 12:02:51 Started transferring output files
 ...
@@ -881,6 +893,8 @@ Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
 ...
+008 (104501503.005.000) 2024-01-05 12:03:26 HTChirpEWMSPilotStatus: Tasking
+...
 006 (104501503.003.000) 2024-01-05 12:03:52 Image size of job updated: 128
 	1  -  MemoryUsage of job (MB)
 	124  -  ResidentSetSize of job (KB)
@@ -900,6 +914,8 @@ Size = 128
 Subproc = 0
 TriggerEventTypeName = "ULOG_IMAGE_SIZE"
 TriggerEventTypeNumber = 6
+...
+008 (104501503.003.000) 2024-01-05 12:04:00 HTChirpEWMSPilotStatus: Done
 ...
 040 (104501503.003.000) 2024-01-05 12:04:04 Started transferring output files
 ...
@@ -964,6 +980,8 @@ Subproc = 0
 TriggerEventTypeName = "ULOG_FILE_TRANSFER"
 TriggerEventTypeNumber = 40
 Type = 6
+...
+008 (104501503.004.000) 2024-01-05 12:04:20 HTChirpEWMSPilotStatus: Tasking
 ...
 006 (104501503.004.000) 2024-01-05 12:04:27 Image size of job updated: 1048576
 	1  -  MemoryUsage of job (MB)
@@ -1151,6 +1169,8 @@ TriggerEventTypeName = "ULOG_FILE_TRANSFER"
 TriggerEventTypeNumber = 40
 Type = 3
 ...
+008 (104501503.005.000) 2024-01-05 12:20:00 HTChirpEWMSPilotStatus: Tasking
+...
 006 (104501503.005.000) 2024-01-05 12:20:56 Image size of job updated: 128
 	1  -  MemoryUsage of job (MB)
 	124  -  ResidentSetSize of job (KB)
@@ -1270,6 +1290,8 @@ StarterAddr = "<128.105.69.35:9618?addrs=128.105.69.35-9618&alias=e2357.chtc.wis
 Subproc = 0
 TriggerEventTypeName = "ULOG_JOB_RECONNECTED"
 TriggerEventTypeNumber = 23
+...
+008 (104501503.005.000) 2024-01-05 12:24:00 HTChirpEWMSPilotStatus: Done
 ...
 040 (104501503.005.000) 2024-01-05 12:24:14 Started transferring output files
 ...
