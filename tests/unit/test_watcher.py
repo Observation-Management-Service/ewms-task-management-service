@@ -3,7 +3,6 @@
 
 import asyncio
 import os
-import shutil
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -14,10 +13,7 @@ LIVE_UPDATE_SLEEP = 2
 
 
 async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -> None:
-    src_copy = Path("abc")
-    shutil.copy(src, src_copy)
-
-    with open(src_copy) as f:
+    with open(src) as f:  # thread safe b/c only reading
         lines = f.readlines()
 
     for i in range(n_updates):
@@ -34,6 +30,7 @@ async def test_000() -> None:
 
     # update file in background task
     asyncio.create_task(mimick_live_file_updates(src, fpath, 5))
+    await asyncio.sleep(0)  # start above task
 
     rc = MagicMock()
     rc.request = AsyncMock(return_value={})

@@ -65,6 +65,7 @@ async def watcher_loop() -> None:
             if jel_fpath in in_progress:
                 continue
             task = asyncio.create_task(watcher.watch_job_event_log(jel_fpath, ewms_rc))
+            await asyncio.sleep(0)  # start above task
             in_progress[jel_fpath] = task
 
         await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
