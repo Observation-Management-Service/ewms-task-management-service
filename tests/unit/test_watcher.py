@@ -7,7 +7,7 @@ import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
-import htcondor
+import htcondor  # type: ignore[import-untyped]
 from tms import config  # noqa: F401  # setup env vars
 from tms.watcher import watcher
 
@@ -18,13 +18,15 @@ async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -
     with open(src) as f:  # thread safe b/c only reading
         lines = f.readlines()
 
+    live_file.touch()  # watcher assumes file exists
+
     for i in range(n_updates):
+        await asyncio.sleep(LIVE_UPDATE_SLEEP)
         with open(live_file, "w") as livef:
             amount = ((i + 1) / n_updates) * len(lines)
             livef.write("".join(lines[: int(amount)]))
         with open(live_file) as livef:
             print(livef.read())  # TODO
-        await asyncio.sleep(LIVE_UPDATE_SLEEP)
 
 
 async def test_000() -> None:
