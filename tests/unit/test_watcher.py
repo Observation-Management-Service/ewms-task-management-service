@@ -9,53 +9,68 @@ from typing import Iterator
 from unittest.mock import AsyncMock, MagicMock
 
 import htcondor  # type: ignore[import-untyped]
+import pytest
 from tms import config  # noqa: F401  # setup env vars
 from tms.watcher import watcher
 
 LIVE_UPDATE_SLEEP = 2
 
-
-def _get_subset_job_event_log(lines: list[str], min_amount: int) -> Iterator[str]:
-    """Get a subset of the job event log and maintain valid syntax."""
-    for i, ln in enumerate(lines):
-        yield ln
-        if i >= min_amount and ln == "...\n":
-            return
+htcondor.enable_debug()
 
 
-async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -> None:
-    """Routinely update the live file by iteratively adding lines from src."""
-    with open(src) as f:  # thread safe b/c only reading
-        lines = f.readlines()
+class JobEventLogFileWrapper:
+    """explain."""
 
-    for i in range(n_updates):
-        await asyncio.sleep(LIVE_UPDATE_SLEEP)
-        with open(live_file, "w") as livef:
-            amount = ((i + 1) / n_updates) * len(lines)
-            subset_lines = _get_subset_job_event_log(lines, int(amount))
-            livef.write("".join(subset_lines))
-        # with open(live_file) as livef:
-        #     print(livef.read())
+    def __init__(self, src: Path) -> None:
+        self.src = src
+        self.live_file = Path(src.name + "-live")
+        self.live_file.touch()  # watcher assumes file exists
+
+    @staticmethod
+    def _get_subset_job_event_log(lines: list[str], min_amount: int) -> Iterator[str]:
+        """Get a subset of the job event log and maintain valid syntax."""
+        for i, ln in enumerate(lines):
+            yield ln
+            if i >= min_amount and ln == "...\n":
+                return
+
+    def start_live_file_updates(self, n_updates: int) -> None:
+        """Begin updating live file by iteratively adding lines from src."""
+        threading.Thread(
+            target=asyncio.run,
+            args=(self._mimick_live_file_updates(n_updates),),
+            daemon=True,
+        ).start()
+
+    async def _mimick_live_file_updates(self, n_updates: int) -> None:
+        with open(self.src) as f:  # thread safe b/c only reading
+            lines = f.readlines()
+
+        for i in range(n_updates):
+            await asyncio.sleep(LIVE_UPDATE_SLEEP)
+            with open(self.live_file, "w") as livef:
+                amount = ((i + 1) / n_updates) * len(lines)
+                subset_lines = self._get_subset_job_event_log(lines, int(amount))
+                livef.write("".join(subset_lines))
+            # with open(live_file) as livef:
+            #     print(livef.read())
 
 
-async def test_000() -> None:
-    """Test the watcher."""
-    htcondor.enable_debug()
-
-    # TODO - move to fixture
+@pytest.fixture
+def jel_file_wrapper() -> JobEventLogFileWrapper:
+    """Job event log file."""
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
-    fpath = Path(src.name + "-live")
-    fpath.touch()  # watcher assumes file exists
+    return JobEventLogFileWrapper(src)
+
+
+async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
+    """Test the watcher."""
 
     # update file in background
-    threading.Thread(
-        target=asyncio.run,
-        args=(mimick_live_file_updates(src, fpath, 5),),
-        daemon=True,
-    ).start()
+    jel_file_wrapper.start_live_file_updates(5)
 
     rc = MagicMock()
     rc.request = AsyncMock(return_value={})
-    await watcher.watch_job_event_log(fpath, rc)
+    await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
 
     assert 0  # TODO
