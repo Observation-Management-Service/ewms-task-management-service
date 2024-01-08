@@ -7,6 +7,7 @@ import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import htcondor
 from tms import config  # noqa: F401  # setup env vars
 from tms.watcher import watcher
 
@@ -28,6 +29,8 @@ async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -
 
 async def test_000() -> None:
     """Test the watcher."""
+    htcondor.enable_debug()
+
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
     fpath = Path(src.name + "-live")
 
