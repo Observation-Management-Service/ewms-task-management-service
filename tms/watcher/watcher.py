@@ -165,7 +165,7 @@ class ClusterInfo:
                 f"new job status: "
                 f"cluster={job_event.cluster} / "
                 f"proc={job_event.proc} / "
-                f"event={job_event.type} ({job_event.type.name}) / "
+                f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
                 f"{jie.name} -> {value}"
             )
             self._jobs[job_event.proc][jie.value] = value
