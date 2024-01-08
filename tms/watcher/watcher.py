@@ -154,12 +154,9 @@ class ClusterInfo:
 
     def update_from_event(
         self,
-        job_event: htcondor.JobEvent,
+        job_event: htcondor.JobEventLog,
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
-        import pprint
-
-        LOGGER.debug(pprint.pformat(dict(job_event)))  # TODO - remove
 
         def set_job_status(jie: JobInfoEnum, value: str) -> None:
             if job_event.proc not in self._jobs:

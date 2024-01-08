@@ -34,8 +34,8 @@ async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -
             amount = ((i + 1) / n_updates) * len(lines)
             subset_lines = _get_subset_job_event_log(lines, int(amount))
             livef.write("".join(subset_lines))
-        with open(live_file) as livef:
-            print(livef.read())  # TODO
+        # with open(live_file) as livef:
+        #     print(livef.read())
 
 
 async def test_000() -> None:
