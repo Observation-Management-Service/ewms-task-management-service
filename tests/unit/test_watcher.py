@@ -21,6 +21,8 @@ async def mimick_live_file_updates(src: Path, live_file: Path, n_updates: int) -
         with open(live_file, "w") as livef:
             amount = ((i + 1) / n_updates) * len(lines)
             livef.write("".join(lines[: int(amount)]))
+        with open(live_file) as livef:
+            print(livef.read())  # TODO
 
 
 async def test_000() -> None:
