@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import threading
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -30,9 +31,12 @@ async def test_000() -> None:
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
     fpath = Path(src.name + "-live")
 
-    # update file in background task
-    asyncio.create_task(mimick_live_file_updates(src, fpath, 5))
-    await asyncio.sleep(0)  # start above task
+    # update file in background
+    threading.Thread(
+        target=asyncio.run,
+        args=(mimick_live_file_updates(src, fpath, 5),),
+        daemon=True,
+    ).start()
 
     rc = MagicMock()
     rc.request = AsyncMock(return_value={})
