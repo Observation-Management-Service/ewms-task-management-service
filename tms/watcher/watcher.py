@@ -72,7 +72,7 @@ def job_info_val_to_string(
 
             case JobInfoKey.JobStatus:
                 if isinstance(job_info_val, int):
-                    return str(htcondor.JobStatus(job_info_val[0]).name)
+                    return str(htcondor.JobStatus(job_info_val).name)
                 elif isinstance(job_info_val, tuple):
                     if job_info_val[0] == htcondor.JobStatus.HELD:
                         return ct.hold_reason_to_string(
