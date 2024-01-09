@@ -65,11 +65,25 @@ def job_info_val_to_string(
     if job_info_val is None:
         return None
 
-    match job_info_key:
-        case JobInfoKey.HTChirpEWMSPilotError:
-            return str(job_info_val)  # *should* already be a str
-        case _:
-            return str(job_info_val)  # who knows what this is
+    try:
+        match job_info_key:
+            case JobInfoKey.HTChirpEWMSPilotError:
+                return str(job_info_val)  # *should* already be a str
+
+            case JobInfoKey.JobStatus:
+                if job_info_val[0] == htcondor.JobStatus.HELD:
+                    return ct.hold_reason_to_string(job_info_val[1], job_info_val[2])  # type: ignore[arg-type]
+                else:
+                    return str(htcondor.JobStatus(job_info_val[0]).name)
+
+            case _:
+                return str(job_info_val)  # who knows what this is
+
+    # keep calm and carry on
+    except Exception as e:
+        LOGGER.exception(e)
+
+    return str(job_info_val)
 
 
 ########################################################################################
@@ -241,10 +255,17 @@ class ClusterInfo:
         #
         # JOB STATUS
         elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
-            # TODO -- get hold reason and use that as value
             match job_status:
+                # get hold reason and use that as value
                 case htcondor.JobStatus.HELD:
-                    set_job_status(JobInfoKey.JobStatus, (job_status.value, 88, 99))
+                    set_job_status(
+                        JobInfoKey.JobStatus,
+                        (
+                            job_status.value,
+                            job_event.get("HoldReasonCode", None),
+                            job_event.get("HoldReasonSubCode", None),
+                        ),
+                    )
                 case _:
                     set_job_status(JobInfoKey.JobStatus, job_status.value)
         #

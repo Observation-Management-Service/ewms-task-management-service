@@ -208,12 +208,12 @@ HOLD_REASON_LOOKUP: dict[int, HoldReason] = {
 }
 
 
-def hold_reason_to_string(code: int, subcode: int | None) -> str:
+def hold_reason_to_string(code: int | None, subcode: int | None) -> str:
     """Get a human-readable message from the hold code (and subcode)."""
     try:
         hold_info = HOLD_REASON_LOOKUP[code]
     except ValueError:
-        return f"Unknown Hold Reason ({code},{subcode})"
+        raise ValueError(f"Unknown Hold Reason ({code},{subcode})")
 
     if subcode is not None:
         if "subcode_lookup" in hold_info:
