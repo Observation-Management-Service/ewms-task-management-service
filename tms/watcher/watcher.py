@@ -180,8 +180,7 @@ class ClusterInfo:
             for dicto in self._jobs.values()
         )
         counts.pop(None, None)  # remove counts of "no error"
-
-        errors = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))
+        errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
