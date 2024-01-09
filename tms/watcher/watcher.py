@@ -75,9 +75,7 @@ def job_info_val_to_string(
                     return str(htcondor.JobStatus(job_info_val).name)
                 elif isinstance(job_info_val, tuple):
                     if job_info_val[0] == htcondor.JobStatus.HELD:
-                        return ct.hold_reason_to_string(
-                            job_info_val[1], job_info_val[2]
-                        )
+                        return f"HELD: {ct.hold_reason_to_string(job_info_val[1], job_info_val[2])}"
                 # else -> fall-through
 
             case _:
@@ -267,8 +265,8 @@ class ClusterInfo:
                         JobInfoKey.JobStatus,
                         (
                             job_status.value,
-                            job_event.get("HoldReasonCode", None),
-                            job_event.get("HoldReasonSubCode", None),
+                            job_event.get("HoldReasonCode", 0),
+                            job_event.get("HoldReasonSubCode", 0),
                         ),
                     )
                 case _:
