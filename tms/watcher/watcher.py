@@ -296,7 +296,7 @@ def get_top_task_errors_by_cluster(
         try:
             raw = info.get_top_task_errors()
         except NoUpdateException:
-            pass
+            continue
         # convert to human-readable
         top_task_errors_by_cluster[cluster_id] = {
             job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotError, k): v
@@ -317,7 +317,7 @@ def get_job_pilot_compound_statuses_by_cluster(
         try:
             raw = info.aggregate_job_pilot_compound_statuses()
         except NoUpdateException:
-            pass
+            continue
         # convert to human-readable
         job_pilot_compound_statuses_by_cluster[cluster_id] = {
             job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotError, job_status): {
