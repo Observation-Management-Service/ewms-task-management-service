@@ -6,6 +6,11 @@ on: [push]
 
 env:
   DOCKER_IMAGE_NAME: oms-test/tms-test
+  COLLECTOR: foo
+  SCHEDD: bar
+  JOB_EVENT_LOG_DIR: tests/job_event_logs
+  TMS_WATCHER_INTERVAL: 1
+  JOB_EVENT_LOG_MODIFICATION_EXPIRY: 5
 
 
 jobs:
@@ -109,6 +114,23 @@ jobs:
         run: |
           singularity run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
             ls
+
+  unit-test:
+    needs: [py-versions]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py3 }}
+      - run: |
+          pip install .[tests]
+      - run: |
+          pytest -vvv tests/unit/
 
 
   #############################################################################
