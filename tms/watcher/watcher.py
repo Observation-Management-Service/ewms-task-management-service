@@ -71,10 +71,14 @@ def job_info_val_to_string(
                 return str(job_info_val)  # *should* already be a str
 
             case JobInfoKey.JobStatus:
-                if job_info_val[0] == htcondor.JobStatus.HELD:
-                    return ct.hold_reason_to_string(job_info_val[1], job_info_val[2])  # type: ignore[arg-type]
-                else:
+                if isinstance(job_info_val, int):
                     return str(htcondor.JobStatus(job_info_val[0]).name)
+                elif isinstance(job_info_val, tuple):
+                    if job_info_val[0] == htcondor.JobStatus.HELD:
+                        return ct.hold_reason_to_string(
+                            job_info_val[1], job_info_val[2]
+                        )
+                # else -> fall-through
 
             case _:
                 return str(job_info_val)  # who knows what this is
@@ -83,6 +87,7 @@ def job_info_val_to_string(
     except Exception as e:
         LOGGER.exception(e)
 
+    # fall-through
     return str(job_info_val)
 
 
