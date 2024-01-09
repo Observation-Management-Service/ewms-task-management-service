@@ -17,8 +17,11 @@ from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
 LOGGER = logging.getLogger(__name__)
 
 
-class JobInfoEnum(enum.Enum):
-    """Represent important job attributes while minimizing memory."""
+class JobInfoKeyEnum(enum.Enum):
+    """Represent important job attributes while minimizing memory.
+
+    NOTE - enum members are singletons -> good for memory reduction
+    """
 
     # pylint:disable=invalid-name
 
@@ -51,18 +54,24 @@ class NoUpdateException(Exception):
     """Raise when there is no update to be made."""
 
 
+ProcId = int
+ValueCodeTup = tuple[int, ...]
+
+
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
     def __init__(self) -> None:
-        self._jobs: dict[int, dict[int, str]] = {}
-        self._previous_aggregate_statuses: dict[str | None, dict[str | None, int]] = {}
+        self._jobs: dict[ProcId, dict[JobInfoKeyEnum, ValueCodeTup]] = {}
+        self._previous_aggregate_statuses: dict[
+            ValueCodeTup | None, dict[ValueCodeTup | None, int]
+        ] = {}
         self._previous_top_task_errors: dict[str, int] = {}
 
-    def aggregate_statuses(
+    def aggregate_job_pilot_compound_statuses(
         self,
-    ) -> dict[str | None, dict[str | None, int]]:
-        """Aggregate statuses of jobs.
+    ) -> dict[ValueCodeTup | None, dict[ValueCodeTup | None, int]]:
+        """Aggregate jobs using a count of each job status & pilot status pair.
 
         ```
             {
@@ -81,34 +90,36 @@ class ClusterInfo:
         """
 
         # pre-allocate statuses as keys
-        statuses: dict[str | None, dict[str | None, int]] = {
-            k: {}
-            for k in set(
-                info.get(JobInfoEnum.JobStatus.value, None)
-                for info in self._jobs.values()
+        job_pilot_compound_statuses: dict[
+            ValueCodeTup | None, dict[ValueCodeTup | None, int]
+        ] = {
+            job_status: {}
+            for job_status in set(
+                job_info.get(JobInfoKeyEnum.JobStatus, None)
+                for job_info in self._jobs.values()
             )
         }
 
         # get counts of each
-        for job_status in statuses:
+        for job_status in job_pilot_compound_statuses:
             # get cluster_info ids that match this status
             ids_for_this_job_status = [
                 i
-                for i, info in self._jobs.items()
-                if info.get(JobInfoEnum.JobStatus.value, None) == job_status
+                for i, job_info in self._jobs.items()
+                if job_info.get(JobInfoKeyEnum.JobStatus, None) == job_status
             ]
             # now, get the pilot-statuses for this job-status
-            statuses[job_status] = dict(
+            job_pilot_compound_statuses[job_status] = dict(
                 collections.Counter(
-                    self._jobs[i].get(JobInfoEnum.HTChirpEWMSPilotStatus.value, None)
+                    self._jobs[i].get(JobInfoKeyEnum.HTChirpEWMSPilotStatus, None)
                     for i in ids_for_this_job_status
                 )
             )
 
         # validate & return
-        if statuses == self._previous_aggregate_statuses:
+        if job_pilot_compound_statuses == self._previous_aggregate_statuses:
             raise NoUpdateException()
-        self._previous_aggregate_statuses = statuses
+        self._previous_aggregate_statuses = job_pilot_compound_statuses
         return self._previous_aggregate_statuses
 
     def get_top_task_errors(
@@ -120,7 +131,7 @@ class ClusterInfo:
             `NoUpdateException` -- if there is no update
         """
         counts = collections.Counter(
-            dicto.get(JobInfoEnum.HTChirpEWMSPilotError.value, None)
+            dicto.get(JobInfoKeyEnum.HTChirpEWMSPilotError, None)
             for dicto in self._jobs.values()
         )
         counts.pop(None, None)  # remove counts of "no error"
@@ -130,11 +141,11 @@ class ClusterInfo:
         # validate & return
         if errors == self._previous_top_task_errors:
             raise NoUpdateException()
-        self._previous_top_task_errors = errors  # type: ignore[assignment]
+        self._previous_top_task_errors = errors
         return self._previous_top_task_errors
 
     @staticmethod
-    def get_chirp_value(job_event: htcondor.JobEvent) -> tuple[JobInfoEnum, str]:
+    def get_chirp_value(job_event: htcondor.JobEvent) -> tuple[JobInfoKeyEnum, str]:
         if "info" not in job_event:
             raise UnknownJobEvent("no 'info' atribute")
         # ex: "HTChirpEWMSPilotStatus: foo bar baz"
@@ -145,7 +156,7 @@ class ClusterInfo:
         # parse
         try:
             attr, value = job_event["info"].split(":", maxsplit=1)
-            jie = JobInfoEnum[attr]
+            jie = JobInfoKeyEnum[attr]
         except (ValueError, KeyError) as e:
             raise UnknownJobEvent(
                 f"invalid 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
@@ -158,7 +169,7 @@ class ClusterInfo:
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
 
-        def set_job_status(jie: JobInfoEnum, value: str) -> None:
+        def set_job_status(jie: JobInfoKeyEnum, value_code_tuple: ValueCodeTup) -> None:
             if job_event.proc not in self._jobs:
                 self._jobs[job_event.proc] = {}
             LOGGER.debug(
@@ -166,21 +177,24 @@ class ClusterInfo:
                 f"cluster={job_event.cluster} / "
                 f"proc={job_event.proc} / "
                 f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
-                f"{jie.name} -> {value}"
+                f"{jie.name} -> {value_code_tuple}"
             )
-            self._jobs[job_event.proc][jie.value] = value
+            self._jobs[job_event.proc][jie] = value_code_tuple
 
         #
         # CHIRP -- pilot status
         if job_event.type == htcondor.JobEventType.GENERIC:
             jie, chirp_value = self.get_chirp_value(job_event)
-            set_job_status(jie, chirp_value)
+            set_job_status(jie, chirp_value)  # TODO
         #
         # JOB STATUS
         elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
-            jie = JobInfoEnum.JobStatus
             # TODO -- get hold reason and use that as value
-            set_job_status(jie, job_status.name)
+            match job_status:
+                case htcondor.JobStatus.HELD:
+                    set_job_status(JobInfoKeyEnum.JobStatus, (job_status.value, 88, 99))
+                case _:
+                    set_job_status(JobInfoKeyEnum.JobStatus, job_status.value)
         #
         # OTHER
         else:
@@ -277,7 +291,9 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         statuses_by_cluster = {}
         for cluster_id, info in cluster_info_dict.items():
             try:
-                statuses_by_cluster[cluster_id] = info.aggregate_statuses()
+                statuses_by_cluster[
+                    cluster_id
+                ] = info.aggregate_job_pilot_compound_statuses()
             except NoUpdateException:
                 pass
 
