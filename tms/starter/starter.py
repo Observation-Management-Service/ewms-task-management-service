@@ -102,8 +102,8 @@ def make_condor_job_description(
         )
         transfer_output_files_list.extend(
             [
-                submit_dict["output"],
-                submit_dict["error"],
+                submit_dict["output"],  # type: ignore[list-item]  # ci mypy has issue w/ this
+                submit_dict["error"],  # type: ignore[list-item]  # ''
             ]
         )
 
