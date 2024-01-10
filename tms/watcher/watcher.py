@@ -344,9 +344,9 @@ def get_job_pilot_compound_statuses_by_cluster(
             continue
         # convert to human-readable
         job_pilot_compound_statuses_by_cluster[cluster_id] = {
-            job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotError, job_status): {
+            job_info_val_to_string(JobInfoKey.JobStatus, job_status): {
                 job_info_val_to_string(
-                    JobInfoKey.HTChirpEWMSPilotError, pilot_status
+                    JobInfoKey.HTChirpEWMSPilotStatus, pilot_status
                 ): ct
                 for pilot_status, ct in pilot_status_cts.items()
             }
