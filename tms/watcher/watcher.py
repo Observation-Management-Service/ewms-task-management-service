@@ -405,6 +405,9 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 continue
 
         LOGGER.info("Done reading events for now")
+        import pprint
+
+        LOGGER.debug(pprint.pformat(cluster_info_dict))
 
         # aggregate
         # NOTE: We unfortunately cannot reduce the data after aggregating.
