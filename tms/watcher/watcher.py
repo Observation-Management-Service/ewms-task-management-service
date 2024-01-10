@@ -169,9 +169,8 @@ class ClusterInfo:
                 )
             )
 
-        import pprint  # TODO
-
-        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses))
+        # TODO - remove
+        LOGGER.debug(json.dumps(job_pilot_compound_statuses, indent=4))
 
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
@@ -207,9 +206,8 @@ class ClusterInfo:
         counts.pop(None, None)  # remove counts of "no error"
         errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
-        import pprint  # TODO
-
-        LOGGER.debug(pprint.pformat(errors))
+        # TODO - remove
+        LOGGER.debug(json.dumps(errors, indent=4))
 
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
@@ -417,9 +415,10 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 continue
 
         LOGGER.info("Done reading events for now")
-        import pprint  # TODO
-
-        LOGGER.debug(pprint.pformat({k: v._jobs for k, v in cluster_info_dict.items()}))
+        # TODO - remove
+        LOGGER.debug(
+            json.dumps({k: v._jobs for k, v in cluster_info_dict.items()}, indent=4)
+        )
 
         # aggregate
         # NOTE: We unfortunately cannot reduce the data after aggregating.
@@ -434,8 +433,8 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         # send -- one big update that way it can't intermittently fail
         if top_task_errors_by_cluster or job_pilot_compound_statuses_by_cluster:
             LOGGER.info("Sending updates to EWMS...")
-            LOGGER.debug(top_task_errors_by_cluster)
-            LOGGER.debug(job_pilot_compound_statuses_by_cluster)
+            LOGGER.debug(json.dumps(top_task_errors_by_cluster, indent=4))
+            LOGGER.debug(json.dumps(job_pilot_compound_statuses_by_cluster, indent=4))
             await ewms_rc.request(
                 "PATCH",
                 "/tms/condor-cluster/many",
