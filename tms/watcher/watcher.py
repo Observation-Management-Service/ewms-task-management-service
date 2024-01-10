@@ -147,15 +147,19 @@ class ClusterInfo:
         }
 
         # get counts of each
-        for job_status in job_pilot_compound_statuses:
+        for job_status_str in job_pilot_compound_statuses:
             # get cluster_info ids that match this job-status
             ids_for_this_job_status = [
                 i
                 for i, job_info in self._jobs.items()
-                if job_info.get(JobInfoKey.JobStatus, None) == job_status
+                if job_info_val_to_string(
+                    JobInfoKey.JobStatus,
+                    job_info.get(JobInfoKey.JobStatus, None),
+                )
+                == job_status_str
             ]
             # now, get the pilot-statuses for this job-status
-            job_pilot_compound_statuses[job_status] = dict(
+            job_pilot_compound_statuses[job_status_str] = dict(
                 collections.Counter(
                     job_info_val_to_string(
                         JobInfoKey.HTChirpEWMSPilotStatus,
