@@ -14,14 +14,6 @@ from ..config import ENV
 LOGGER = logging.getLogger(__name__)
 
 
-def make_condor_logs_dir() -> Path:
-    """Make the condor logs subdirectory."""
-    dpath = Path(ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}")  # tms-2024-1-27
-    dpath.mkdir(parents=True)
-    LOGGER.info(f"HTCondor will write log files to {dpath}")
-    return dpath
-
-
 def make_condor_job_description(
     # taskforce args
     image: str,
@@ -30,7 +22,7 @@ def make_condor_job_description(
     input_files: list[str],
     taskforce_uuid: str,
     # condor args
-    do_transfer_output: bool,
+    do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
@@ -55,6 +47,10 @@ def make_condor_job_description(
     environment_str = " ".join(f"{k}={v}" for k, v in environment.items())
     input_files_str = " ".join(input_files)
 
+    # cluster logs -- shared w/ other clusters
+    ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
+
     # write
     submit_dict = {
         "executable": "/bin/bash",
@@ -64,9 +60,13 @@ def make_condor_job_description(
         "environment": f'"{environment_str}"',  # must be quoted
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
-        "should_transfer_files": "YES",
         "transfer_input_files": f'"{input_files_str}"',  # must be quoted
-        "transfer_output_files": '""',  # must be quoted for "none"
+        #
+        "log": str(logs_fpath),
+        "transfer_output_files": str(logs_fpath),  # must be quoted for "none"
+        # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
+        "should_transfer_files": "YES",
+        "when_to_transfer_output": "ON_EXIT_OR_EVICT",
         #
         # Don't transfer executable (/bin/bash) in case of
         #   version (dependency) mismatch.
@@ -92,33 +92,27 @@ def make_condor_job_description(
         "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
 
-    # outputs
-    if do_transfer_output:
+    # worker stdout & stderr
+    if do_transfer_worker_stdouterr:
         # this is the location where the files will go when/if *returned here*
-        logs_dir = make_condor_logs_dir()
+        cluster_subdir = logs_fpath.parent / "tms-cluster-$(ClusterId)"
         submit_dict.update(
             {
-                "output": str(logs_dir / "tms-worker-$(ProcId).out"),
-                "error": str(logs_dir / "tms-worker-$(ProcId).err"),
-                "log": str(logs_dir / "tms-taskforce.log"),
+                "output": str(cluster_subdir / "$(ProcId).out"),
+                "error": str(cluster_subdir / "$(ProcId).err"),
             }
         )
-        # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         submit_dict.update(
             {
                 "transfer_output_files": ",".join(
-                    [
-                        submit_dict["output"],  # type: ignore[list-item]
-                        submit_dict["error"],  # type: ignore[list-item]
-                        submit_dict["log"],  # type: ignore[list-item]
+                    submit_dict["transfer_output_files"].split(",")
+                    + [
+                        submit_dict["output"],
+                        submit_dict["error"],
                     ]
                 ),
-                "when_to_transfer_output": "ON_EXIT_OR_EVICT",
             }
         )
-    else:
-        # NOTE: this needs to be removed if we ARE transferring files
-        submit_dict["initialdir"] = "/tmp"
 
     LOGGER.info(submit_dict)
     return submit_dict
@@ -155,7 +149,7 @@ async def start(
     input_files: list[str],
     taskforce_uuid: str,
     # condor args
-    do_transfer_output: bool,
+    do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
@@ -174,7 +168,7 @@ async def start(
         input_files,
         taskforce_uuid,
         #
-        do_transfer_output,
+        do_transfer_worker_stdouterr,
         max_worker_runtime,
         n_cores,
         priority,
