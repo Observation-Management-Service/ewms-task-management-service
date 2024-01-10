@@ -157,7 +157,6 @@ class ClusterInfo:
                     for i in ids_for_this_job_status
                 )
             )
-            job_info_val_to_string(JobInfoKey.JobStatus, job_status)
 
         # is this an update?
         dump = json.dumps(
