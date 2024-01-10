@@ -387,9 +387,17 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                     # EWMS can map (collector + schedd + condor_id) to a taskforce_uuid
                     "collector": ENV.COLLECTOR,
                     "schedd": ENV.SCHEDD,
-                    "top_task_errors_by_cluster": top_task_errors_by_cluster,
-                    "compound_statuses_by_cluster": compound_statuses_by_cluster,
-                },
+                }
+                | (  # conditionally add key-val
+                    {"top_task_errors_by_cluster": top_task_errors_by_cluster}
+                    if top_task_errors_by_cluster
+                    else {}
+                )
+                | (  # conditionally add key-val
+                    {"compound_statuses_by_cluster": compound_statuses_by_cluster}
+                    if compound_statuses_by_cluster
+                    else {}
+                ),
             )
         else:
             LOGGER.info("No updates needed for EWMS")
