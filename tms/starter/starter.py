@@ -2,6 +2,7 @@
 
 
 import logging
+from datetime import date
 from pathlib import Path
 from typing import Any, Awaitable
 
@@ -15,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 def make_condor_logs_dir() -> Path:
     """Make the condor logs subdirectory."""
-    dpath = Path("tms-taskforce")
+    dpath = Path(ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}")  # tms-2024-1-27
     dpath.mkdir(parents=True)
     LOGGER.info(f"HTCondor will write log files to {dpath}")
     return dpath
