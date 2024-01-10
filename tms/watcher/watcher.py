@@ -379,8 +379,6 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         # send -- one big update that way it can't intermittently fail
         if top_task_errors_by_cluster or compound_statuses_by_cluster:
             LOGGER.info("Sending updates to EWMS...")
-            LOGGER.debug(pprint.pformat(top_task_errors_by_cluster, indent=4))
-            LOGGER.debug(pprint.pformat(compound_statuses_by_cluster, indent=4))
             await ewms_rc.request(
                 "PATCH",
                 "/tms/condor-cluster/many",
