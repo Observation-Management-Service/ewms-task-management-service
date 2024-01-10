@@ -111,7 +111,7 @@ class ClusterInfo:
         self._previous_aggregate_statuses__hash: str = ""
         self._previous_top_task_errors__hash: str = ""
 
-    def aggregate_job_pilot_compound_statuses(
+    def aggregate_compound_statuses(
         self,
     ) -> dict[str | None, dict[str | None, int]]:
         """Aggregate jobs using a count of each job status & pilot status pair.
@@ -135,36 +135,28 @@ class ClusterInfo:
         """
 
         # pre-allocate job-statuses as keys
-        job_pilot_compound_statuses: dict[str | None, dict[str | None, int]] = {
+        job_pilot_compound_statuses: dict[
+            JobInfoVal | None, dict[JobInfoVal | None, int]
+        ] = {
             job_status: {}
             for job_status in set(
-                job_info_val_to_string(
-                    JobInfoKey.JobStatus,
-                    job_info.get(JobInfoKey.JobStatus, None),
-                )
+                job_info.get(JobInfoKey.JobStatus, None)
                 for job_info in self._jobs.values()
             )
         }
 
         # get counts of each
-        for job_status_str in job_pilot_compound_statuses:
+        for job_status in job_pilot_compound_statuses:
             # get cluster_info ids that match this job-status
             ids_for_this_job_status = [
                 i
                 for i, job_info in self._jobs.items()
-                if job_info_val_to_string(
-                    JobInfoKey.JobStatus,
-                    job_info.get(JobInfoKey.JobStatus, None),
-                )
-                == job_status_str
+                if job_info.get(JobInfoKey.JobStatus, None) == job_status
             ]
             # now, get the pilot-statuses for this job-status
-            job_pilot_compound_statuses[job_status_str] = dict(
+            job_pilot_compound_statuses[job_status] = dict(
                 collections.Counter(
-                    job_info_val_to_string(
-                        JobInfoKey.HTChirpEWMSPilotStatus,
-                        self._jobs[i].get(JobInfoKey.HTChirpEWMSPilotStatus, None),
-                    )
+                    self._jobs[i].get(JobInfoKey.HTChirpEWMSPilotStatus, None)
                     for i in ids_for_this_job_status
                 )
             )
@@ -172,6 +164,7 @@ class ClusterInfo:
         # TODO - remove
         LOGGER.debug(json.dumps(job_pilot_compound_statuses, indent=4))
 
+        # is this an update?
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
                 job_pilot_compound_statuses,
@@ -179,12 +172,18 @@ class ClusterInfo:
                 ensure_ascii=True,
             ).encode("utf-8")
         ).hexdigest()
-
-        # validate & return
         if hashed == self._previous_aggregate_statuses__hash:
             raise NoUpdateException()
         self._previous_aggregate_statuses__hash = hashed
-        return job_pilot_compound_statuses
+
+        # convert all keys (statuses) to strings
+        return {
+            job_info_val_to_string(JobInfoKey.JobStatus, job_status): {
+                job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotStatus, pstat): ct
+                for pstat, ct in pstat_cts.items()
+            }
+            for job_status, pstat_cts in job_pilot_compound_statuses.items()
+        }
 
     def get_top_task_errors(
         self,
@@ -209,6 +208,7 @@ class ClusterInfo:
         # TODO - remove
         LOGGER.debug(json.dumps(errors, indent=4))
 
+        # is this an update?
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
                 errors,
@@ -216,11 +216,10 @@ class ClusterInfo:
                 ensure_ascii=True,
             ).encode("utf-8")
         ).hexdigest()
-
-        # validate & return
         if hashed == self._previous_top_task_errors__hash:
             raise NoUpdateException()
         self._previous_top_task_errors__hash = hashed
+
         return errors
 
     @staticmethod
@@ -319,56 +318,6 @@ def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
 ########################################################################################
 
 
-def get_top_task_errors_by_cluster(
-    cluster_info_dict: dict[str, ClusterInfo],
-) -> dict[str, dict[str | None, int]]:
-    """Get the top task errors for each cluster, in a human-readable format."""
-    LOGGER.info("Getting top task errors...")
-
-    top_task_errors_by_cluster = {}
-    for cluster_id, info in cluster_info_dict.items():
-        try:
-            raw = info.get_top_task_errors()
-        except NoUpdateException:
-            continue
-        # convert to human-readable
-        top_task_errors_by_cluster[cluster_id] = {
-            job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotError, k): v
-            for k, v in raw.items()
-        }
-
-    return top_task_errors_by_cluster
-
-
-def get_job_pilot_compound_statuses_by_cluster(
-    cluster_info_dict: dict[str, ClusterInfo],
-) -> dict[str, dict[str | None, dict[str | None, int]]]:
-    """Get the top task errors for each cluster, in a human-readable format."""
-    LOGGER.info("Aggregating job statuses...")
-
-    job_pilot_compound_statuses_by_cluster = {}
-    for cluster_id, info in cluster_info_dict.items():
-        try:
-            raw = info.aggregate_job_pilot_compound_statuses()
-        except NoUpdateException:
-            continue
-        # convert to human-readable
-        job_pilot_compound_statuses_by_cluster[cluster_id] = {
-            job_info_val_to_string(JobInfoKey.JobStatus, job_status): {
-                job_info_val_to_string(
-                    JobInfoKey.HTChirpEWMSPilotStatus, pilot_status
-                ): ct
-                for pilot_status, ct in pilot_status_cts.items()
-            }
-            for job_status, pilot_status_cts in raw.items()
-        }
-
-    return job_pilot_compound_statuses_by_cluster
-
-
-########################################################################################
-
-
 async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     """Watch over one job event log file, containing multiple taskforces.
 
@@ -425,16 +374,26 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         #  Once we aggregate we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
         #  Alternatively, we could re-parse the entire job log every time.
-        top_task_errors_by_cluster = get_top_task_errors_by_cluster(cluster_info_dict)
-        job_pilot_compound_statuses_by_cluster = (
-            get_job_pilot_compound_statuses_by_cluster(cluster_info_dict)
-        )
+        LOGGER.info("Getting top task errors...")
+        top_task_errors_by_cluster = {}
+        for cid, info in cluster_info_dict.items():
+            try:
+                top_task_errors_by_cluster[cid] = info.get_top_task_errors()
+            except NoUpdateException:
+                continue
+        LOGGER.info("Aggregating compound statuses...")
+        compound_statuses_by_cluster = {}
+        for cid, info in cluster_info_dict.items():
+            try:
+                compound_statuses_by_cluster[cid] = info.aggregate_compound_statuses()
+            except NoUpdateException:
+                continue
 
         # send -- one big update that way it can't intermittently fail
-        if top_task_errors_by_cluster or job_pilot_compound_statuses_by_cluster:
+        if top_task_errors_by_cluster or compound_statuses_by_cluster:
             LOGGER.info("Sending updates to EWMS...")
             LOGGER.debug(json.dumps(top_task_errors_by_cluster, indent=4))
-            LOGGER.debug(json.dumps(job_pilot_compound_statuses_by_cluster, indent=4))
+            LOGGER.debug(json.dumps(compound_statuses_by_cluster, indent=4))
             await ewms_rc.request(
                 "PATCH",
                 "/tms/condor-cluster/many",
@@ -444,7 +403,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                     "collector": ENV.COLLECTOR,
                     "schedd": ENV.SCHEDD,
                     "top_task_errors_by_cluster": top_task_errors_by_cluster,
-                    "job_pilot_compound_statuses_by_cluster": job_pilot_compound_statuses_by_cluster,
+                    "compound_statuses_by_cluster": compound_statuses_by_cluster,
                 },
             )
         else:
