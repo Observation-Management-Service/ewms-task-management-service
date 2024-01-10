@@ -134,20 +134,12 @@ class ClusterInfo:
         Raises:
             `NoUpdateException` -- if there is no update
         """
-
-        # pre-allocate job-statuses as keys
-        job_pilot_compound_statuses: dict[
-            JobInfoVal | None, dict[JobInfoVal | None, int]
-        ] = {
-            job_status: {}
-            for job_status in set(
-                job_info.get(JobInfoKey.JobStatus, None)
-                for job_info in self._jobs.values()
-            )
-        }
+        job_pilot_compound_statuses: dict[str | None, dict[str | None, int]] = {}
 
         # get counts of each
-        for job_status in job_pilot_compound_statuses:
+        for job_status in set(
+            job_info.get(JobInfoKey.JobStatus, None) for job_info in self._jobs.values()
+        ):
             # get cluster_info ids that match this job-status
             ids_for_this_job_status = [
                 i
@@ -155,36 +147,32 @@ class ClusterInfo:
                 if job_info.get(JobInfoKey.JobStatus, None) == job_status
             ]
             # now, get the pilot-statuses for this job-status
-            job_pilot_compound_statuses[job_status] = dict(
+            key = job_info_val_to_string(JobInfoKey.JobStatus, job_status)
+            job_pilot_compound_statuses[key] = dict(
                 collections.Counter(
-                    self._jobs[i].get(JobInfoKey.HTChirpEWMSPilotStatus, None)
+                    job_info_val_to_string(
+                        JobInfoKey.HTChirpEWMSPilotStatus,
+                        self._jobs[i].get(JobInfoKey.HTChirpEWMSPilotStatus, None),
+                    )
                     for i in ids_for_this_job_status
                 )
             )
-
-        # TODO - remove
-        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
+            job_info_val_to_string(JobInfoKey.JobStatus, job_status)
 
         # is this an update?
-        hashed = hashlib.md5(
-            json.dumps(  # sort -> deterministic
-                job_pilot_compound_statuses,
-                sort_keys=True,
-                ensure_ascii=True,
-            ).encode("utf-8")
-        ).hexdigest()
+        dump = json.dumps(
+            job_pilot_compound_statuses,
+            sort_keys=True,  # sort -> deterministic
+            ensure_ascii=True,
+            indent=4,  # for logging
+        )
+        LOGGER.debug(dump)
+        hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
         if hashed == self._previous_aggregate_statuses__hash:
             raise NoUpdateException()
         self._previous_aggregate_statuses__hash = hashed
 
-        # convert all keys (statuses) to strings
-        return {
-            job_info_val_to_string(JobInfoKey.JobStatus, job_status): {
-                job_info_val_to_string(JobInfoKey.HTChirpEWMSPilotStatus, pstat): ct
-                for pstat, ct in pstat_cts.items()
-            }
-            for job_status, pstat_cts in job_pilot_compound_statuses.items()
-        }
+        return job_pilot_compound_statuses
 
     def get_top_task_errors(
         self,
@@ -206,17 +194,15 @@ class ClusterInfo:
         counts.pop(None, None)  # remove counts of "no error"
         errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
-        # TODO - remove
-        LOGGER.debug(pprint.pformat(errors, indent=4))
-
         # is this an update?
-        hashed = hashlib.md5(
-            json.dumps(  # sort -> deterministic
-                errors,
-                sort_keys=True,
-                ensure_ascii=True,
-            ).encode("utf-8")
-        ).hexdigest()
+        dump = json.dumps(
+            errors,
+            sort_keys=True,  # sort -> deterministic
+            ensure_ascii=True,
+            indent=4,  # for logging
+        )
+        LOGGER.debug(dump)
+        hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
         if hashed == self._previous_top_task_errors__hash:
             raise NoUpdateException()
         self._previous_top_task_errors__hash = hashed
