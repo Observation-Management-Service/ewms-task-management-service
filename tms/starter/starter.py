@@ -3,7 +3,6 @@
 
 import logging
 from datetime import date
-from pathlib import Path
 from typing import Any, Awaitable
 
 import htcondor  # type: ignore[import-untyped]
