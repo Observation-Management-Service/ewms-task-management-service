@@ -165,6 +165,10 @@ class ClusterInfo:
                 )
             )
 
+        import pprint  # TODO
+
+        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses))
+
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
                 job_pilot_compound_statuses,
@@ -198,6 +202,10 @@ class ClusterInfo:
         )
         counts.pop(None, None)  # remove counts of "no error"
         errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
+
+        import pprint  # TODO
+
+        LOGGER.debug(pprint.pformat(errors))
 
         hashed = hashlib.md5(
             json.dumps(  # sort -> deterministic
@@ -405,7 +413,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 continue
 
         LOGGER.info("Done reading events for now")
-        import pprint
+        import pprint  # TODO
 
         LOGGER.debug(pprint.pformat({k: v._jobs for k, v in cluster_info_dict.items()}))
 
