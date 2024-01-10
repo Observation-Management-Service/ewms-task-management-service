@@ -7,6 +7,7 @@ import enum
 import hashlib
 import json
 import logging
+import pprint
 import time
 from pathlib import Path
 
@@ -162,7 +163,7 @@ class ClusterInfo:
             )
 
         # TODO - remove
-        LOGGER.debug(json.dumps(job_pilot_compound_statuses, indent=4))
+        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
         hashed = hashlib.md5(
@@ -206,7 +207,7 @@ class ClusterInfo:
         errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # TODO - remove
-        LOGGER.debug(json.dumps(errors, indent=4))
+        LOGGER.debug(pprint.pformat(errors, indent=4))
 
         # is this an update?
         hashed = hashlib.md5(
@@ -366,7 +367,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         LOGGER.info("Done reading events for now")
         # TODO - remove
         LOGGER.debug(
-            json.dumps({k: v._jobs for k, v in cluster_info_dict.items()}, indent=4)
+            pprint.pformat({k: v._jobs for k, v in cluster_info_dict.items()}, indent=4)
         )
 
         # aggregate
@@ -392,8 +393,8 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         # send -- one big update that way it can't intermittently fail
         if top_task_errors_by_cluster or compound_statuses_by_cluster:
             LOGGER.info("Sending updates to EWMS...")
-            LOGGER.debug(json.dumps(top_task_errors_by_cluster, indent=4))
-            LOGGER.debug(json.dumps(compound_statuses_by_cluster, indent=4))
+            LOGGER.debug(pprint.pformat(top_task_errors_by_cluster, indent=4))
+            LOGGER.debug(pprint.pformat(compound_statuses_by_cluster, indent=4))
             await ewms_rc.request(
                 "PATCH",
                 "/tms/condor-cluster/many",
