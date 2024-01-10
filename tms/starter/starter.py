@@ -43,9 +43,6 @@ def make_condor_job_description(
     #   entrypoint, and loading the icetray env file
     #   directly from cvmfs messes up the paths" -DS
 
-    environment_str = " ".join(f"{k}={v}" for k, v in environment.items())
-    input_files_str = " ".join(input_files)
-
     # cluster logs -- shared w/ other clusters
     ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
@@ -56,13 +53,13 @@ def make_condor_job_description(
         "arguments": arguments,
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
-        "environment": f'"{environment_str}"',  # must be quoted
+        "environment": f'"{" ".join(f"{k}={v}" for k, v in environment.items())}"',  # must be quoted
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
-        "transfer_input_files": f'"{input_files_str}"',  # must be quoted
+        "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
         #
         "log": str(logs_fpath),
-        "transfer_output_files": str(logs_fpath),  # must be quoted for "none"
+        # "transfer_output_files": ... # NOTE: see (way) below
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
@@ -91,6 +88,8 @@ def make_condor_job_description(
         "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
 
+    transfer_output_files_list = [str(logs_fpath)]  # NOTE: see (way) below
+
     # worker stdout & stderr
     if do_transfer_worker_stdouterr:
         # this is the location where the files will go when/if *returned here*
@@ -101,17 +100,19 @@ def make_condor_job_description(
                 "error": str(cluster_subdir / "$(ProcId).err"),
             }
         )
-        submit_dict.update(
-            {
-                "transfer_output_files": ",".join(
-                    submit_dict["transfer_output_files"].split(",")
-                    + [
-                        submit_dict["output"],
-                        submit_dict["error"],
-                    ]
-                ),
-            }
+        transfer_output_files_list.extend(
+            [
+                submit_dict["output"],
+                submit_dict["error"],
+            ]
         )
+
+    # transfer_output_files
+    submit_dict.update(
+        {
+            "transfer_output_files": f'"{",".join(transfer_output_files_list)}"',  # must be quoted
+        }
+    )
 
     LOGGER.info(submit_dict)
     return submit_dict
