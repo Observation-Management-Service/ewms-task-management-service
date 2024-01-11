@@ -55,6 +55,18 @@ class JobEventLogFileWrapper:
             # with open(live_file) as livef:
             #     print(livef.read())
 
+        # now add an "unimportant" event (no ewms update needed)
+        await asyncio.sleep(LIVE_UPDATE_SLEEP)
+        with open(self.live_file, "w") as livef:
+            more_lines = lines[:]  # copy
+            more_lines.extend(
+                [
+                    "008 (104501503.002.000) 2024-01-05 12:29:24 Goodbye from job 3\n",
+                    "...\n",
+                ]
+            )
+            livef.write("".join(more_lines))
+
 
 @pytest.fixture
 def jel_file_wrapper() -> JobEventLogFileWrapper:

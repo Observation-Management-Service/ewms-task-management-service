@@ -156,6 +156,10 @@ async def start(
     worker_disk_bytes: int,
     worker_memory_bytes: int,
 ) -> dict[str, Any]:
+    """Start an EWMS taskforce workers on an HTCondor cluster.
+
+    Returns attrs for sending to EWMS.
+    """
     LOGGER.info(
         f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
     )
