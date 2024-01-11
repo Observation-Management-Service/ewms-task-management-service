@@ -77,12 +77,22 @@ def jel_file_wrapper() -> JobEventLogFileWrapper:
 
 async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     """Test the watcher."""
+    n_updates = 5
 
     # update file in background
-    jel_file_wrapper.start_live_file_updates(5)
+    jel_file_wrapper.start_live_file_updates(n_updates)
 
     rc = MagicMock()
     rc.request = AsyncMock(return_value={})
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
+
+    assert rc.request.call_count == n_updates
+    assert rc.request.call_args_list == [
+        ("PATCH", "/tms/condor-cluster/many", {}),
+        ("PATCH", "/tms/condor-cluster/many", {}),
+        ("PATCH", "/tms/condor-cluster/many", {}),
+        ("PATCH", "/tms/condor-cluster/many", {}),
+        ("PATCH", "/tms/condor-cluster/many", {}),
+    ]
 
     assert 0  # TODO
