@@ -6,7 +6,7 @@ import os
 import threading
 from pathlib import Path
 from typing import Iterator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, call
 
 import htcondor  # type: ignore[import-untyped]
 import pytest
@@ -88,11 +88,85 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     assert rc.request.call_count == n_updates
     assert rc.request.call_args_list == [
-        ("PATCH", "/tms/condor-cluster/many", {}),
-        ("PATCH", "/tms/condor-cluster/many", {}),
-        ("PATCH", "/tms/condor-cluster/many", {}),
-        ("PATCH", "/tms/condor-cluster/many", {}),
-        ("PATCH", "/tms/condor-cluster/many", {}),
+        call(
+            "PATCH",
+            "/tms/condor-cluster/many",
+            {
+                "collector": "foo",
+                "schedd": "bar",
+                "top_task_errors_by_cluster": {104501503: {}, 104500588: {}},
+                "compound_statuses_by_cluster": {
+                    104501503: {
+                        "IDLE": {None: 5},
+                        "REMOVED": {None: 1},
+                        "COMPLETED": {"Done": 1},
+                    },
+                    104500588: {"REMOVED": {None: 1}},
+                },
+            },
+        ),
+        call(
+            "PATCH",
+            "/tms/condor-cluster/many",
+            {
+                "collector": "foo",
+                "schedd": "bar",
+                "compound_statuses_by_cluster": {
+                    104501503: {
+                        "IDLE": {None: 3},
+                        "RUNNING": {None: 1},
+                        "REMOVED": {None: 1},
+                        "COMPLETED": {"Done": 2},
+                    }
+                },
+            },
+        ),
+        call(
+            "PATCH",
+            "/tms/condor-cluster/many",
+            {
+                "collector": "foo",
+                "schedd": "bar",
+                "compound_statuses_by_cluster": {
+                    104501503: {
+                        "RUNNING": {None: 3},
+                        "REMOVED": {None: 1},
+                        "COMPLETED": {"Done": 3},
+                    }
+                },
+            },
+        ),
+        call(
+            "PATCH",
+            "/tms/condor-cluster/many",
+            {
+                "collector": "foo",
+                "schedd": "bar",
+                "compound_statuses_by_cluster": {
+                    104501503: {
+                        "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
+                        "RUNNING": {"Tasking": 1},
+                        "REMOVED": {None: 1},
+                        "COMPLETED": {"Done": 4},
+                    }
+                },
+            },
+        ),
+        call(
+            "PATCH",
+            "/tms/condor-cluster/many",
+            {
+                "collector": "foo",
+                "schedd": "bar",
+                "compound_statuses_by_cluster": {
+                    104501503: {
+                        "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
+                        "REMOVED": {None: 1},
+                        "COMPLETED": {"Done": 5},
+                    }
+                },
+            },
+        ),
     ]
 
     assert 0  # TODO
