@@ -36,7 +36,7 @@ pypng==0.20220715.0
 qrcode==7.4.2
 requests==2.31.0
 requests-futures==1.0.1
-setuptools==69.0.2
+setuptools==69.0.3
 six==1.16.0
 thrift==0.16.0
 tornado==6.4
@@ -55,8 +55,8 @@ cryptography==41.0.7
 └── cffi [required: >=1.12, installed: 1.16.0]
     └── pycparser [required: Any, installed: 2.21]
 pip==23.2.1
-pipdeptree==2.13.1
-setuptools==69.0.2
+pipdeptree==2.13.2
+setuptools==69.0.3
 tms
 ├── htcondor [required: Any, installed: 23.3.0]
 ├── wipac-dev-tools [required: Any, installed: 1.8.2]
