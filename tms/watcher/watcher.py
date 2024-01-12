@@ -3,6 +3,7 @@
 
 import asyncio
 import collections
+import dataclasses as dc
 import enum
 import hashlib
 import json
@@ -275,6 +276,50 @@ class ClusterInfo:
 ########################################################################################
 
 
+@dc.dataclass
+class TaskforceTracker:
+    """Used for keeping track of a taskforce."""
+
+    taskforce_uuid: str
+    cluster_id: str
+    seen: bool = False
+
+
+async def query_for_more_taskforce_trackers(
+    ewms_rc: RestClient,
+    jel_fpath: Path,
+    taskforce_trackers: list[TaskforceTracker],
+) -> list[TaskforceTracker]:
+    """Get/Update the list of TaskforceTracker instances."""
+    LOGGER.info("Querying taskforces from EWMS...")
+    res = await ewms_rc.request(
+        "POST",
+        "/tms/taskforces/find",
+        {
+            "filter": {
+                "collector": ENV.COLLECTOR,
+                "schedd": ENV.SCHEDD,
+                "job_event_log_fpath": str(jel_fpath),
+            },
+            "projection": ["taskforce_uuid", "cluster_id"],
+        },
+    )
+    for dicto in res["taskforces"]:
+        if dicto["taskforce_uuid"] in [tt.taskforce_uuid for tt in taskforce_trackers]:
+            continue
+        LOGGER.info(f"Tracking new taskforce: {dicto}")
+        taskforce_trackers.append(
+            TaskforceTracker(
+                taskforce_uuid=dicto["taskforce_uuid"],
+                cluster_id=dicto["cluster_id"],
+            )
+        )
+    return taskforce_trackers
+
+
+########################################################################################
+
+
 class EveryXSeconds:
     """Keep track of durations."""
 
@@ -315,31 +360,56 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_info_dict: dict[str, ClusterInfo] = {}  # LARGE
-    time_tracker = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    taskforce_trackers: list[TaskforceTracker] = []
+    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
         # wait for job log to populate (more)
-        while not time_tracker.has_been_x_seconds():
+        while not interval_timer.has_been_x_seconds():
             await asyncio.sleep(1)
+
+        # query for new taskforces, so we wait for any
+        #   taskforces/clusters that are late to start by condor
+        #   (and are not yet in the job log)
+        taskforce_trackers = await query_for_more_taskforce_trackers(
+            ewms_rc,
+            jel_fpath,
+            taskforce_trackers,
+        )
 
         # get events -- exit when no more events, or took too long
         got_new_events = False
         LOGGER.info(f"Reading events from {jel_fpath}...")
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
+            await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
+            # is this a novel cluster/taskforce? is it valid?
             if job_event.cluster not in cluster_info_dict:
+                try:
+                    next(
+                        tt
+                        for tt in taskforce_trackers
+                        if tt.cluster_id == job_event.cluster
+                    ).seen = True
+                except StopIteration:
+                    LOGGER.warning(
+                        f"Cluster found in job event log does not match any "
+                        f"known taskforce ({job_event.cluster}), skipping it"
+                    )
+                    continue
                 cluster_info_dict[job_event.cluster] = ClusterInfo()
+            # update
             try:
                 cluster_info_dict[job_event.cluster].update_from_event(job_event)
             except UnknownJobEvent as e:
                 LOGGER.debug(f"error: {e}")
-            await asyncio.sleep(0)  # since htcondor is not async
-            if time_tracker.has_been_x_seconds():
+            # check times
+            if interval_timer.has_been_x_seconds():
                 break
 
         # endgame check
-        if not got_new_events:
+        if (not got_new_events) and all(tt.seen for tt in taskforce_trackers):
             if is_file_past_modification_expiry(jel_fpath):
                 # case: file has not been updated and it's old
                 jel_fpath.unlink()  # delete file
