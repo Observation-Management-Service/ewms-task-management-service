@@ -176,8 +176,11 @@ class ClusterInfo:
         LOGGER.debug(dump)
         hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
         if hashed == self._previous_aggregate_statuses__hash:
-            raise NoUpdateException()
+            raise NoUpdateException("compound statuses did not change")
         self._previous_aggregate_statuses__hash = hashed
+
+        if not job_pilot_compound_statuses:
+            raise NoUpdateException("errors list is empty")
 
         return job_pilot_compound_statuses
 
@@ -211,8 +214,11 @@ class ClusterInfo:
         LOGGER.debug(dump)
         hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
         if hashed == self._previous_top_task_errors__hash:
-            raise NoUpdateException()
+            raise NoUpdateException("errors did not change")
         self._previous_top_task_errors__hash = hashed
+
+        if not errors:
+            raise NoUpdateException("errors list is empty")
 
         return errors
 
