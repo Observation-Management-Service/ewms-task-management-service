@@ -381,7 +381,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             ewms_rc,
             jel_fpath,
-            list(cluster_infos.keys()),
+            list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
             cluster_infos[cluster_id] = ClusterInfo(taskforce_uuid)
 
