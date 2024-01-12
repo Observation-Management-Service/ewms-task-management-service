@@ -106,7 +106,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             "PATCH",
             "/tms/taskforces/many",
             {
-                "top_task_errors_by_taskforce": {123: {}, 456: {}},
+                "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
                     123: {
                         "IDLE": {None: 5},
