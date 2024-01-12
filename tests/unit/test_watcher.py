@@ -100,7 +100,17 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
 
     patch_calls = [c for c in rc.request.call_args_list if c.args[0] == "PATCH"]
+    # n updates  +  initial call of null-update for taskforces
+    assert len(patch_calls) == n_updates + 1
     assert patch_calls == [
+        call(
+            "PATCH",
+            "/tms/taskforces/many",
+            {
+                "top_task_errors_by_taskforce": {123: {}, 456: {}},
+                "compound_statuses_by_taskforce": {123: {}, 456: {}},
+            },
+        ),
         call(
             "PATCH",
             "/tms/taskforces/many",
