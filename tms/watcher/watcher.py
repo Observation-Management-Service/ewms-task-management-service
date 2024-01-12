@@ -3,7 +3,6 @@
 
 import asyncio
 import collections
-import dataclasses as dc
 import enum
 import hashlib
 import json
@@ -17,7 +16,11 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
-from ..config import ENV, WATCHER_N_pTOP_TASK_ERRORS
+from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
+
+_ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
+_ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -111,7 +114,7 @@ class ClusterInfo:
 
     def __init__(self, taskforce_uuid: str) -> None:
         self.taskforce_uuid = taskforce_uuid
-        self.is_eventless = True
+        self.seen_in_jel = False
 
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
         self._previous_aggregate_statuses__hash: str = ""
@@ -214,9 +217,12 @@ class ClusterInfo:
         return errors
 
     @staticmethod
-    def get_chirp_value(job_event: htcondor.JobEvent) -> tuple[JobInfoKey, str]:
+    def _get_ewms_pilot_chirp_value(
+        job_event: htcondor.JobEvent,
+    ) -> tuple[JobInfoKey, str]:
+        """Parse out the chirp value."""
         if "info" not in job_event:
-            raise UnknownJobEvent("no 'info' atribute")
+            raise UnknownJobEvent("no 'info' attribute")
         # ex: "HTChirpEWMSPilotStatus: foo bar baz"
         if not job_event["info"].startswith("HTChirpEWMSPilot"):
             raise UnknownJobEvent(
@@ -232,37 +238,43 @@ class ClusterInfo:
             ) from e
         return jie, value.strip()
 
+    def _set_job_status(
+        self,
+        job_event: htcondor.JobEvent,
+        jie: JobInfoKey,
+        value_code_tuple: JobInfoVal,
+    ) -> None:
+        if job_event.proc not in self._jobs:
+            self._jobs[job_event.proc] = {}
+        LOGGER.debug(
+            f"new job status: "
+            f"cluster={job_event.cluster} / "
+            f"proc={job_event.proc} / "
+            f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
+            f"{jie.name} -> {value_code_tuple}"
+        )
+        self._jobs[job_event.proc][jie] = value_code_tuple
+
     def update_from_event(
         self,
-        job_event: htcondor.JobEventLog,
+        job_event: htcondor.JobEvent,
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
-        self.is_eventless = False
-
-        def set_job_status(jie: JobInfoKey, value_code_tuple: JobInfoVal) -> None:
-            if job_event.proc not in self._jobs:
-                self._jobs[job_event.proc] = {}
-            LOGGER.debug(
-                f"new job status: "
-                f"cluster={job_event.cluster} / "
-                f"proc={job_event.proc} / "
-                f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
-                f"{jie.name} -> {value_code_tuple}"
-            )
-            self._jobs[job_event.proc][jie] = value_code_tuple
+        self.seen_in_jel = True
 
         #
         # CHIRP -- pilot status
         if job_event.type == htcondor.JobEventType.GENERIC:
-            jie, chirp_value = self.get_chirp_value(job_event)
-            set_job_status(jie, chirp_value)
+            jie, chirp_value = self._get_ewms_pilot_chirp_value(job_event)
+            self._set_job_status(job_event, jie, chirp_value)
         #
         # JOB STATUS
         elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
             match job_status:
                 # get hold reason and use that as value
                 case htcondor.JobStatus.HELD:
-                    set_job_status(
+                    self._set_job_status(
+                        job_event,
                         JobInfoKey.JobStatus,
                         (
                             job_status.value,
@@ -270,8 +282,13 @@ class ClusterInfo:
                             job_event.get("HoldReasonSubCode", 0),
                         ),
                     )
+                # any other job status
                 case _:
-                    set_job_status(JobInfoKey.JobStatus, job_status.value)
+                    self._set_job_status(
+                        job_event,
+                        JobInfoKey.JobStatus,
+                        job_status.value,
+                    )
         #
         # OTHER
         else:
@@ -390,7 +407,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 break
 
         # endgame check
-        if (not got_new_events) and all(not c.is_eventless for c in cluster_infos):
+        if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
             if is_file_past_modification_expiry(jel_fpath):
                 # case: file has not been updated and it's old
                 jel_fpath.unlink()  # delete file
@@ -406,41 +423,39 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
             pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
         )
 
+        patch_body: dict[str, Any] = {
+            _ALL_TOP_ERRORS_KEY: {},
+            _ALL_COMP_STAT_KEY: {},
+        }
+
         # aggregate
         # NOTE: We unfortunately cannot reduce the data after aggregating.
         #  Once we aggregate we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
         #  Alternatively, we could re-parse the entire job log every time.
-        LOGGER.info("Getting top task errors...")
-        top_task_errors_by_taskforce = {}
-        for info in cluster_infos.values():
+        for cid, info in cluster_infos.items():
             try:
-                top_task_errors_by_taskforce[
+                LOGGER.info(
+                    f"Getting top task errors {info.taskforce_uuid=} / {cid=}..."
+                )
+                patch_body[_ALL_TOP_ERRORS_KEY][
                     info.taskforce_uuid
                 ] = info.get_top_task_errors()
             except NoUpdateException:
-                continue
-        LOGGER.info("Aggregating compound statuses...")
-        compound_statuses_by_taskforce = {}
-        for info in cluster_infos.values():
+                pass
             try:
-                compound_statuses_by_taskforce[
+                LOGGER.info(
+                    f"Aggregating compound statuses {info.taskforce_uuid=} / {cid=}..."
+                )
+                patch_body[_ALL_COMP_STAT_KEY][
                     info.taskforce_uuid
                 ] = info.aggregate_compound_statuses()
             except NoUpdateException:
-                continue
+                pass
 
         # send -- one big update that way it can't intermittently fail
-        patch_body: dict[str, Any] = {}
-        if top_task_errors_by_taskforce:
-            patch_body.update(
-                {"top_task_errors_by_taskforce": top_task_errors_by_taskforce}
-            )
-        if compound_statuses_by_taskforce:
-            patch_body.update(
-                {"compound_statuses_by_taskforce": compound_statuses_by_taskforce}
-            )
-        if patch_body:
+        # (it's okay to send an empty sub-dict, but all empties is pointless)
+        if any(patch_body[k] for k in [_ALL_TOP_ERRORS_KEY, _ALL_COMP_STAT_KEY]):
             LOGGER.info("Sending updates to EWMS...")
             await ewms_rc.request(
                 "PATCH",
