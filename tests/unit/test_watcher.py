@@ -99,7 +99,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     rc.request = AsyncMock(side_effect=rc_request_by_args)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
 
-    patch_calls = [c for c in rc.request.call_args_list if c[0] == "PATCH"]
+    patch_calls = [c for c in rc.request.call_args_list if c.args[0] == "PATCH"]
     assert patch_calls == [
         call(
             "PATCH",
