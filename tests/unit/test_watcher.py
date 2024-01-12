@@ -61,7 +61,7 @@ class JobEventLogFileWrapper:
             more_lines = lines[:]  # copy
             more_lines.extend(
                 [
-                    "008 (104501503.002.000) 2024-01-05 12:29:24 Goodbye from job 3\n",
+                    "008 (123.002.000) 2024-01-05 12:29:24 Goodbye from job 3\n",
                     "...\n",
                 ]
             )
@@ -82,37 +82,46 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     # update file in background
     jel_file_wrapper.start_live_file_updates(n_updates)
 
+    def rc_request_by_args(*args, **kwargs):
+        if args[:2] == ("POST", "/tms/taskforces/find"):
+            return {
+                "taskforces": [
+                    {"taskforce_uuid": 123, "cluster_id": 104501503},
+                    {"taskforce_uuid": 456, "cluster_id": 104500588},
+                ]
+            }
+        elif args[:2] == ("PATCH", "/tms/taskforces/many"):
+            return {}
+        else:
+            return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
+
     rc = MagicMock()
-    rc.request = AsyncMock(return_value={})
+    rc.request = AsyncMock(side_effect=rc_request_by_args)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
 
     assert rc.request.call_count == n_updates
     assert rc.request.call_args_list == [
         call(
             "PATCH",
-            "/tms/condor-cluster/many",
+            "/tms/taskforces/many",
             {
-                "collector": "foo",
-                "schedd": "bar",
-                "top_task_errors_by_cluster": {104501503: {}, 104500588: {}},
-                "compound_statuses_by_cluster": {
-                    104501503: {
+                "top_task_errors_by_taskforce": {123: {}, 456: {}},
+                "compound_statuses_by_taskforce": {
+                    123: {
                         "IDLE": {None: 5},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 1},
                     },
-                    104500588: {"REMOVED": {None: 1}},
+                    456: {"REMOVED": {None: 1}},
                 },
             },
         ),
         call(
             "PATCH",
-            "/tms/condor-cluster/many",
+            "/tms/taskforces/many",
             {
-                "collector": "foo",
-                "schedd": "bar",
-                "compound_statuses_by_cluster": {
-                    104501503: {
+                "compound_statuses_by_taskforce": {
+                    123: {
                         "IDLE": {None: 3},
                         "RUNNING": {None: 1},
                         "REMOVED": {None: 1},
@@ -123,12 +132,10 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "PATCH",
-            "/tms/condor-cluster/many",
+            "/tms/taskforces/many",
             {
-                "collector": "foo",
-                "schedd": "bar",
-                "compound_statuses_by_cluster": {
-                    104501503: {
+                "compound_statuses_by_taskforce": {
+                    123: {
                         "RUNNING": {None: 3},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 3},
@@ -138,12 +145,10 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "PATCH",
-            "/tms/condor-cluster/many",
+            "/tms/taskforces/many",
             {
-                "collector": "foo",
-                "schedd": "bar",
-                "compound_statuses_by_cluster": {
-                    104501503: {
+                "compound_statuses_by_taskforce": {
+                    123: {
                         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
                         "RUNNING": {"Tasking": 1},
                         "REMOVED": {None: 1},
@@ -154,12 +159,10 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "PATCH",
-            "/tms/condor-cluster/many",
+            "/tms/taskforces/many",
             {
-                "collector": "foo",
-                "schedd": "bar",
-                "compound_statuses_by_cluster": {
-                    104501503: {
+                "compound_statuses_by_taskforce": {
+                    123: {
                         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 5},
@@ -168,5 +171,3 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
     ]
-
-    assert 0  # TODO
