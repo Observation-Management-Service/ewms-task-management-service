@@ -11,12 +11,13 @@ import logging
 import pprint
 import time
 from pathlib import Path
+from typing import Any, AsyncIterator
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
-from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
+from ..config import ENV, WATCHER_N_pTOP_TASK_ERRORS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -108,7 +109,10 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(self) -> None:
+    def __init__(self, taskforce_uuid: str) -> None:
+        self.taskforce_uuid = taskforce_uuid
+        self.is_eventless = True
+
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
         self._previous_aggregate_statuses__hash: str = ""
         self._previous_top_task_errors__hash: str = ""
@@ -233,6 +237,7 @@ class ClusterInfo:
         job_event: htcondor.JobEventLog,
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
+        self.is_eventless = False
 
         def set_job_status(jie: JobInfoKey, value_code_tuple: JobInfoVal) -> None:
             if job_event.proc not in self._jobs:
@@ -276,22 +281,13 @@ class ClusterInfo:
 ########################################################################################
 
 
-@dc.dataclass
-class TaskforceTracker:
-    """Used for keeping track of a taskforce."""
-
-    taskforce_uuid: str
-    cluster_id: str
-    seen: bool = False
-
-
-async def query_for_more_taskforce_trackers(
+async def query_for_more_taskforces(
     ewms_rc: RestClient,
     jel_fpath: Path,
-    taskforce_trackers: list[TaskforceTracker],
-) -> list[TaskforceTracker]:
-    """Get/Update the list of TaskforceTracker instances."""
-    LOGGER.info("Querying taskforces from EWMS...")
+    taskforce_uuids: list[str],
+) -> AsyncIterator[tuple[str, str]]:
+    """Get new taskforce uuids."""
+    LOGGER.info("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
         "POST",
         "/tms/taskforces/find",
@@ -305,16 +301,10 @@ async def query_for_more_taskforce_trackers(
         },
     )
     for dicto in res["taskforces"]:
-        if dicto["taskforce_uuid"] in [tt.taskforce_uuid for tt in taskforce_trackers]:
+        if dicto["taskforce_uuid"] in taskforce_uuids:
             continue
         LOGGER.info(f"Tracking new taskforce: {dicto}")
-        taskforce_trackers.append(
-            TaskforceTracker(
-                taskforce_uuid=dicto["taskforce_uuid"],
-                cluster_id=dicto["cluster_id"],
-            )
-        )
-    return taskforce_trackers
+        yield dicto["taskforce_uuid"], dicto["cluster_id"]
 
 
 ########################################################################################
@@ -359,8 +349,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     """
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
-    cluster_info_dict: dict[str, ClusterInfo] = {}  # LARGE
-    taskforce_trackers: list[TaskforceTracker] = []
+    cluster_infos: dict[str, ClusterInfo] = {}  # LARGE
     interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
@@ -372,11 +361,12 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the job log)
-        taskforce_trackers = await query_for_more_taskforce_trackers(
+        async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             ewms_rc,
             jel_fpath,
-            taskforce_trackers,
-        )
+            list(cluster_infos.keys()),
+        ):
+            cluster_infos[cluster_id] = ClusterInfo(taskforce_uuid)
 
         # get events -- exit when no more events, or took too long
         got_new_events = False
@@ -384,24 +374,15 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
             await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
-            # is this a novel cluster/taskforce? is it valid?
-            if job_event.cluster not in cluster_info_dict:
-                try:
-                    next(
-                        tt
-                        for tt in taskforce_trackers
-                        if tt.cluster_id == job_event.cluster
-                    ).seen = True
-                except StopIteration:
-                    LOGGER.warning(
-                        f"Cluster found in job event log does not match any "
-                        f"known taskforce ({job_event.cluster}), skipping it"
-                    )
-                    continue
-                cluster_info_dict[job_event.cluster] = ClusterInfo()
             # update
             try:
-                cluster_info_dict[job_event.cluster].update_from_event(job_event)
+                cluster_infos[job_event.cluster].update_from_event(job_event)
+            except KeyError:
+                LOGGER.warning(
+                    f"Cluster found in job event log does not match any "
+                    f"known taskforce ({job_event.cluster}), skipping it"
+                )
+                continue
             except UnknownJobEvent as e:
                 LOGGER.debug(f"error: {e}")
             # check times
@@ -409,7 +390,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 break
 
         # endgame check
-        if (not got_new_events) and all(tt.seen for tt in taskforce_trackers):
+        if (not got_new_events) and all(not c.is_eventless for c in cluster_infos):
             if is_file_past_modification_expiry(jel_fpath):
                 # case: file has not been updated and it's old
                 jel_fpath.unlink()  # delete file
@@ -422,7 +403,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         LOGGER.info("Done reading events for now")
         # TODO - remove
         LOGGER.debug(
-            pprint.pformat({k: v._jobs for k, v in cluster_info_dict.items()}, indent=4)
+            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
         )
 
         # aggregate
@@ -431,42 +412,40 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         #  needed for replacing/updating individual jobs' status(es).
         #  Alternatively, we could re-parse the entire job log every time.
         LOGGER.info("Getting top task errors...")
-        top_task_errors_by_cluster = {}
-        for cid, info in cluster_info_dict.items():
+        top_task_errors_by_taskforce = {}
+        for info in cluster_infos.values():
             try:
-                top_task_errors_by_cluster[cid] = info.get_top_task_errors()
+                top_task_errors_by_taskforce[
+                    info.taskforce_uuid
+                ] = info.get_top_task_errors()
             except NoUpdateException:
                 continue
         LOGGER.info("Aggregating compound statuses...")
-        compound_statuses_by_cluster = {}
-        for cid, info in cluster_info_dict.items():
+        compound_statuses_by_taskforce = {}
+        for info in cluster_infos.values():
             try:
-                compound_statuses_by_cluster[cid] = info.aggregate_compound_statuses()
+                compound_statuses_by_taskforce[
+                    info.taskforce_uuid
+                ] = info.aggregate_compound_statuses()
             except NoUpdateException:
                 continue
 
         # send -- one big update that way it can't intermittently fail
-        if top_task_errors_by_cluster or compound_statuses_by_cluster:
+        patch_body: dict[str, Any] = {}
+        if top_task_errors_by_taskforce:
+            patch_body.update(
+                {"top_task_errors_by_taskforce": top_task_errors_by_taskforce}
+            )
+        if compound_statuses_by_taskforce:
+            patch_body.update(
+                {"compound_statuses_by_taskforce": compound_statuses_by_taskforce}
+            )
+        if patch_body:
             LOGGER.info("Sending updates to EWMS...")
             await ewms_rc.request(
                 "PATCH",
-                "/tms/condor-cluster/many",
-                {
-                    # we don't have the taskforce_uuid(s), but...
-                    # EWMS can map (collector + schedd + condor_id) to a taskforce_uuid
-                    "collector": ENV.COLLECTOR,
-                    "schedd": ENV.SCHEDD,
-                }
-                | (  # conditionally add key-val
-                    {"top_task_errors_by_cluster": top_task_errors_by_cluster}
-                    if top_task_errors_by_cluster
-                    else {}
-                )
-                | (  # conditionally add key-val
-                    {"compound_statuses_by_cluster": compound_statuses_by_cluster}
-                    if compound_statuses_by_cluster
-                    else {}
-                ),
+                "/tms/taskforces/many",
+                patch_body,
             )
         else:
             LOGGER.info("No updates needed for EWMS")
