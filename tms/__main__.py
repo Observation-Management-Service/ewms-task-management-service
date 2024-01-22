@@ -30,7 +30,7 @@ async def starter_loop() -> None:
         """Get the next taskforce requested for this collector + schedd."""
         return await ewms_rc.request(  # type: ignore[no-any-return]
             "GET",
-            "/tms/taskforce/start",
+            "/tms/taskforce/pending",
             {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
         )
 
@@ -43,8 +43,8 @@ async def starter_loop() -> None:
             )
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
-                "PATCH",
-                f"/tms/taskforce/start/{args['taskforce_uuid']}",
+                "POST",
+                f"/tms/taskforce/running/{args['taskforce_uuid']}",
                 ewms_taskforce_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
