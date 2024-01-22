@@ -9,6 +9,7 @@ import json
 import logging
 import pprint
 import time
+import urllib
 from pathlib import Path
 from typing import Any, AsyncIterator
 
@@ -418,6 +419,15 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
                 # case: file has not been updated and it's old
                 jel_fpath.unlink()  # delete file
                 LOGGER.warning(f"Deleted job log file {jel_fpath}")
+                await ewms_rc.request(
+                    "POST",
+                    f"/tms/job-event-log/{urllib.parse.quote(str(jel_fpath), safe='')}",
+                    {
+                        "collector": ENV.COLLECTOR,
+                        "schedd": ENV.SCHEDD,
+                        "finished": True,
+                    },
+                )
                 return
             else:
                 # case: file has not been updated but need to wait longer
