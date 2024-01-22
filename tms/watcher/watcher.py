@@ -474,8 +474,8 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
         if any(patch_body[k] for k in [_ALL_TOP_ERRORS_KEY, _ALL_COMP_STAT_KEY]):
             LOGGER.info("Sending updates to EWMS...")
             await ewms_rc.request(
-                "PATCH",
-                "/tms/taskforces/many",
+                "POST",
+                "/tms/taskforces/report",
                 patch_body,
             )
         else:
