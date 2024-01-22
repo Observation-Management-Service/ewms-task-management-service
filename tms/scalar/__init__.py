@@ -41,6 +41,8 @@ async def scalar_loop() -> None:
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
     LOGGER.info("Connected to EWMS")
 
+    interval_timer = utils.EveryXSeconds(ENV.TMS_OUTER_LOOP_WAIT)
+
     while True:
         # START(S)
         while args := await next_to_start(ewms_rc):
@@ -73,4 +75,6 @@ async def scalar_loop() -> None:
                 f"/tms/taskforce/stop/{args['taskforce_uuid']}",
             )
 
-        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
+        # throttle
+        while not interval_timer.has_been_x_seconds():
+            await asyncio.sleep(1)

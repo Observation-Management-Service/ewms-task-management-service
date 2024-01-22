@@ -17,6 +17,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
+from .. import utils
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
@@ -334,23 +335,6 @@ async def query_for_more_taskforces(
 ########################################################################################
 
 
-class EveryXSeconds:
-    """Keep track of durations."""
-
-    def __init__(self, seconds: float) -> None:
-        self.seconds = seconds
-        self._last_time = time.time()
-
-    def has_been_x_seconds(self) -> bool:
-        """Has it been at least `self.seconds` since last time?"""
-        diff = time.time() - self._last_time
-        yes = diff >= self.seconds
-        if yes:
-            self._last_time = time.time()
-            LOGGER.info(f"has been at least {self.seconds}s (actually {diff}s)")
-        return yes
-
-
 def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
     """Return whether the file was last modified longer than the expiry."""
     diff = time.time() - jel_fpath.stat().st_mtime
@@ -374,7 +358,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_infos: dict[str, ClusterInfo] = {}  # LARGE
-    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    interval_timer = utils.EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
