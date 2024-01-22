@@ -4,52 +4,15 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
-from . import utils
 from .config import ENV, config_logging
-from .starter import starter
-from .stopper import stopper
+from .scalar import scalar_loop
 from .watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
-
-
-async def starter_loop() -> None:
-    """Listen to EWMS and start designated taskforces."""
-
-    # make connections -- do now so we don't have any surprises downstream
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
-    LOGGER.info("Connected to EWMS")
-
-    async def next_one() -> dict[str, Any]:
-        """Get the next taskforce requested for this collector + schedd."""
-        return await ewms_rc.request(  # type: ignore[no-any-return]
-            "GET",
-            "/tms/taskforce/pending",
-            {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
-        )
-
-    while True:
-        while args := await next_one():
-            ewms_taskforce_attrs = await starter.start(
-                schedd_obj,
-                utils.is_taskforce_to_be_aborted(ewms_rc, args["taskforce_uuid"]),
-                **args,  # TODO
-            )
-            # confirm start (otherwise ewms will request this one again -- good for statelessness)
-            await ewms_rc.request(
-                "POST",
-                f"/tms/taskforce/running/{args['taskforce_uuid']}",
-                ewms_taskforce_attrs,
-            )
-            LOGGER.info("Sent taskforce info to EWMS")
-
-        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
 
 
 async def watcher_loop() -> None:
@@ -71,46 +34,6 @@ async def watcher_loop() -> None:
         await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
 
 
-async def stopper_loop() -> None:
-    """Listen to EWMS and stop designated taskforces."""
-
-    # make connections -- do now so we don't have any surprises downstream
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
-    LOGGER.info("Connected to EWMS")
-
-    async def next_one() -> dict[str, Any]:
-        """Get the next taskforce requested for this collector + schedd."""
-        return await ewms_rc.request(  # type: ignore[no-any-return]
-            "GET",
-            "/tms/taskforce/stop",
-            {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
-        )
-
-    while True:
-        while args := await next_one():
-            stopper.stop(
-                schedd_obj,
-                args["cluster_id"],
-            )
-            # confirm stop (otherwise ewms will request this one again -- good for statelessness)
-            await ewms_rc.request(
-                "DELETE",
-                f"/tms/taskforce/stop/{args['taskforce_uuid']}",
-            )
-
-        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
-
-
-def _create_loop_task(key: str) -> asyncio.Task[None]:
-    funcs = {
-        "starter": starter_loop,
-        "watcher": watcher_loop,
-        "stopper": stopper_loop,
-    }
-    return asyncio.create_task(funcs[key]())
-
-
 async def main() -> None:
     """explain."""
     htcondor.set_subsystem("TOOL")
@@ -120,23 +43,15 @@ async def main() -> None:
     htcondor.enable_debug()
 
     loops = {
-        k: _create_loop_task(k)
-        for k in [
-            "starter",
-            "watcher",
-            "stopper",
-        ]
+        asyncio.create_task(scalar_loop()): "scalar",
+        asyncio.create_task(watcher_loop()): "watcher",
     }
-
-    while True:
-        done, _ = await asyncio.wait(
-            loops.values(),
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        # restart any done tasks
-        for key in loops:
-            if loops[key] in done:
-                loops[key] = _create_loop_task(key)
+    done, _ = await asyncio.wait(
+        loops.keys(),
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    for task in done:
+        LOGGER.error(f"'{loops[task]}' asyncio task completed: {task}")
 
 
 if __name__ == "__main__":
