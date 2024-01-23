@@ -12,7 +12,7 @@ certifi==2023.11.17
 cffi==1.16.0
 charset-normalizer==3.3.2
 coloredlogs==15.0.1
-cryptography==41.0.7
+cryptography==42.0.0
 Deprecated==1.2.14
 googleapis-common-protos==1.59.1
 grpcio==1.60.0
@@ -51,7 +51,7 @@ zipp==3.17.0
 ########################################################################
 #  pipdeptree
 ########################################################################
-cryptography==41.0.7
+cryptography==42.0.0
 └── cffi [required: >=1.12, installed: 1.16.0]
     └── pycparser [required: Any, installed: 2.21]
 pip==23.2.1
