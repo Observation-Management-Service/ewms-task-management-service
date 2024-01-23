@@ -87,8 +87,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         if args[:2] == ("POST", "/tms/taskforces/find"):
             return {
                 "taskforces": [
-                    {"taskforce_uuid": "abc123", "cluster_id": "104501503"},
-                    {"taskforce_uuid": "def456", "cluster_id": "104500588"},
+                    {"taskforce_uuid": "abc123", "cluster_id": 104501503},
+                    {"taskforce_uuid": "def456", "cluster_id": 104500588},
                 ]
             }
         elif args[:2] == ("POST", "/tms/taskforces/report"):
@@ -189,7 +189,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     # check that aggregates are not lost
     # - has last (non-null novel) value that was sent to EWMS
     tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "abc123")
-    assert tmonitor.cluster_id == "104501503"
+    assert tmonitor.cluster_id == 104501503
     assert tmonitor.top_task_errors == {}
     assert tmonitor.aggregate_statuses == {
         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
@@ -198,6 +198,6 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     }
     # - has last (non-null novel) value that was sent to EWMS
     tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "def456")
-    assert tmonitor.cluster_id == "104500588"
+    assert tmonitor.cluster_id == 104500588
     assert tmonitor.top_task_errors == {}
     assert tmonitor.aggregate_statuses == {"REMOVED": {None: 1}}

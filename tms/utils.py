@@ -39,7 +39,7 @@ class EveryXSeconds:
 class TaskforceMonitor:
     """For storing minimal data on a taskforce through its lifetime."""
 
-    def __init__(self, taskforce_uuid: str, cluster_id: str) -> None:
+    def __init__(self, taskforce_uuid: str, cluster_id: int) -> None:
         self.taskforce_uuid = taskforce_uuid
         self.cluster_id = cluster_id
 

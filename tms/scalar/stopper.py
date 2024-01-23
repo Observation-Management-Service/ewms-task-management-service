@@ -13,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 def stop(
     schedd_obj: htcondor.Schedd,
     #
-    cluster_id: str,
+    cluster_id: int,
 ) -> None:
     """Main logic."""
     LOGGER.info(
