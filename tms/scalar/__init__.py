@@ -16,7 +16,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
-    """Get the next taskforce requested for this collector + schedd."""
+    """Get the next taskforce requested for this collector + schedd.
+
+    Returns empty dict when there is no taskforce to start.
+    """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
         "/tms/taskforce/pending",
@@ -25,7 +28,10 @@ async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
 
 
 async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
-    """Get the next taskforce requested for this collector + schedd."""
+    """Get the next taskforce requested for this collector + schedd.
+
+    Returns empty dict when there is no taskforce to stop.
+    """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
         "/tms/taskforce/stop",
