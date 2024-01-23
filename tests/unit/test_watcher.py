@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, call
 import htcondor  # type: ignore[import-untyped]
 import pytest
 from tms import config  # noqa: F401  # setup env vars
+from tms import utils
 from tms.watcher import watcher
 
 LIVE_UPDATE_SLEEP = 2
@@ -95,9 +96,10 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
 
+    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=rc_request_by_args)
-    await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc)
+    await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
 
     patch_calls = [c for c in rc.request.call_args_list if c.args[0] == "PATCH"]
     assert len(patch_calls) == n_updates
