@@ -55,8 +55,8 @@ async def test_000() -> None:
             config.ENV.JOB_EVENT_LOG_DIR / "tms-cluster-$(ClusterId)" / "$(ProcId).err"
         ),
         "transfer_output_files": (
-            f'"{str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log")}, '
-            f'{str(config.ENV.JOB_EVENT_LOG_DIR / "tms-cluster-$(ClusterId)" / "$(ProcId).out")}, '
+            f'"{str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log")},'
+            f'{str(config.ENV.JOB_EVENT_LOG_DIR / "tms-cluster-$(ClusterId)" / "$(ProcId).out")},'
             f'{str(config.ENV.JOB_EVENT_LOG_DIR / "tms-cluster-$(ClusterId)" / "$(ProcId).err")}"'
         ),  # must be quoted
     }
