@@ -17,7 +17,7 @@ from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
-from ..utils import EveryXSeconds, TaskforceMonitor, AppendOnlyList
+from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -310,7 +310,7 @@ async def query_for_more_taskforces(
     ewms_rc: RestClient,
     jel_fpath: Path,
     taskforce_uuids: list[str],
-) -> AsyncIterator[tuple[str, str]]:
+) -> AsyncIterator[tuple[str, int]]:
     """Get new taskforce uuids."""
     LOGGER.info("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
