@@ -2,7 +2,7 @@
 
 
 from datetime import date
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
@@ -14,7 +14,7 @@ htcondor.enable_debug()
 
 async def test_000() -> None:
     """Test the starter."""
-    is_aborted_awaitable = MagicMock()
+    is_aborted_awaitable = AsyncMock(return_value=False)
     schedd_obj = MagicMock()
 
     submit_dict = {
