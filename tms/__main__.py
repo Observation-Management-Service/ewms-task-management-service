@@ -9,7 +9,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .config import ENV, config_logging
-from .scalar import scalar_loop
+from .scalar.scalar import scalar_loop
 from .utils import AppendOnlyList, TaskforceMonitor
 from .watcher import watcher
 
