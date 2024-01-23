@@ -91,7 +91,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                     {"taskforce_uuid": 456, "cluster_id": 104500588},
                 ]
             }
-        elif args[:2] == ("PATCH", "/tms/taskforces/many"):
+        elif args[:2] == ("POST", "/tms/taskforces/report"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
@@ -101,12 +101,16 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     rc.request = AsyncMock(side_effect=rc_request_by_args)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
 
-    patch_calls = [c for c in rc.request.call_args_list if c.args[0] == "PATCH"]
-    assert len(patch_calls) == n_updates
-    assert patch_calls == [
+    post_calls = [
+        c
+        for c in rc.request.call_args_list
+        if c.args[:2] == ("POST", "/tms/taskforces/report")
+    ]
+    assert len(post_calls) == n_updates
+    assert post_calls == [
         call(
-            "PATCH",
-            "/tms/taskforces/many",
+            "POST",
+            "/tms/taskforces/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -120,8 +124,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
         call(
-            "PATCH",
-            "/tms/taskforces/many",
+            "POST",
+            "/tms/taskforces/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -135,8 +139,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
         call(
-            "PATCH",
-            "/tms/taskforces/many",
+            "POST",
+            "/tms/taskforces/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -149,8 +153,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
         call(
-            "PATCH",
-            "/tms/taskforces/many",
+            "POST",
+            "/tms/taskforces/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -164,8 +168,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
         call(
-            "PATCH",
-            "/tms/taskforces/many",
+            "POST",
+            "/tms/taskforces/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
