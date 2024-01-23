@@ -10,12 +10,13 @@ from rest_tools.client import RestClient
 
 from .config import ENV, config_logging
 from .scalar import scalar_loop
+from .utils import AppendOnlyList, TaskforceMonitor
 from .watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
 
 
-async def watcher_loop() -> None:
+async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
     """Watch over all job event log files and send EWMS taskforce updates."""
     in_progress: dict[Path, asyncio.Task[None]] = {}
 
@@ -42,9 +43,11 @@ async def main() -> None:
     # htcondor.enable_log()
     htcondor.enable_debug()
 
+    tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
+
     loops = {
-        asyncio.create_task(scalar_loop()): "scalar",
-        asyncio.create_task(watcher_loop()): "watcher",
+        asyncio.create_task(scalar_loop(tmonitors)): "scalar",
+        asyncio.create_task(watcher_loop(tmonitors)): "watcher",
     }
     done, _ = await asyncio.wait(
         loops.keys(),

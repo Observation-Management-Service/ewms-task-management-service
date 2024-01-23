@@ -33,7 +33,7 @@ async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     )
 
 
-async def scalar_loop() -> None:
+async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
 
     # make connections -- do now so we don't have any surprises downstream

@@ -3,6 +3,7 @@
 
 import logging
 import time
+from typing import TypeVar
 
 from rest_tools.client import RestClient
 
@@ -33,3 +34,30 @@ class EveryXSeconds:
             self._last_time = time.time()
             LOGGER.info(f"has been at least {self.seconds}s (actually {diff}s)")
         return yes
+
+
+class TaskforceMonitor:
+    """For storing minimal data on a taskforce through its lifetime."""
+
+    def __init__(self, taskforce_uuid: str, cluster_id: str) -> None:
+        self.taskforce_uuid = taskforce_uuid
+        self.cluster_id = cluster_id
+
+        self.aggregate_statuses: dict[str | None, dict[str | None, int]] = {}
+        self.top_task_errors: dict[str, int] = {}
+
+
+T = TypeVar("T")
+
+
+class AppendOnlyList(list[T]):
+    """A list you cannot explicitly remove items from."""
+
+    def remove(self, *args):
+        raise NotImplementedError()
+
+    def pop(self, *args):
+        raise NotImplementedError()
+
+    def clear(self, *args):
+        raise NotImplementedError()

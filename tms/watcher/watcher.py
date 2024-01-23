@@ -4,7 +4,6 @@
 import asyncio
 import collections
 import enum
-import hashlib
 import json
 import logging
 import pprint
@@ -17,8 +16,8 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
-from .. import utils
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
+from ..utils import EveryXSeconds, TaskforceMonitor, AppendOnlyList
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -114,13 +113,12 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(self, taskforce_uuid: str) -> None:
-        self.taskforce_uuid = taskforce_uuid
+    def __init__(self, tmonitor: TaskforceMonitor) -> None:
+        self.tmonitor = tmonitor
+        self.taskforce_uuid = tmonitor.taskforce_uuid
         self.seen_in_jel = False
 
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
-        self._previous_aggregate_statuses__hash: str = ""
-        self._previous_top_task_errors__hash: str = ""
 
     def aggregate_compound_statuses(
         self,
@@ -168,21 +166,22 @@ class ClusterInfo:
                 )
             )
 
-        # is this an update?
-        dump = json.dumps(
-            job_pilot_compound_statuses,
-            sort_keys=True,  # sort -> deterministic
-            ensure_ascii=True,
-            indent=4,  # for logging
+        LOGGER.debug(
+            json.dumps(
+                job_pilot_compound_statuses,
+                sort_keys=True,  # sort -> deterministic
+                ensure_ascii=True,
+                indent=4,  # for logging
+            )
         )
-        LOGGER.debug(dump)
-        hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
-        if hashed == self._previous_aggregate_statuses__hash:
+
+        # is this an update?
+        if self.tmonitor.aggregate_statuses == job_pilot_compound_statuses:
             raise NoUpdateException("compound statuses did not change")
-        self._previous_aggregate_statuses__hash = hashed
+        self.tmonitor.aggregate_statuses = job_pilot_compound_statuses
 
         if not job_pilot_compound_statuses:
-            raise NoUpdateException("errors list is empty")
+            raise NoUpdateException("compound statuses dict is empty")
 
         return job_pilot_compound_statuses
 
@@ -207,20 +206,21 @@ class ClusterInfo:
         errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # is this an update?
-        dump = json.dumps(
-            errors,
-            sort_keys=True,  # sort -> deterministic
-            ensure_ascii=True,
-            indent=4,  # for logging
+        LOGGER.debug(
+            json.dumps(
+                errors,
+                sort_keys=True,  # sort -> deterministic
+                ensure_ascii=True,
+                indent=4,  # for logging
+            )
         )
-        LOGGER.debug(dump)
-        hashed = hashlib.md5(dump.encode("utf-8")).hexdigest()
-        if hashed == self._previous_top_task_errors__hash:
+
+        if self.tmonitor.top_task_errors == errors:
             raise NoUpdateException("errors did not change")
-        self._previous_top_task_errors__hash = hashed
+        self.tmonitor.top_task_errors = errors
 
         if not errors:
-            raise NoUpdateException("errors list is empty")
+            raise NoUpdateException("errors dict is empty")
 
         return errors
 
@@ -347,7 +347,11 @@ def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
 ########################################################################################
 
 
-async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
+async def watch_job_event_log(
+    jel_fpath: Path,
+    ewms_rc: RestClient,
+    tmonitors: AppendOnlyList[TaskforceMonitor],
+) -> None:
     """Watch over one job event log file, containing multiple taskforces.
 
     NOTE:
@@ -358,7 +362,7 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_infos: dict[str, ClusterInfo] = {}  # LARGE
-    interval_timer = utils.EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
@@ -374,7 +378,10 @@ async def watch_job_event_log(jel_fpath: Path, ewms_rc: RestClient) -> None:
             jel_fpath,
             list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
-            cluster_infos[cluster_id] = ClusterInfo(taskforce_uuid)
+            cluster_infos[cluster_id] = ClusterInfo(
+                TaskforceMonitor(taskforce_uuid, cluster_id)
+            )
+            tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
         # get events -- exit when no more events, or took too long
         got_new_events = False
