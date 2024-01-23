@@ -28,7 +28,13 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
         for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
             if jel_fpath in in_progress:
                 continue
-            task = asyncio.create_task(watcher.watch_job_event_log(jel_fpath, ewms_rc))
+            task = asyncio.create_task(
+                watcher.watch_job_event_log(
+                    jel_fpath,
+                    ewms_rc,
+                    tmonitors,
+                )
+            )
             await asyncio.sleep(0)  # start above task
             in_progress[jel_fpath] = task
 
