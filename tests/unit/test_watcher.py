@@ -87,8 +87,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         if args[:2] == ("POST", "/tms/taskforces/find"):
             return {
                 "taskforces": [
-                    {"taskforce_uuid": 123, "cluster_id": 104501503},
-                    {"taskforce_uuid": 456, "cluster_id": 104500588},
+                    {"taskforce_uuid": "abc123", "cluster_id": "z104501503"},
+                    {"taskforce_uuid": "def456", "cluster_id": "z104500588"},
                 ]
             }
         elif args[:2] == ("POST", "/tms/taskforces/report"):
@@ -101,6 +101,9 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     rc.request = AsyncMock(side_effect=rc_request_by_args)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
 
+    assert len(tmonitors) == 2  # check that the taskforce monitors is still here
+
+    # assert POST calls
     post_calls = [
         c
         for c in rc.request.call_args_list
@@ -114,12 +117,12 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
-                    123: {
+                    "abc123": {
                         "IDLE": {None: 5},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 1},
                     },
-                    456: {"REMOVED": {None: 1}},
+                    "def456": {"REMOVED": {None: 1}},
                 },
             },
         ),
@@ -129,7 +132,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
-                    123: {
+                    "abc123": {
                         "IDLE": {None: 3},
                         "RUNNING": {None: 1},
                         "REMOVED": {None: 1},
@@ -144,7 +147,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
-                    123: {
+                    "abc123": {
                         "RUNNING": {None: 3},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 3},
@@ -158,7 +161,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
-                    123: {
+                    "abc123": {
                         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
                         "RUNNING": {"Tasking": 1},
                         "REMOVED": {None: 1},
@@ -173,7 +176,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
-                    123: {
+                    "abc123": {
                         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
                         "REMOVED": {None: 1},
                         "COMPLETED": {"Done": 5},
@@ -182,3 +185,19 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             },
         ),
     ]
+
+    # check that aggregates are not lost
+    # - has last (non-null novel) value that was sent to EWMS
+    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "abc123")
+    assert tmonitor.cluster_id == "z104501503"
+    assert tmonitor.top_task_errors == {}
+    assert tmonitor.aggregate_statuses == {
+        "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
+        "REMOVED": {None: 1},
+        "COMPLETED": {"Done": 5},
+    }
+    # - has last (non-null novel) value that was sent to EWMS
+    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "def456")
+    assert tmonitor.cluster_id == "z104500588"
+    assert tmonitor.top_task_errors == {}
+    assert tmonitor.aggregate_statuses == {"REMOVED": {None: 1}}
