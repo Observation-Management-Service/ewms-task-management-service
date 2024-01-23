@@ -5,6 +5,7 @@ import logging
 
 import htcondor  # type: ignore[import-untyped]
 
+from .. import types
 from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 def stop(
     schedd_obj: htcondor.Schedd,
     #
-    cluster_id: int,
+    cluster_id: types.ClusterId,
 ) -> None:
     """Main logic."""
     LOGGER.info(

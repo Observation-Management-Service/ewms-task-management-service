@@ -16,8 +16,8 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools as ct
+from .. import types, utils
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
-from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -113,7 +113,7 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(self, tmonitor: TaskforceMonitor) -> None:
+    def __init__(self, tmonitor: utils.TaskforceMonitor) -> None:
         self.tmonitor = tmonitor
         self.taskforce_uuid = tmonitor.taskforce_uuid
         self.seen_in_jel = False
@@ -122,7 +122,7 @@ class ClusterInfo:
 
     def aggregate_compound_statuses(
         self,
-    ) -> dict[str | None, dict[str | None, int]]:
+    ) -> types.AggregateStatuses:
         """Aggregate jobs using a count of each job status & pilot status pair.
 
         Return value is in a human-readable format, so do not persist for long.
@@ -142,7 +142,7 @@ class ClusterInfo:
         Raises:
             `NoUpdateException` -- if there is no update
         """
-        job_pilot_compound_statuses: dict[str | None, dict[str | None, int]] = {}
+        job_pilot_compound_statuses: types.AggregateStatuses = {}
 
         # get counts of each
         for job_status in set(
@@ -187,7 +187,7 @@ class ClusterInfo:
 
     def get_top_task_errors(
         self,
-    ) -> dict[str, int]:
+    ) -> types.TopTaskErrors:
         """Aggregate top X errors of jobs.
 
         Return value is in a human-readable format, so do not persist for long.
@@ -203,7 +203,7 @@ class ClusterInfo:
             for dicto in self._jobs.values()
         )
         counts.pop(None, None)  # remove counts of "no error"
-        errors: dict[str, int] = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
+        errors: types.TopTaskErrors = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # is this an update?
         LOGGER.debug(
@@ -310,7 +310,7 @@ async def query_for_more_taskforces(
     ewms_rc: RestClient,
     jel_fpath: Path,
     taskforce_uuids: list[str],
-) -> AsyncIterator[tuple[str, int]]:
+) -> AsyncIterator[tuple[str, types.ClusterId]]:
     """Get new taskforce uuids."""
     LOGGER.info("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
@@ -350,7 +350,7 @@ def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
 async def watch_job_event_log(
     jel_fpath: Path,
     ewms_rc: RestClient,
-    tmonitors: AppendOnlyList[TaskforceMonitor],
+    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
 ) -> None:
     """Watch over one job event log file, containing multiple taskforces.
 
@@ -361,8 +361,8 @@ async def watch_job_event_log(
     """
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
-    cluster_infos: dict[str, ClusterInfo] = {}  # LARGE
-    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
+    interval_timer = utils.EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
@@ -379,7 +379,7 @@ async def watch_job_event_log(
             list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
             cluster_infos[cluster_id] = ClusterInfo(
-                TaskforceMonitor(taskforce_uuid, cluster_id)
+                utils.TaskforceMonitor(taskforce_uuid, cluster_id)
             )
             tmonitors.append(cluster_infos[cluster_id].tmonitor)
 

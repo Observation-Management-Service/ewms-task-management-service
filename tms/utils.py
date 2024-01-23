@@ -7,6 +7,8 @@ from typing import TypeVar
 
 from rest_tools.client import RestClient
 
+from . import types
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -39,12 +41,12 @@ class EveryXSeconds:
 class TaskforceMonitor:
     """For storing minimal data on a taskforce through its lifetime."""
 
-    def __init__(self, taskforce_uuid: str, cluster_id: int) -> None:
+    def __init__(self, taskforce_uuid: str, cluster_id: types.ClusterId) -> None:
         self.taskforce_uuid = taskforce_uuid
         self.cluster_id = cluster_id
 
-        self.aggregate_statuses: dict[str | None, dict[str | None, int]] = {}
-        self.top_task_errors: dict[str, int] = {}
+        self.aggregate_statuses: types.AggregateStatuses = {}
+        self.top_task_errors: types.TopTaskErrors = {}
 
 
 T = TypeVar("T")
