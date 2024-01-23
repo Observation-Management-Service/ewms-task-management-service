@@ -6,13 +6,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
+from mock.mock import patch
 from tms import config  # noqa: F401  # setup env vars
 from tms.scalar import starter
 
 htcondor.enable_debug()
 
 
-async def test_000() -> None:
+@patch("htcondor.Submit")
+async def test_000(htcs_mock: MagicMock) -> None:
     """Test the starter."""
     is_aborted_awaitable = AsyncMock(return_value=False)
     schedd_obj = MagicMock()
@@ -82,8 +84,10 @@ async def test_000() -> None:
     )
 
     is_aborted_awaitable.assert_awaited_once()
+
+    htcs_mock.assert_called_with(submit_dict)
     schedd_obj.submit.assert_called_with(
-        htcondor.Submit(submit_dict),
+        htcs_mock,
         count=123,  # submit N workers
     )
 
