@@ -97,8 +97,8 @@ async def test_000(htcs_mock: MagicMock) -> None:
             "schedd": config.ENV.SCHEDD,
         },
         taskforce_uuid="9874abcdef",
-        cluster_id="idk",
-        n_workers=123,
+        cluster_id=htcs_mock.return_value.cluster.return_value,
+        n_workers=htcs_mock.return_value.num_procs.return_value,
         starter_info=submit_dict,
         job_event_log_fpath=str(
             config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
