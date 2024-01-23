@@ -35,10 +35,9 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                     tmonitors,
                 )
             )
-            await asyncio.sleep(0)  # start above task
             in_progress[jel_fpath] = task
 
-        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)
+        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
 
 
 async def main() -> None:
