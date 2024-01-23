@@ -67,7 +67,7 @@ async def test_000() -> None:
 
     ret = await starter.start(
         schedd_obj=schedd_obj,
-        is_aborted_awaitable=is_aborted_awaitable,
+        is_aborted_awaitable=is_aborted_awaitable(),
         #
         n_workers=123,
         # taskforce args
