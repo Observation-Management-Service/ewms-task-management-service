@@ -50,16 +50,13 @@ async def main() -> None:
 
     tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
 
-    loops = {
-        asyncio.create_task(scalar_loop(tmonitors)): "scalar",
-        asyncio.create_task(watcher_loop(tmonitors)): "watcher",
-    }
-    done, _ = await asyncio.wait(
-        loops.keys(),
-        return_when=asyncio.FIRST_COMPLETED,
-    )
-    for task in done:
-        LOGGER.error(f"'{loops[task]}' asyncio task completed: {task}")
+    # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
+    # on task fail, cancel others then raise original exception(s)
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(scalar_loop(tmonitors))
+        tg.create_task(watcher_loop(tmonitors))
+
+    LOGGER.info("Done")
 
 
 if __name__ == "__main__":
