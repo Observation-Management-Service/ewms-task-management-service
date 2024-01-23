@@ -86,7 +86,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
 
     htcs_mock.assert_called_with(submit_dict)
     schedd_obj.submit.assert_called_with(
-        htcs_mock,
+        htcs_mock.return_value,
         count=123,  # submit N workers
     )
 
