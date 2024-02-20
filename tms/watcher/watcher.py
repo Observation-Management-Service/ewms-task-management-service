@@ -8,7 +8,6 @@ import json
 import logging
 import pprint
 import time
-import urllib
 from pathlib import Path
 from typing import Any, AsyncIterator
 
@@ -412,8 +411,9 @@ async def watch_job_event_log(
                 LOGGER.warning(f"Deleted job log file {jel_fpath}")
                 await ewms_rc.request(
                     "POST",
-                    f"/tms/job-event-log/{urllib.parse.quote(str(jel_fpath), safe='')}",
+                    "/tms/job-event-log/",
                     {
+                        "job_event_log_fpath": str(jel_fpath),
                         "collector": ENV.COLLECTOR,
                         "schedd": ENV.SCHEDD,
                         "finished": True,
