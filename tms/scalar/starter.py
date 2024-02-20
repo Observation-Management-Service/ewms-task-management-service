@@ -199,15 +199,9 @@ async def start(
 
     # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
-        orchestrator="condor",
-        location={
-            "collector": ENV.COLLECTOR,
-            "schedd": ENV.SCHEDD,
-        },
-        taskforce_uuid=taskforce_uuid,
         cluster_id=submit_result_obj.cluster(),
         n_workers=submit_result_obj.num_procs(),
-        starter_info=submit_dict,
+        submit_dict=submit_dict,
         job_event_log_fpath=submit_dict["log"],
     )
     return ewms_taskforce_attrs
