@@ -139,7 +139,7 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    is_aborted_awaitable: Awaitable[bool],
+    is_still_pending_start: Awaitable[bool],
     #
     n_workers: int,
     # taskforce args
@@ -182,10 +182,12 @@ async def start(
 
     # final checks
     if ENV.DRYRUN:
-        LOGGER.critical("Script Aborted: dryrun enabled")
+        LOGGER.critical("Startup Aborted - dryrun enabled")
         return {}
-    if await is_aborted_awaitable:
-        LOGGER.critical(f"Script Aborted: EWMS aborted taskforce: {taskforce_uuid}")
+    if not await is_still_pending_start:
+        LOGGER.critical(
+            f"Startup Aborted - taskforce is no longer pending-start: {taskforce_uuid}"
+        )
         return {}
 
     # submit
