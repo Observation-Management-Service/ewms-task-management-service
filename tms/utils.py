@@ -30,7 +30,7 @@ async def any_taskforces_still_using_jel(
     ewms_rc: RestClient,
     jel_fpath: Path,
 ) -> bool:
-    """Return whether there are non-completed taskforces using the jel."""
+    """Return whether there are non-completed taskforces using the JEL."""
     resp = await ewms_rc.request(
         "POST",
         "/tms/taskforces/find",

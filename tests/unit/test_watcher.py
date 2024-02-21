@@ -2,6 +2,7 @@
 
 
 import asyncio
+import logging
 import os
 import threading
 from pathlib import Path
@@ -13,6 +14,9 @@ import pytest
 from tms import config  # noqa: F401  # setup env vars
 from tms import utils
 from tms.watcher import watcher
+
+LOGGER = logging.getLogger(__name__)
+
 
 LIVE_UPDATE_SLEEP = 2
 
@@ -29,7 +33,7 @@ class JobEventLogFileWrapper:
 
     @staticmethod
     def _get_subset_job_event_log(lines: list[str], min_amount: int) -> Iterator[str]:
-        """Get a subset of the job event log and maintain valid syntax."""
+        """Get a subset of the JEL and maintain valid syntax."""
         for i, ln in enumerate(lines):
             yield ln
             if i >= min_amount and ln == "...\n":
@@ -71,7 +75,7 @@ class JobEventLogFileWrapper:
 
 @pytest.fixture
 def jel_file_wrapper() -> JobEventLogFileWrapper:
-    """Job event log file."""
+    """JEL file."""
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
     return JobEventLogFileWrapper(src)
 

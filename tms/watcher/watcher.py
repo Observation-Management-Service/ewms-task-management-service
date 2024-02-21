@@ -335,14 +335,14 @@ async def query_for_more_taskforces(
 
 
 def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
-    """Check all conditions for determining if it is time to delete the jel."""
+    """Check all conditions for determining if it is time to delete the JEL."""
 
     def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
         """Return whether the file was last modified longer than the expiry."""
         diff = time.time() - jel_fpath.stat().st_mtime
         yes = diff >= ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY
         if yes:
-            LOGGER.warning(f"Job log file {jel_fpath} has not been updated in {diff}s")
+            LOGGER.warning(f"JEL file {jel_fpath} has not been updated in {diff}s")
         return yes
 
     return is_file_past_modification_expiry() and utils.any_taskforces_still_using_jel(
@@ -358,7 +358,7 @@ async def watch_job_event_log(
     ewms_rc: RestClient,
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
 ) -> None:
-    """Watch over one job event log file, containing multiple taskforces.
+    """Watch over one JEL file, containing multiple taskforces.
 
     NOTE:
         1. a taskforce is never split among multiple files, it uses only one
@@ -372,13 +372,13 @@ async def watch_job_event_log(
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
-        # wait for job log to populate (more)
+        # wait for JEL to populate (more)
         while not interval_timer.has_been_x_seconds():
             await asyncio.sleep(1)
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
-        #   (and are not yet in the job log)
+        #   (and are not yet in the JEL)
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             ewms_rc,
             jel_fpath,
@@ -400,7 +400,7 @@ async def watch_job_event_log(
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
                 LOGGER.warning(
-                    f"Cluster found in job event log does not match any "
+                    f"Cluster found in JEL does not match any "
                     f"known taskforce ({job_event.cluster}), skipping it"
                 )
                 continue
@@ -414,7 +414,7 @@ async def watch_job_event_log(
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
             if is_jel_okay_to_delete(ewms_rc, jel_fpath):
                 jel_fpath.unlink()  # delete file
-                LOGGER.warning(f"Deleted job log file {jel_fpath}")
+                LOGGER.warning(f"Deleted JEL file {jel_fpath}")
                 return
             else:
                 continue
@@ -434,7 +434,7 @@ async def watch_job_event_log(
         # NOTE: We unfortunately cannot reduce the data after aggregating.
         #  Once we aggregate we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
-        #  Alternatively, we could re-parse the entire job log every time.
+        #  Alternatively, we could re-parse the entire JEL every time.
         for cid, info in cluster_infos.items():
             try:
                 LOGGER.info(
