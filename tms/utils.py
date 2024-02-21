@@ -3,17 +3,20 @@
 
 import logging
 import time
+from pathlib import Path
 from typing import TypeVar
 
 from rest_tools.client import RestClient
 
 from . import types
+from .config import ENV
 
 LOGGER = logging.getLogger(__name__)
 
 
 async def is_taskforce_still_pending_start(
-    ewms_rc: RestClient, taskforce_uuid: str
+    ewms_rc: RestClient,
+    taskforce_uuid: str,
 ) -> bool:
     """Return whether the taskforce is still pending-start."""
     ret = await ewms_rc.request(
@@ -21,6 +24,27 @@ async def is_taskforce_still_pending_start(
         f"/tms/taskforce/{taskforce_uuid}",
     )
     return ret["tms_status"] == "pending-start"  # type: ignore[no-any-return]
+
+
+async def any_taskforces_still_using_jel(
+    ewms_rc: RestClient,
+    jel_fpath: Path,
+) -> bool:
+    """Return whether there are non-completed taskforces using the jel."""
+    resp = await ewms_rc.request(
+        "POST",
+        "/tms/taskforces/find",
+        {
+            "query": {
+                "job_event_log_fpath": str(jel_fpath),
+                "collector": ENV.COLLECTOR,
+                "schedd": ENV.SCHEDD,
+                "condor_complete_ts": {"$ne": None},
+            },
+            "projection": ["taskforce_uuid"],
+        },
+    )
+    return len(resp["taskforces"]) != 0
 
 
 class EveryXSeconds:
