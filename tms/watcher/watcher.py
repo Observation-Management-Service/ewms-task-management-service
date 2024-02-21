@@ -17,6 +17,7 @@ from rest_tools.client import RestClient
 from .. import condor_tools as ct
 from .. import types, utils
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
+from .utils import send_condor_complete
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -100,6 +101,14 @@ def job_info_val_to_string(
 
 class UnknownJobEvent(Exception):
     """Raise when the job event is not valid for these purposes."""
+
+
+class ReceivedClusterRemovedJobEvent(Exception):
+    """Raise when a job event signally the cluster has been removed is seen."""
+
+    def __init__(self, timestamp: int):
+        self.timestamp = timestamp
+        super().__init__()
 
 
 class NoUpdateException(Exception):
@@ -297,6 +306,11 @@ class ClusterInfo:
                         job_status.value,
                     )
         #
+        #
+        elif job_event.type == htcondor.JobEventType.CLUSTER_REMOVE:
+            raise ReceivedClusterRemovedJobEvent(int(job_event.timestamp))
+
+        #
         # OTHER
         else:
             raise UnknownJobEvent(f"not an important event: {job_event.type.name}")
@@ -334,7 +348,7 @@ async def query_for_more_taskforces(
 ########################################################################################
 
 
-def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
+async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
     """Check all conditions for determining if it is time to delete the JEL."""
 
     def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
@@ -345,8 +359,9 @@ def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
             LOGGER.warning(f"JEL file {jel_fpath} has not been updated in {diff}s")
         return yes
 
-    return is_file_past_modification_expiry() and utils.any_taskforces_still_using_jel(
-        ewms_rc, jel_fpath
+    return (
+        is_file_past_modification_expiry()
+        and await utils.any_taskforces_still_using_jel(ewms_rc, jel_fpath)
     )
 
 
@@ -404,6 +419,12 @@ async def watch_job_event_log(
                     f"known taskforce ({job_event.cluster}), skipping it"
                 )
                 continue
+            except ReceivedClusterRemovedJobEvent as e:
+                await send_condor_complete(
+                    ewms_rc,
+                    cluster_infos[job_event.cluster].taskforce_uuid,
+                    e.timestamp,
+                )
             except UnknownJobEvent as e:
                 LOGGER.debug(f"error: {e}")
             # check times
@@ -412,7 +433,7 @@ async def watch_job_event_log(
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            if is_jel_okay_to_delete(ewms_rc, jel_fpath):
+            if await is_jel_okay_to_delete(ewms_rc, jel_fpath):
                 jel_fpath.unlink()  # delete file
                 LOGGER.warning(f"Deleted JEL file {jel_fpath}")
                 return
