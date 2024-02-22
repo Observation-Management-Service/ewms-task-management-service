@@ -95,15 +95,9 @@ async def test_000(htcs_mock: MagicMock) -> None:
     )
 
     assert ret == dict(
-        orchestrator="condor",
-        location={
-            "collector": config.ENV.COLLECTOR,
-            "schedd": config.ENV.SCHEDD,
-        },
-        taskforce_uuid="9874abcdef",
         cluster_id=schedd_obj.submit.return_value.cluster.return_value,
         n_workers=schedd_obj.submit.return_value.num_procs.return_value,
-        starter_info=submit_dict,
+        submit_dict=submit_dict,
         job_event_log_fpath=str(
             config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
         ),
