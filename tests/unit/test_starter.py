@@ -19,7 +19,7 @@ htcondor.enable_debug()
 @patch("htcondor.Submit")
 async def test_000(htcs_mock: MagicMock) -> None:
     """Test the starter."""
-    awaitable_is_still_pending_start = AsyncMock(return_value=False)
+    awaitable_is_still_pending_start = AsyncMock(return_value=True)
     schedd_obj = MagicMock()
 
     submit_dict = {
