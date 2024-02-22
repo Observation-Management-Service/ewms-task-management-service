@@ -139,7 +139,7 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    is_still_pending_start: Awaitable[bool],
+    awaitable_is_still_pending_start: Awaitable[bool],
     #
     n_workers: int,
     # taskforce args
@@ -184,7 +184,7 @@ async def start(
     if ENV.DRYRUN:
         LOGGER.critical("Startup Aborted - dryrun enabled")
         return {}
-    if not await is_still_pending_start:
+    if not await awaitable_is_still_pending_start:
         LOGGER.critical(
             f"Startup Aborted - taskforce is no longer pending-start: {taskforce_uuid}"
         )
