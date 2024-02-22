@@ -52,11 +52,16 @@ async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -
     while True:
         # START(S)
         while args := await next_to_start(ewms_rc):
-            ewms_taskforce_attrs = await starter.start(
-                schedd_obj,
-                utils.is_taskforce_still_pending_start(ewms_rc, args["taskforce_uuid"]),
-                **args,  # TODO
-            )
+            try:
+                ewms_taskforce_attrs = await starter.start(
+                    schedd_obj,
+                    utils.is_taskforce_still_pending_start(
+                        ewms_rc, args["taskforce_uuid"]
+                    ),
+                    **args,  # TODO
+                )
+            except starter.TaskforceNoLongerPendingStart:
+                continue
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "POST",

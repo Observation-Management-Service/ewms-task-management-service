@@ -13,6 +13,14 @@ from ..config import ENV
 LOGGER = logging.getLogger(__name__)
 
 
+class HaltedByDryRun(Exception):
+    """Raise when doing a dry run and no further progress is needed."""
+
+
+class TaskforceNoLongerPendingStart(Exception):
+    """Raise when taskforce is not pending-start when it is expected to be."""
+
+
 def make_condor_job_description(
     # taskforce args
     image: str,
@@ -183,12 +191,12 @@ async def start(
     # final checks
     if ENV.DRYRUN:
         LOGGER.critical("Startup Aborted - dryrun enabled")
-        return {}
+        raise HaltedByDryRun()
     if not await awaitable_is_still_pending_start:
         LOGGER.critical(
             f"Startup Aborted - taskforce is no longer pending-start: {taskforce_uuid}"
         )
-        return {}
+        raise TaskforceNoLongerPendingStart()
 
     # submit
     submit_result_obj = submit(
