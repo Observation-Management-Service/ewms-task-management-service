@@ -17,8 +17,9 @@ class HaltedByDryRun(Exception):
     """Raise when doing a dry run and no further progress is needed."""
 
 
-class TaskforceNoLongerPendingStart(Exception):
-    """Raise when taskforce is not pending-start when it is expected to be."""
+class TaskforceNoLongerPendingStarter(Exception):
+    """Raise when taskforce is not pending-starter when it is expected to
+    be."""
 
 
 def make_condor_job_description(
@@ -147,7 +148,7 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    awaitable_is_still_pending_start: Awaitable[bool],
+    awaitable_is_still_pending_starter: Awaitable[bool],
     #
     n_workers: int,
     # taskforce args
@@ -192,11 +193,11 @@ async def start(
     if ENV.DRYRUN:
         LOGGER.critical("Startup Aborted - dryrun enabled")
         raise HaltedByDryRun()
-    if not await awaitable_is_still_pending_start:
+    if not await awaitable_is_still_pending_starter:
         LOGGER.critical(
-            f"Startup Aborted - taskforce is no longer pending-start: {taskforce_uuid}"
+            f"Startup Aborted - taskforce is no longer pending-starter: {taskforce_uuid}"
         )
-        raise TaskforceNoLongerPendingStart()
+        raise TaskforceNoLongerPendingStarter()
 
     # submit
     submit_result_obj = submit(

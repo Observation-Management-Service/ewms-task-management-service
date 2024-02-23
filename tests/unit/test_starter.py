@@ -19,7 +19,7 @@ htcondor.enable_debug()
 @patch("htcondor.Submit")
 async def test_000(htcs_mock: MagicMock) -> None:
     """Test the starter."""
-    awaitable_is_still_pending_start = AsyncMock(return_value=True)
+    awaitable_is_still_pending_starter = AsyncMock(return_value=True)
     schedd_obj = MagicMock()
 
     submit_dict = {
@@ -68,7 +68,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
 
     ret = await starter.start(
         schedd_obj=schedd_obj,
-        awaitable_is_still_pending_start=awaitable_is_still_pending_start(),
+        awaitable_is_still_pending_starter=awaitable_is_still_pending_starter(),
         #
         n_workers=123,
         # taskforce args
@@ -86,7 +86,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
         worker_memory_bytes=4235,
     )
 
-    awaitable_is_still_pending_start.assert_awaited_once()
+    awaitable_is_still_pending_starter.assert_awaited_once()
 
     htcs_mock.assert_called_with(submit_dict)
     schedd_obj.submit.assert_called_with(
