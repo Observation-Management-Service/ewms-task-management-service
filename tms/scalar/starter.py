@@ -150,13 +150,13 @@ async def start(
     schedd_obj: htcondor.Schedd,
     awaitable_is_still_pending_starter: Awaitable[bool],
     #
+    taskforce_uuid: str,
     n_workers: int,
     # taskforce args
     image: str,
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    taskforce_uuid: str,
     # condor args
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,

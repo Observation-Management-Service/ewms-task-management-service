@@ -55,22 +55,28 @@ async def scalar_loop(
 
     while True:
         # START(S)
-        while args := await next_to_start(ewms_rc):
+        while ewms_pending_starter_attrs := await next_to_start(ewms_rc):
             try:
-                ewms_taskforce_attrs = await starter.start(
+                ewms_condor_submit_attrs = await starter.start(
                     schedd_obj,
                     utils.is_taskforce_still_pending_starter(
-                        ewms_rc, args["taskforce_uuid"]
+                        ewms_rc, ewms_pending_starter_attrs["taskforce_uuid"]
                     ),
-                    **args,  # TODO
+                    #
+                    ewms_pending_starter_attrs["taskforce_uuid"],
+                    ewms_pending_starter_attrs["n_workers"],
+                    #
+                    **ewms_pending_starter_attrs["taskforce_args"],
+                    #
+                    **ewms_pending_starter_attrs["condor_args"],
                 )
             except starter.TaskforceNoLongerPendingStarter:
                 continue
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "POST",
-                f"/taskforce/tms-action/condor-submit/{args['taskforce_uuid']}",
-                ewms_taskforce_attrs,
+                f"/taskforce/tms-action/condor-submit/{ewms_pending_starter_attrs['taskforce_uuid']}",
+                ewms_condor_submit_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
 
@@ -79,15 +85,15 @@ async def scalar_loop(
         #
 
         # STOP(S)
-        while args := await next_to_stop(ewms_rc):
+        while ewms_pending_starter_attrs := await next_to_stop(ewms_rc):
             stopper.stop(
                 schedd_obj,
-                args["cluster_id"],
+                ewms_pending_starter_attrs["cluster_id"],
             )
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "DELETE",
-                f"/taskforce/tms-action/pending-stopper/{args['taskforce_uuid']}",
+                f"/taskforce/tms-action/pending-stopper/{ewms_pending_starter_attrs['taskforce_uuid']}",
             )
 
         # throttle
