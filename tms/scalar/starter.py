@@ -152,7 +152,7 @@ async def start(
     #
     taskforce_uuid: str,
     n_workers: int,
-    # taskforce args
+    # task args
     image: str,
     arguments: str,
     environment: dict[str, str],

@@ -66,7 +66,7 @@ async def scalar_loop(
                     ewms_pending_starter_attrs["taskforce_uuid"],
                     ewms_pending_starter_attrs["n_workers"],
                     #
-                    **ewms_pending_starter_attrs["taskforce_args"],
+                    **ewms_pending_starter_attrs["task_args"],
                     #
                     **ewms_pending_starter_attrs["condor_args"],
                 )
