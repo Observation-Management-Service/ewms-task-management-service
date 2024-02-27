@@ -115,27 +115,6 @@ async def query_for_more_taskforces(
         yield dicto["taskforce_uuid"], dicto["cluster_id"]
 
 
-async def any_taskforces_still_using_jel(
-    ewms_rc: RestClient,
-    jel_fpath: Path,
-) -> bool:
-    """Return whether there are non-completed taskforces using the JEL."""
-    resp = await ewms_rc.request(
-        "POST",
-        "/taskforces/find",
-        {
-            "query": {
-                "job_event_log_fpath": str(jel_fpath),
-                "collector": ENV.COLLECTOR,
-                "schedd": ENV.SCHEDD,
-                "condor_complete_ts": {"$ne": None},
-            },
-            "projection": ["taskforce_uuid"],
-        },
-    )
-    return len(resp["taskforces"]) != 0
-
-
 async def send_condor_complete(
     ewms_rc: RestClient,
     taskforce_uuid: str,
@@ -154,14 +133,29 @@ async def send_condor_complete(
 async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
     """Check all conditions for determining if it is time to delete the JEL."""
 
-    def is_file_past_modification_expiry() -> bool:
-        """Return whether the file was last modified longer than the expiry."""
+    def is_jel_past_modification_expiry() -> bool:
+        """Return whether the time since last mod is longer than the expiry."""
         diff = time.time() - jel_fpath.stat().st_mtime
         yes = diff >= ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY
         if yes:
             LOGGER.warning(f"JEL file {jel_fpath} has not been updated in {diff}s")
         return yes
 
-    return is_file_past_modification_expiry() and await any_taskforces_still_using_jel(
-        ewms_rc, jel_fpath
-    )
+    async def is_jel_no_longer_used() -> bool:
+        """Return whether there are no non-completed taskforces using JEL."""
+        resp = await ewms_rc.request(
+            "POST",
+            "/taskforces/find",
+            {
+                "query": {
+                    "job_event_log_fpath": str(jel_fpath),
+                    "collector": ENV.COLLECTOR,
+                    "schedd": ENV.SCHEDD,
+                    "condor_complete_ts": {"$ne": None},
+                },
+                "projection": ["taskforce_uuid"],
+            },
+        )
+        return not resp["taskforces"]
+
+    return is_jel_past_modification_expiry() and await is_jel_no_longer_used()
