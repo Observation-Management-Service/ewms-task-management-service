@@ -68,7 +68,7 @@ async def scalar_loop(
                     #
                     **ewms_pending_starter_attrs["container_config"],
                     #
-                    **ewms_pending_starter_attrs["condor_config"],
+                    **ewms_pending_starter_attrs["worker_config"],
                 )
             except starter.TaskforceNoLongerPendingStarter:
                 continue

@@ -24,12 +24,12 @@ class TaskforceNoLongerPendingStarter(Exception):
 
 def make_condor_job_description(
     taskforce_uuid: str,
-    # taskforce args
+    # container_config
     image: str,
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    # condor args
+    # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
@@ -157,7 +157,7 @@ async def start(
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    # condor_config
+    # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
