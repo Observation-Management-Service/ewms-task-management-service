@@ -39,7 +39,11 @@ async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     )
 
 
-async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -> None:
+async def scalar_loop(
+    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
+    # NOTE - ^^^^ can be used for the smart starter/stopper IF this decision is made on TMS.
+    #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
+) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
 
     # make connections -- do now so we don't have any surprises downstream
