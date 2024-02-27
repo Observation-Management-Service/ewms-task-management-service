@@ -367,7 +367,7 @@ async def watch_job_event_log(
             LOGGER.info("Sending updates to EWMS...")
             await ewms_rc.request(
                 "POST",
-                "/tms/taskforces/report",
+                "/taskforces/tms/report",
                 patch_body,
             )
         else:

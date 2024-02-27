@@ -19,7 +19,7 @@ async def is_taskforce_still_pending_starter(
     """Return whether the taskforce is still pending-starter."""
     ret = await ewms_rc.request(
         "GET",
-        f"/tms/taskforce/{taskforce_uuid}",
+        f"/taskforce/{taskforce_uuid}",
     )
     return ret["tms_most_recent_action"] == "pending-starter"  # type: ignore[no-any-return]
 

@@ -98,7 +98,7 @@ async def query_for_more_taskforces(
     LOGGER.info("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
         "POST",
-        "/tms/taskforces/find",
+        "/taskforces/find",
         {
             "filter": {
                 "collector": ENV.COLLECTOR,
@@ -122,7 +122,7 @@ async def any_taskforces_still_using_jel(
     """Return whether there are non-completed taskforces using the JEL."""
     resp = await ewms_rc.request(
         "POST",
-        "/tms/taskforces/find",
+        "/taskforces/find",
         {
             "query": {
                 "job_event_log_fpath": str(jel_fpath),
@@ -144,7 +144,7 @@ async def send_condor_complete(
     """Tell EWMS that this taskforce is condor-complete."""
     await ewms_rc.request(
         "POST",
-        f"/tms/taskforce/condor-complete/{taskforce_uuid}",
+        f"/taskforce/tms/condor-complete/{taskforce_uuid}",
         {
             "condor_complete_ts": timestamp,
         },

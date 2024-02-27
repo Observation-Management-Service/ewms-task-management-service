@@ -22,7 +22,7 @@ async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
     """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
-        "/tms/taskforce/pending",
+        "/taskforce/tms-action/pending-starter",
         {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
     )
 
@@ -34,7 +34,7 @@ async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
-        "/tms/taskforce/stop",
+        "/taskforce/tms-action/pending-stopper",
         {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
     )
 
@@ -65,7 +65,7 @@ async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "POST",
-                f"/tms/taskforce/running/{args['taskforce_uuid']}",
+                f"/taskforce/tms-action/condor-submit/{args['taskforce_uuid']}",
                 ewms_taskforce_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
@@ -83,7 +83,7 @@ async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "DELETE",
-                f"/tms/taskforce/stop/{args['taskforce_uuid']}",
+                f"/taskforce/tms-action/pending-stopper/{args['taskforce_uuid']}",
             )
 
         # throttle
