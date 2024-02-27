@@ -152,12 +152,12 @@ async def start(
     #
     taskforce_uuid: str,
     n_workers: int,
-    # task args
+    # container_config
     image: str,
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    # condor args
+    # condor_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
