@@ -164,6 +164,6 @@ async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
             LOGGER.warning(
                 "There are no non-completed taskforces using JEL -- CAN DELETE"
             )
-        return is_used
+        return not is_used
 
     return is_jel_past_modification_expiry() and await is_jel_no_longer_used()
