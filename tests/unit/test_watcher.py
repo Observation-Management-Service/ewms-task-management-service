@@ -92,7 +92,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     def mock_all_requests(*args, **kwargs):
         # fmt: off
-        if args[:2] == ("POST", "/taskforces/find") and args[2]["query"]["condor_complete_ts"] == {"$ne": None}:
+        if args[:2] == ("POST", "/taskforces/find") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
             # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
             return {"taskforces": []}
         # fmt: on
