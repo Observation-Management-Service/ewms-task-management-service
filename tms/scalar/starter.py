@@ -83,11 +83,13 @@ def make_condor_job_description(
         "transfer_executable": "false",
         #
         "request_cpus": str(n_cores),
+        # NOTE: condor uses binary sizes but formats like decimal
         "request_memory": humanfriendly.format_size(
             # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
             humanfriendly.parse_size(str(worker_memory), binary=True),
             binary=True,
         ).replace("i", ""),
+        # NOTE: condor uses binary sizes but formats like decimal
         "request_disk": humanfriendly.format_size(
             # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
             humanfriendly.parse_size(str(worker_disk), binary=True),
