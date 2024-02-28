@@ -100,7 +100,7 @@ async def query_for_more_taskforces(
         "POST",
         "/taskforces/find",
         {
-            "filter": {
+            "query": {
                 "collector": ENV.COLLECTOR,
                 "schedd": ENV.SCHEDD,
                 "job_event_log_fpath": str(jel_fpath),
