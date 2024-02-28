@@ -80,10 +80,6 @@ async def scalar_loop(
             )
             LOGGER.info("Sent taskforce info to EWMS")
 
-        #
-        # TODO - build out logic to auto-start and/or auto-stop
-        #
-
         # STOP(S)
         while ewms_pending_starter_attrs := await next_to_stop(ewms_rc):
             stopper.stop(
