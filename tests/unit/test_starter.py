@@ -82,8 +82,8 @@ async def test_000(htcs_mock: MagicMock) -> None:
         max_worker_runtime=95487,
         n_cores=64,
         priority=100,
-        worker_disk_bytes=85461235,
-        worker_memory_bytes=4235,
+        worker_disk=85461235,
+        worker_memory=4235,
     )
 
     awaitable_is_still_pending_starter.assert_awaited_once()

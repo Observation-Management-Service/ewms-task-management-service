@@ -34,8 +34,8 @@ def make_condor_job_description(
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
-    worker_disk_bytes: int | str,
-    worker_memory_bytes: int | str,
+    worker_disk: int | str,
+    worker_memory: int | str,
 ) -> dict[str, Any]:
     """Make the condor job description (dict)."""
 
@@ -85,12 +85,12 @@ def make_condor_job_description(
         "request_cpus": str(n_cores),
         "request_memory": humanfriendly.format_size(
             # 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> "3 MB")
-            str(worker_memory_bytes),
+            str(worker_memory),
             binary=True,
         ).replace("i", ""),
         "request_disk": humanfriendly.format_size(
             # 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> "3 MB")
-            str(worker_disk_bytes),
+            str(worker_disk),
             binary=True,
         ).replace("i", ""),
         "priority": int(priority),
@@ -166,8 +166,8 @@ async def start(
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
-    worker_disk_bytes: int | str,
-    worker_memory_bytes: int | str,
+    worker_disk: int | str,
+    worker_memory: int | str,
 ) -> dict[str, Any]:
     """Start an EWMS taskforce workers on an HTCondor cluster.
 
@@ -190,8 +190,8 @@ async def start(
         max_worker_runtime,
         n_cores,
         priority,
-        worker_disk_bytes,
-        worker_memory_bytes,
+        worker_disk,
+        worker_memory,
     )
 
     # final checks
