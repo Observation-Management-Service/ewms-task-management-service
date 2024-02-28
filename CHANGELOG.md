@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.1 (2024-02-28)
+
+### Other
+
+* Updates for WMS REST Schema ([#4](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/4)) ([`b867605`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/b867605ee2b7155ca3486ce7e3fcdeca8e2f343f))
+
 ## v0.1.0 (2024-01-23)
 
 
