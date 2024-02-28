@@ -156,8 +156,7 @@ async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
                 "projection": ["taskforce_uuid"],
             },
         )
-        is_used = bool(resp["taskforces"])
-        if is_used:
+        if is_used := bool(resp["taskforces"]):
             LOGGER.info(
                 "There are still non-completed taskforces using JEL -- DON'T DELETE"
             )
