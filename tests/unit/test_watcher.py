@@ -90,8 +90,12 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     # update file in background
     jel_file_wrapper.start_live_file_updates(n_updates)
 
-    def rc_request_by_args(*args, **kwargs):
-        if args[:2] == ("POST", "/taskforces/find"):
+    def mock_all_requests(*args, **kwargs):
+        # fmt: off
+        if args[:2] == ("POST", "/taskforces/find") and args[1]["query"]["condor_complete_ts"] == {"$ne": None}:
+            return {"taskforces": []}
+        # fmt: on
+        elif args[:2] == ("POST", "/taskforces/find"):
             return {
                 "taskforces": [
                     {"taskforce_uuid": "abc123", "cluster_id": 104501503},
@@ -105,7 +109,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
-    rc.request = AsyncMock(side_effect=rc_request_by_args)
+    rc.request = AsyncMock(side_effect=mock_all_requests)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
 
     assert len(tmonitors) == 2  # check that the taskforce monitors is still here
