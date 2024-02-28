@@ -13,20 +13,29 @@ from ..config import ENV
 LOGGER = logging.getLogger(__name__)
 
 
+class HaltedByDryRun(Exception):
+    """Raise when doing a dry run and no further progress is needed."""
+
+
+class TaskforceNoLongerPendingStarter(Exception):
+    """Raise when taskforce is not pending-starter when it is expected to
+    be."""
+
+
 def make_condor_job_description(
-    # taskforce args
+    taskforce_uuid: str,
+    # container_config
     image: str,
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    taskforce_uuid: str,
-    # condor args
+    # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
-    worker_disk_bytes: int,
-    worker_memory_bytes: int,
+    worker_disk: int | str,
+    worker_memory: int | str,
 ) -> dict[str, Any]:
     """Make the condor job description (dict)."""
 
@@ -74,11 +83,17 @@ def make_condor_job_description(
         "transfer_executable": "false",
         #
         "request_cpus": str(n_cores),
-        "request_memory": humanfriendly.format_size(  # 1073741824 -> "1 GiB" -> "1 GB"
-            worker_memory_bytes, binary=True
+        # NOTE: condor uses binary sizes but formats like decimal
+        "request_memory": humanfriendly.format_size(
+            # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
+            humanfriendly.parse_size(str(worker_memory), binary=True),
+            binary=True,
         ).replace("i", ""),
-        "request_disk": humanfriendly.format_size(  # 1073741824 -> "1 GiB" -> "1 GB"
-            worker_disk_bytes, binary=True
+        # NOTE: condor uses binary sizes but formats like decimal
+        "request_disk": humanfriendly.format_size(
+            # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
+            humanfriendly.parse_size(str(worker_disk), binary=True),
+            binary=True,
         ).replace("i", ""),
         "priority": int(priority),
         "+WantIOProxy": "true",  # for HTChirp
@@ -139,22 +154,22 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    is_aborted_awaitable: Awaitable[bool],
+    awaitable_is_still_pending_starter: Awaitable[bool],
     #
+    taskforce_uuid: str,
     n_workers: int,
-    # taskforce args
+    # container_config
     image: str,
     arguments: str,
     environment: dict[str, str],
     input_files: list[str],
-    taskforce_uuid: str,
-    # condor args
+    # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
     n_cores: int,
     priority: int,
-    worker_disk_bytes: int,
-    worker_memory_bytes: int,
+    worker_disk: int | str,
+    worker_memory: int | str,
 ) -> dict[str, Any]:
     """Start an EWMS taskforce workers on an HTCondor cluster.
 
@@ -166,27 +181,30 @@ async def start(
 
     # prep
     submit_dict = make_condor_job_description(
+        taskforce_uuid,
+        #
         image,
         arguments,
         environment,
         input_files,
-        taskforce_uuid,
         #
         do_transfer_worker_stdouterr,
         max_worker_runtime,
         n_cores,
         priority,
-        worker_disk_bytes,
-        worker_memory_bytes,
+        worker_disk,
+        worker_memory,
     )
 
     # final checks
     if ENV.DRYRUN:
-        LOGGER.critical("Script Aborted: dryrun enabled")
-        return {}
-    if await is_aborted_awaitable:
-        LOGGER.critical(f"Script Aborted: EWMS aborted taskforce: {taskforce_uuid}")
-        return {}
+        LOGGER.critical("Startup Aborted - dryrun enabled")
+        raise HaltedByDryRun()
+    if not await awaitable_is_still_pending_starter:
+        LOGGER.critical(
+            f"Startup Aborted - taskforce is no longer pending-starter: {taskforce_uuid}"
+        )
+        raise TaskforceNoLongerPendingStarter()
 
     # submit
     submit_result_obj = submit(
@@ -197,15 +215,9 @@ async def start(
 
     # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
-        orchestrator="condor",
-        location={
-            "collector": ENV.COLLECTOR,
-            "schedd": ENV.SCHEDD,
-        },
-        taskforce_uuid=taskforce_uuid,
         cluster_id=submit_result_obj.cluster(),
         n_workers=submit_result_obj.num_procs(),
-        starter_info=submit_dict,
+        submit_dict=submit_dict,
         job_event_log_fpath=submit_dict["log"],
     )
     return ewms_taskforce_attrs

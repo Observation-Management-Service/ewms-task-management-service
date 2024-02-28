@@ -3,21 +3,26 @@
 
 import asyncio
 import collections
-import enum
 import json
 import logging
 import pprint
-import time
-import urllib
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
-from .. import condor_tools as ct
-from .. import types, utils
+from .. import condor_tools, types
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
+from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
+from .utils import (
+    JobInfoKey,
+    JobInfoVal,
+    is_jel_okay_to_delete,
+    job_info_val_to_string,
+    query_for_more_taskforces,
+    send_condor_complete,
+)
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -26,81 +31,16 @@ _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
 LOGGER = logging.getLogger(__name__)
 
 
-########################################################################################
-
-
-JobInfoVal = tuple[int, ...] | str
-
-
-class JobInfoKey(enum.Enum):
-    """Represent important job attributes while minimizing memory.
-
-    NOTE - enum members are singletons -> good for memory reduction
-    """
-
-    # pylint:disable=invalid-name
-
-    ClusterId = enum.auto()
-    JobStatus = enum.auto()
-    EnteredCurrentStatus = enum.auto()
-    ProcId = enum.auto()
-    #
-    HoldReason = enum.auto()
-    HoldReasonCode = enum.auto()
-    HoldReasonSubCode = enum.auto()
-    #
-    HTChirpEWMSPilotLastUpdatedTimestamp = enum.auto()
-    HTChirpEWMSPilotStartedTimestamp = enum.auto()
-    HTChirpEWMSPilotStatus = enum.auto()
-    #
-    HTChirpEWMSPilotTasksTotal = enum.auto()
-    HTChirpEWMSPilotTasksFailed = enum.auto()
-    HTChirpEWMSPilotTasksSuccess = enum.auto()
-    #
-    HTChirpEWMSPilotError = enum.auto()
-    HTChirpEWMSPilotErrorTraceback = enum.auto()
-
-
-def job_info_val_to_string(
-    job_info_key: JobInfoKey,
-    job_info_val: JobInfoVal | None,
-) -> str | None:
-    """Convert the JobInfoVal instance to a string (or None).
-
-    This will increase memory, so do not persist return value for long.
-    """
-    if job_info_val is None:
-        return None
-
-    try:
-        match job_info_key:
-            case JobInfoKey.HTChirpEWMSPilotError:
-                return str(job_info_val)  # *should* already be a str
-
-            case JobInfoKey.JobStatus:
-                if isinstance(job_info_val, int):
-                    return str(htcondor.JobStatus(job_info_val).name)
-                elif isinstance(job_info_val, tuple):
-                    if job_info_val[0] == htcondor.JobStatus.HELD:
-                        return f"HELD: {ct.hold_reason_to_string(job_info_val[1], job_info_val[2])}"
-                # else -> fall-through
-
-            case _:
-                return str(job_info_val)  # who knows what this is
-
-    # keep calm and carry on
-    except Exception as e:
-        LOGGER.exception(e)
-
-    # fall-through
-    return str(job_info_val)
-
-
-########################################################################################
-
-
 class UnknownJobEvent(Exception):
     """Raise when the job event is not valid for these purposes."""
+
+
+class ReceivedClusterRemovedJobEvent(Exception):
+    """Raise when a job event signally the cluster has been removed is seen."""
+
+    def __init__(self, timestamp: int):
+        self.timestamp = timestamp
+        super().__init__()
 
 
 class NoUpdateException(Exception):
@@ -113,7 +53,7 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(self, tmonitor: utils.TaskforceMonitor) -> None:
+    def __init__(self, tmonitor: TaskforceMonitor) -> None:
         self.tmonitor = tmonitor
         self.taskforce_uuid = tmonitor.taskforce_uuid
         self.seen_in_jel = False
@@ -277,7 +217,9 @@ class ClusterInfo:
             self._set_job_status(job_event, jie, chirp_value)
         #
         # JOB STATUS
-        elif job_status := ct.JOB_EVENT_STATUS_TRANSITIONS.get(job_event.type, None):
+        elif job_status := condor_tools.JOB_EVENT_STATUS_TRANSITIONS.get(
+            job_event.type
+        ):
             match job_status:
                 # get hold reason and use that as value
                 case htcondor.JobStatus.HELD:
@@ -298,6 +240,11 @@ class ClusterInfo:
                         job_status.value,
                     )
         #
+        #
+        elif job_event.type == htcondor.JobEventType.CLUSTER_REMOVE:
+            raise ReceivedClusterRemovedJobEvent(int(job_event.timestamp))
+
+        #
         # OTHER
         else:
             raise UnknownJobEvent(f"not an important event: {job_event.type.name}")
@@ -306,53 +253,12 @@ class ClusterInfo:
 ########################################################################################
 
 
-async def query_for_more_taskforces(
-    ewms_rc: RestClient,
-    jel_fpath: Path,
-    taskforce_uuids: list[str],
-) -> AsyncIterator[tuple[str, types.ClusterId]]:
-    """Get new taskforce uuids."""
-    LOGGER.info("Querying for more taskforces from EWMS...")
-    res = await ewms_rc.request(
-        "POST",
-        "/tms/taskforces/find",
-        {
-            "filter": {
-                "collector": ENV.COLLECTOR,
-                "schedd": ENV.SCHEDD,
-                "job_event_log_fpath": str(jel_fpath),
-            },
-            "projection": ["taskforce_uuid", "cluster_id"],
-        },
-    )
-    for dicto in res["taskforces"]:
-        if dicto["taskforce_uuid"] in taskforce_uuids:
-            continue
-        LOGGER.info(f"Tracking new taskforce: {dicto}")
-        yield dicto["taskforce_uuid"], dicto["cluster_id"]
-
-
-########################################################################################
-
-
-def is_file_past_modification_expiry(jel_fpath: Path) -> bool:
-    """Return whether the file was last modified longer than the expiry."""
-    diff = time.time() - jel_fpath.stat().st_mtime
-    yes = diff >= ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY
-    if yes:
-        LOGGER.warning(f"Job log file {jel_fpath} has not been updated in {diff}s")
-    return yes
-
-
-########################################################################################
-
-
 async def watch_job_event_log(
     jel_fpath: Path,
     ewms_rc: RestClient,
-    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
+    tmonitors: AppendOnlyList[TaskforceMonitor],
 ) -> None:
-    """Watch over one job event log file, containing multiple taskforces.
+    """Watch over one JEL file, containing multiple taskforces.
 
     NOTE:
         1. a taskforce is never split among multiple files, it uses only one
@@ -362,24 +268,24 @@ async def watch_job_event_log(
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
-    interval_timer = utils.EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
-        # wait for job log to populate (more)
+        # wait for JEL to populate (more)
         while not interval_timer.has_been_x_seconds():
             await asyncio.sleep(1)
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
-        #   (and are not yet in the job log)
+        #   (and are not yet in the JEL)
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             ewms_rc,
             jel_fpath,
             list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
             cluster_infos[cluster_id] = ClusterInfo(
-                utils.TaskforceMonitor(taskforce_uuid, cluster_id)
+                TaskforceMonitor(taskforce_uuid, cluster_id)
             )
             tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
@@ -394,10 +300,16 @@ async def watch_job_event_log(
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
                 LOGGER.warning(
-                    f"Cluster found in job event log does not match any "
+                    f"Cluster found in JEL does not match any "
                     f"known taskforce ({job_event.cluster}), skipping it"
                 )
                 continue
+            except ReceivedClusterRemovedJobEvent as e:
+                await send_condor_complete(
+                    ewms_rc,
+                    cluster_infos[job_event.cluster].taskforce_uuid,
+                    e.timestamp,
+                )
             except UnknownJobEvent as e:
                 LOGGER.debug(f"error: {e}")
             # check times
@@ -406,22 +318,11 @@ async def watch_job_event_log(
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            if is_file_past_modification_expiry(jel_fpath):
-                # case: file has not been updated and it's old
+            if await is_jel_okay_to_delete(ewms_rc, jel_fpath):
                 jel_fpath.unlink()  # delete file
-                LOGGER.warning(f"Deleted job log file {jel_fpath}")
-                await ewms_rc.request(
-                    "POST",
-                    f"/tms/job-event-log/{urllib.parse.quote(str(jel_fpath), safe='')}",
-                    {
-                        "collector": ENV.COLLECTOR,
-                        "schedd": ENV.SCHEDD,
-                        "finished": True,
-                    },
-                )
+                LOGGER.warning(f"Deleted JEL file {jel_fpath}")
                 return
             else:
-                # case: file has not been updated but need to wait longer
                 continue
 
         LOGGER.info("Done reading events for now")
@@ -439,7 +340,7 @@ async def watch_job_event_log(
         # NOTE: We unfortunately cannot reduce the data after aggregating.
         #  Once we aggregate we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
-        #  Alternatively, we could re-parse the entire job log every time.
+        #  Alternatively, we could re-parse the entire JEL every time.
         for cid, info in cluster_infos.items():
             try:
                 LOGGER.info(
@@ -466,7 +367,7 @@ async def watch_job_event_log(
             LOGGER.info("Sending updates to EWMS...")
             await ewms_rc.request(
                 "POST",
-                "/tms/taskforces/report",
+                "/taskforces/tms/report",
                 patch_body,
             )
         else:

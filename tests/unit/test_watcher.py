@@ -2,6 +2,7 @@
 
 
 import asyncio
+import logging
 import os
 import threading
 from pathlib import Path
@@ -13,6 +14,9 @@ import pytest
 from tms import config  # noqa: F401  # setup env vars
 from tms import utils
 from tms.watcher import watcher
+
+LOGGER = logging.getLogger(__name__)
+
 
 LIVE_UPDATE_SLEEP = 2
 
@@ -29,7 +33,7 @@ class JobEventLogFileWrapper:
 
     @staticmethod
     def _get_subset_job_event_log(lines: list[str], min_amount: int) -> Iterator[str]:
-        """Get a subset of the job event log and maintain valid syntax."""
+        """Get a subset of the JEL and maintain valid syntax."""
         for i, ln in enumerate(lines):
             yield ln
             if i >= min_amount and ln == "...\n":
@@ -71,7 +75,7 @@ class JobEventLogFileWrapper:
 
 @pytest.fixture
 def jel_file_wrapper() -> JobEventLogFileWrapper:
-    """Job event log file."""
+    """JEL file."""
     src = Path(os.environ["JOB_EVENT_LOG_DIR"]) / "condor_test_logfile"
     return JobEventLogFileWrapper(src)
 
@@ -86,22 +90,27 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     # update file in background
     jel_file_wrapper.start_live_file_updates(n_updates)
 
-    def rc_request_by_args(*args, **kwargs):
-        if args[:2] == ("POST", "/tms/taskforces/find"):
+    def mock_all_requests(*args, **kwargs):
+        # fmt: off
+        if args[:2] == ("POST", "/taskforces/find") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
+            # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
+            return {"taskforces": []}
+        # fmt: on
+        elif args[:2] == ("POST", "/taskforces/find"):
             return {
                 "taskforces": [
                     {"taskforce_uuid": "abc123", "cluster_id": 104501503},
                     {"taskforce_uuid": "def456", "cluster_id": 104500588},
                 ]
             }
-        elif args[:2] == ("POST", "/tms/taskforces/report"):
+        elif args[:2] == ("POST", "/taskforces/tms/report"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
 
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
-    rc.request = AsyncMock(side_effect=rc_request_by_args)
+    rc.request = AsyncMock(side_effect=mock_all_requests)
     await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
 
     assert len(tmonitors) == 2  # check that the taskforce monitors is still here
@@ -110,13 +119,13 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     post_calls = [
         c
         for c in rc.request.call_args_list
-        if c.args[:2] == ("POST", "/tms/taskforces/report")
+        if c.args[:2] == ("POST", "/taskforces/tms/report")
     ]
     assert len(post_calls) == n_updates
     assert post_calls == [
         call(
             "POST",
-            "/tms/taskforces/report",
+            "/taskforces/tms/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -131,7 +140,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/tms/taskforces/report",
+            "/taskforces/tms/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -146,7 +155,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/tms/taskforces/report",
+            "/taskforces/tms/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -160,7 +169,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/tms/taskforces/report",
+            "/taskforces/tms/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -175,7 +184,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/tms/taskforces/report",
+            "/taskforces/tms/report",
             {
                 "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {

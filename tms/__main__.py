@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
-    """Watch over all job event log files and send EWMS taskforce updates."""
+    """Watch over all JEL files and send EWMS taskforce updates."""
     in_progress: dict[Path, asyncio.Task[None]] = {}
 
     # make connections -- do now so we don't have any surprises downstream

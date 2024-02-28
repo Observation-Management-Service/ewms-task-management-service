@@ -22,7 +22,7 @@ async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
     """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
-        "/tms/taskforce/pending",
+        "/taskforce/tms-action/pending-starter",
         {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
     )
 
@@ -34,12 +34,16 @@ async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     """
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
-        "/tms/taskforce/stop",
+        "/taskforce/tms-action/pending-stopper",
         {"collector": ENV.COLLECTOR, "schedd": ENV.SCHEDD},
     )
 
 
-async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -> None:
+async def scalar_loop(
+    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
+    # NOTE - ^^^^ can be used for the smart starter/stopper IF this decision is made on TMS.
+    #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
+) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
 
     # make connections -- do now so we don't have any surprises downstream
@@ -51,34 +55,41 @@ async def scalar_loop(tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor]) -
 
     while True:
         # START(S)
-        while args := await next_to_start(ewms_rc):
-            ewms_taskforce_attrs = await starter.start(
-                schedd_obj,
-                utils.is_taskforce_to_be_aborted(ewms_rc, args["taskforce_uuid"]),
-                **args,  # TODO
-            )
+        while ewms_pending_starter_attrs := await next_to_start(ewms_rc):
+            try:
+                ewms_condor_submit_attrs = await starter.start(
+                    schedd_obj,
+                    utils.is_taskforce_still_pending_starter(
+                        ewms_rc, ewms_pending_starter_attrs["taskforce_uuid"]
+                    ),
+                    #
+                    ewms_pending_starter_attrs["taskforce_uuid"],
+                    ewms_pending_starter_attrs["n_workers"],
+                    #
+                    **ewms_pending_starter_attrs["container_config"],
+                    #
+                    **ewms_pending_starter_attrs["worker_config"],
+                )
+            except starter.TaskforceNoLongerPendingStarter:
+                continue
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "POST",
-                f"/tms/taskforce/running/{args['taskforce_uuid']}",
-                ewms_taskforce_attrs,
+                f"/taskforce/tms-action/condor-submit/{ewms_pending_starter_attrs['taskforce_uuid']}",
+                ewms_condor_submit_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
 
-        #
-        # TODO - build out logic to auto-start and/or auto-stop
-        #
-
         # STOP(S)
-        while args := await next_to_stop(ewms_rc):
+        while ewms_pending_starter_attrs := await next_to_stop(ewms_rc):
             stopper.stop(
                 schedd_obj,
-                args["cluster_id"],
+                ewms_pending_starter_attrs["cluster_id"],
             )
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
             await ewms_rc.request(
                 "DELETE",
-                f"/tms/taskforce/stop/{args['taskforce_uuid']}",
+                f"/taskforce/tms-action/pending-stopper/{ewms_pending_starter_attrs['taskforce_uuid']}",
             )
 
         # throttle

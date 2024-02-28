@@ -1,6 +1,7 @@
 """Unit tests for the starter functionality."""
 
 
+import logging
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -9,13 +10,16 @@ import humanfriendly
 from tms import config  # noqa: F401  # setup env vars
 from tms.scalar import starter
 
+LOGGER = logging.getLogger(__name__)
+
+
 htcondor.enable_debug()
 
 
 @patch("htcondor.Submit")
 async def test_000(htcs_mock: MagicMock) -> None:
     """Test the starter."""
-    is_aborted_awaitable = AsyncMock(return_value=False)
+    awaitable_is_still_pending_starter = AsyncMock(return_value=True)
     schedd_obj = MagicMock()
 
     submit_dict = {
@@ -64,7 +68,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
 
     ret = await starter.start(
         schedd_obj=schedd_obj,
-        is_aborted_awaitable=is_aborted_awaitable(),
+        awaitable_is_still_pending_starter=awaitable_is_still_pending_starter(),
         #
         n_workers=123,
         # taskforce args
@@ -78,11 +82,11 @@ async def test_000(htcs_mock: MagicMock) -> None:
         max_worker_runtime=95487,
         n_cores=64,
         priority=100,
-        worker_disk_bytes=85461235,
-        worker_memory_bytes=4235,
+        worker_disk=85461235,
+        worker_memory=4235,
     )
 
-    is_aborted_awaitable.assert_awaited_once()
+    awaitable_is_still_pending_starter.assert_awaited_once()
 
     htcs_mock.assert_called_with(submit_dict)
     schedd_obj.submit.assert_called_with(
@@ -91,15 +95,9 @@ async def test_000(htcs_mock: MagicMock) -> None:
     )
 
     assert ret == dict(
-        orchestrator="condor",
-        location={
-            "collector": config.ENV.COLLECTOR,
-            "schedd": config.ENV.SCHEDD,
-        },
-        taskforce_uuid="9874abcdef",
         cluster_id=schedd_obj.submit.return_value.cluster.return_value,
         n_workers=schedd_obj.submit.return_value.num_procs.return_value,
-        starter_info=submit_dict,
+        submit_dict=submit_dict,
         job_event_log_fpath=str(
             config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
         ),
