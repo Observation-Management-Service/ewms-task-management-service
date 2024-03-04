@@ -20,7 +20,7 @@ RUN pip install --upgrade pip
 
 # install
 RUN pip install --no-cache-dir .
-# ENV PYTHONPATH=/home/app
+# ENV PYTHONPATH=/app
 
 
 ENTRYPOINT ["/entrypoint.sh"]
