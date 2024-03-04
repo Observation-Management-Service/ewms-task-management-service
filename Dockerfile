@@ -2,6 +2,7 @@ FROM python:3.12
 
 RUN useradd -m -U app
 
+RUN mkdir /app
 WORKDIR /app
 
 # entrypoint magic
