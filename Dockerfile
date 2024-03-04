@@ -14,14 +14,12 @@ RUN chmod +x /entrypoint.sh
 USER app
 COPY --chown=app:app . .
 
-# venv
+# venv and install
 RUN pip install virtualenv
 RUN python -m virtualenv /app/tms_venv
-RUN . /app/tms_venv/bin/activate
-RUN pip install --upgrade pip
-
-# install
-RUN pip install --no-cache-dir .
+RUN . /app/tms_venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install --no-cache-dir .
 
 # go
 ENTRYPOINT ["/entrypoint.sh"]
