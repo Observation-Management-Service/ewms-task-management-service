@@ -1,4 +1,5 @@
 #!/bin/bash
-set -x  # turn on debugging
+echo "tms entrypoint: activating venv"
 source tms_venv/bin/activate
+echo "tms entrypoint: executing command: $@"
 exec "$@"
