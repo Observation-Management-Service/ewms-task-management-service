@@ -4,13 +4,14 @@ RUN useradd -m -U app
 
 RUN mkdir /app
 WORKDIR /app
+RUN chown -R app /app
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# user
 USER app
-
 COPY --chown=app:app . .
 
 # venv
@@ -21,8 +22,7 @@ RUN pip install --upgrade pip
 
 # install
 RUN pip install --no-cache-dir .
-# ENV PYTHONPATH=/app
 
-
+# go
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "-m", "tms"]
