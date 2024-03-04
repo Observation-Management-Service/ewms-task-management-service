@@ -16,8 +16,8 @@ COPY --chown=app:app . .
 
 # venv
 RUN pip install virtualenv
-RUN python -m virtualenv tms_venv
-RUN . tms_venv/bin/activate
+RUN python -m virtualenv /app/tms_venv
+RUN . /app/tms_venv/bin/activate
 RUN pip install --upgrade pip
 
 # install
