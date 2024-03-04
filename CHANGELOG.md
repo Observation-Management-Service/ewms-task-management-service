@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.2 (2024-03-04)
+
+### Other
+
+* Use Python Venv in `Dockerfile` for Apptainer ([#5](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/5)) ([`7404522`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/740452279df5254c2c99be1b76c82ee71fc67faf))
+
 ## v0.1.1 (2024-02-28)
 
 ### Other
