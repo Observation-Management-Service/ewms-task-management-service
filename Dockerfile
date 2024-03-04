@@ -2,7 +2,7 @@ FROM python:3.12
 
 RUN useradd -m -U app
 
-WORKDIR /home/app
+WORKDIR /app
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
