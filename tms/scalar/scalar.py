@@ -45,15 +45,18 @@ async def scalar_loop(
     #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
 ) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
+    LOGGER.info("Starting scalar...")
 
     # make connections -- do now so we don't have any surprises downstream
+    LOGGER.info("Connecting to HTCondor...")
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+    LOGGER.info("Connecting to EWMS...")
     ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
-    LOGGER.info("Connected to EWMS")
 
     interval_timer = utils.EveryXSeconds(ENV.TMS_OUTER_LOOP_WAIT)
 
     while True:
+        LOGGER.info("Activating starter...")
         # START(S)
         while ewms_pending_starter_attrs := await next_to_start(ewms_rc):
             try:
@@ -79,8 +82,10 @@ async def scalar_loop(
                 ewms_condor_submit_attrs,
             )
             LOGGER.info("Sent taskforce info to EWMS")
+        LOGGER.info("De-activated starter.")
 
         # STOP(S)
+        LOGGER.info("Activating stopper...")
         while ewms_pending_starter_attrs := await next_to_stop(ewms_rc):
             stopper.stop(
                 schedd_obj,
@@ -91,6 +96,7 @@ async def scalar_loop(
                 "DELETE",
                 f"/taskforce/tms-action/pending-stopper/{ewms_pending_starter_attrs['taskforce_uuid']}",
             )
+        LOGGER.info("De-activated stopper.")
 
         # throttle
         while not interval_timer.has_been_x_seconds():
