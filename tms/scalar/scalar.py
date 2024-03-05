@@ -9,7 +9,8 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import utils
-from ..config import COLLECTOR, ENV, SCHEDD
+from ..condor_tools import get_collector, get_schedd
+from ..config import ENV
 from . import starter, stopper
 
 LOGGER = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
         "/taskforce/tms-action/pending-starter",
-        {"collector": COLLECTOR, "schedd": SCHEDD},
+        {"collector": get_collector(), "schedd": get_schedd()},
     )
 
 
@@ -35,7 +36,7 @@ async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     return await ewms_rc.request(  # type: ignore[no-any-return]
         "GET",
         "/taskforce/tms-action/pending-stopper",
-        {"collector": COLLECTOR, "schedd": SCHEDD},
+        {"collector": get_collector(), "schedd": get_schedd()},
     )
 
 

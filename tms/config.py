@@ -5,12 +5,9 @@ import dataclasses as dc
 import logging
 from pathlib import Path
 
-import htcondor  # type: ignore[import-untyped]
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
 WATCHER_N_TOP_TASK_ERRORS = 10
-COLLECTOR = htcondor.param["CONDOR_HOST"]
-SCHEDD = htcondor.param["FULL_HOSTNAME"]
 
 
 @dc.dataclass(frozen=True)
