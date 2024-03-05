@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.3 (2024-03-05)
+
+### Other
+
+* Add more logging (esp. at start up) ([`93c9740`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/93c9740e7d47f28df43a75366b2be63ccd22cfe7))
+
 ## v0.1.2 (2024-03-04)
 
 ### Other
