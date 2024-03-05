@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.5 (2024-03-05)
+
+### Other
+
+* Use Client Credentials for REST Auth ([#7](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/7)) ([`eaf30cd`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/eaf30cd4b0e11541da7456232837ac3b17c07577))
+
 ## v0.1.4 (2024-03-05)
 
 ### Other
