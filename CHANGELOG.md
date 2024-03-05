@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.4 (2024-03-05)
+
+### Other
+
+* Auto-detect Collector and Schedd DNS ([#6](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/6)) ([`95b6f42`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/95b6f4241cc56fe453a85b12c0493230fcd4eda4))
+
 ## v0.1.3 (2024-03-05)
 
 ### Other
