@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import RestClient
+from rest_tools.client import ClientCredentialsAuth, RestClient
 
 from .. import utils
 from ..condor_tools import get_collector, get_schedd
@@ -52,7 +52,12 @@ async def scalar_loop(
     LOGGER.info("Connecting to HTCondor...")
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
     LOGGER.info("Connecting to EWMS...")
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    ewms_rc = ClientCredentialsAuth(
+        ENV.EWMS_ADDRESS,
+        ENV.EWMS_TOKEN_URL,
+        ENV.EWMS_CLIENT_ID,
+        ENV.EWMS_CLIENT_SECRET,
+    )
 
     interval_timer = utils.EveryXSeconds(ENV.TMS_OUTER_LOOP_WAIT)
 
