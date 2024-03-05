@@ -6,7 +6,7 @@ import logging
 import htcondor  # type: ignore[import-untyped]
 
 from .. import types
-from ..config import ENV
+from ..condor_tools import get_collector, get_schedd
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def stop(
 ) -> None:
     """Main logic."""
     LOGGER.info(
-        f"Stopping EWMS taskforce workers on {cluster_id} / {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Stopping EWMS taskforce workers on {cluster_id} / {get_collector()} / {get_schedd()}"
     )
 
     # Remove workers -- may not be instantaneous

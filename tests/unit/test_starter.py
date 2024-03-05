@@ -2,6 +2,7 @@
 
 
 import logging
+import os
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -16,6 +17,13 @@ LOGGER = logging.getLogger(__name__)
 htcondor.enable_debug()
 
 
+@patch(
+    "htcondor.param",
+    new=dict(
+        CONDOR_HOST=os.environ["_TEST_COLLECTOR"],
+        FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
+    ),
+)
 @patch("htcondor.Submit")
 async def test_000(htcs_mock: MagicMock) -> None:
     """Test the starter."""

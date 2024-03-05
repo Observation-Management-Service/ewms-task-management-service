@@ -7,11 +7,11 @@ import os
 import threading
 from pathlib import Path
 from typing import Iterator
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import htcondor  # type: ignore[import-untyped]
 import pytest
-from tms import config  # noqa: F401  # setup env vars
+from tms import config  # noqa: F401  # import in order to set up env vars
 from tms import utils
 from tms.watcher import watcher
 
@@ -83,6 +83,13 @@ def jel_file_wrapper() -> JobEventLogFileWrapper:
 ########################################################################################
 
 
+@patch(
+    "htcondor.param",
+    new=dict(
+        CONDOR_HOST=os.environ["_TEST_COLLECTOR"],
+        FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
+    ),
+)
 async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     """Test the watcher."""
     n_updates = 5

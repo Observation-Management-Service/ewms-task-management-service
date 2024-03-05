@@ -1,4 +1,4 @@
-"""Config settings."""
+"""config.py."""
 
 
 import dataclasses as dc
@@ -16,8 +16,6 @@ class EnvConfig:
 
     # pylint:disable=invalid-name
 
-    COLLECTOR: str
-    SCHEDD: str
     JOB_EVENT_LOG_DIR: Path
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
 

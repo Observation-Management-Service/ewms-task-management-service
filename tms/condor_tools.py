@@ -10,6 +10,16 @@ from typing_extensions import Required  # Required new to py3.11
 LOGGER = logging.getLogger(__name__)
 
 
+def get_collector() -> str:
+    """Get get_collector() dns."""
+    return str(htcondor.param["CONDOR_HOST"])
+
+
+def get_schedd() -> str:
+    """Get schedd dns."""
+    return str(htcondor.param["FULL_HOSTNAME"])
+
+
 # from https://github.com/htcondor/htcondor/blob/main/src/condor_scripts/condor_watch_q#L1179
 JOB_EVENT_STATUS_TRANSITIONS = {
     htcondor.JobEventType.SUBMIT: htcondor.JobStatus.IDLE,

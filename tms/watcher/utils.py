@@ -11,6 +11,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools, types
+from ..condor_tools import get_collector, get_schedd
 from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -101,8 +102,8 @@ async def query_for_more_taskforces(
         "/taskforces/find",
         {
             "query": {
-                "collector": ENV.COLLECTOR,
-                "schedd": ENV.SCHEDD,
+                "collector": get_collector(),
+                "schedd": get_schedd(),
                 "job_event_log_fpath": str(jel_fpath),
             },
             "projection": ["taskforce_uuid", "cluster_id"],
@@ -149,8 +150,8 @@ async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
             {
                 "query": {
                     "job_event_log_fpath": str(jel_fpath),
-                    "collector": ENV.COLLECTOR,
-                    "schedd": ENV.SCHEDD,
+                    "collector": get_collector(),
+                    "schedd": get_schedd(),
                     "condor_complete_ts": {"$ne": None},
                 },
                 "projection": ["taskforce_uuid"],
