@@ -23,7 +23,9 @@ class EnvConfig:
     TMS_WATCHER_INTERVAL: int = 60 * 3
 
     EWMS_ADDRESS: str = ""
-    EWMS_AUTH: str = ""
+    EWMS_TOKEN_URL: str = ""
+    EWMS_CLIENT_ID: str = ""
+    EWMS_CLIENT_SECRET: str = ""
 
     DRYRUN: bool = False
     CI_TEST: bool = False
