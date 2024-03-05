@@ -16,16 +16,17 @@ class EnvConfig:
 
     # pylint:disable=invalid-name
 
+    # REQUIRED
+    EWMS_ADDRESS: str
+    EWMS_TOKEN_URL: str
+    EWMS_CLIENT_ID: str
+    EWMS_CLIENT_SECRET: str
     JOB_EVENT_LOG_DIR: Path
+
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
-
-    EWMS_ADDRESS: str = ""
-    EWMS_TOKEN_URL: str = ""
-    EWMS_CLIENT_ID: str = ""
-    EWMS_CLIENT_SECRET: str = ""
 
     DRYRUN: bool = False
     CI_TEST: bool = False
