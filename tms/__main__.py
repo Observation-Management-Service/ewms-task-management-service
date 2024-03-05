@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import RestClient
+from rest_tools.client import ClientCredentialsAuth
 
 from .config import ENV, config_logging
 from .scalar.scalar import scalar_loop
@@ -24,7 +24,12 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
 
     # make connections -- do now so we don't have any surprises downstream
     LOGGER.info("Connecting to EWMS...")
-    ewms_rc = RestClient(ENV.EWMS_ADDRESS, token=ENV.EWMS_AUTH)
+    ewms_rc = ClientCredentialsAuth(
+        ENV.EWMS_ADDRESS,
+        ENV.EWMS_TOKEN_URL,
+        ENV.EWMS_CLIENT_ID,
+        ENV.EWMS_CLIENT_SECRET,
+    )
 
     while True:
         LOGGER.info(
