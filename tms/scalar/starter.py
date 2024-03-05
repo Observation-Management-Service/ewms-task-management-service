@@ -8,7 +8,7 @@ from typing import Any, Awaitable
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
 
-from ..config import ENV
+from ..config import COLLECTOR, ENV, SCHEDD
 
 LOGGER = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ async def start(
     Returns attrs for sending to EWMS.
     """
     LOGGER.info(
-        f"Starting {n_workers} EWMS taskforce workers on {ENV.COLLECTOR} / {ENV.SCHEDD}"
+        f"Starting {n_workers} EWMS taskforce workers on {COLLECTOR} / {SCHEDD}"
     )
 
     # prep
