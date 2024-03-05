@@ -15,8 +15,13 @@ LOGGER = logging.getLogger(__name__)
 htcondor.enable_debug()
 
 
-@patch("tms.condor_tools.get_collector", new=lambda: os.environ["_TEST_COLLECTOR"])
-@patch("tms.condor_tools.get_schedd", new=lambda: os.environ["_TEST_SCHEDD"])
+@patch(
+    "htcondor.param",
+    new=dict(
+        CONDOR_HOST=os.environ["_TEST_COLLECTOR"],
+        FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
+    ),
+)
 async def test_000() -> None:
     """Test the stopper."""
     schedd_obj = MagicMock()

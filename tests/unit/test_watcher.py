@@ -83,8 +83,13 @@ def jel_file_wrapper() -> JobEventLogFileWrapper:
 ########################################################################################
 
 
-@patch("tms.condor_tools.get_collector", new=lambda: os.environ["_TEST_COLLECTOR"])
-@patch("tms.condor_tools.get_schedd", new=lambda: os.environ["_TEST_SCHEDD"])
+@patch(
+    "htcondor.param",
+    new=dict(
+        CONDOR_HOST=os.environ["_TEST_COLLECTOR"],
+        FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
+    ),
+)
 async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     """Test the watcher."""
     n_updates = 5
