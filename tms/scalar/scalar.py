@@ -129,5 +129,4 @@ async def scalar_loop(
         LOGGER.info("De-activated stopper.")
 
         # throttle
-        while not interval_timer.has_been_x_seconds():
-            await asyncio.sleep(1)
+        await interval_timer.wait_until_x()

@@ -273,8 +273,7 @@ async def watch_job_event_log(
 
     while True:
         # wait for JEL to populate (more)
-        while not interval_timer.has_been_x_seconds():
-            await asyncio.sleep(1)
+        await interval_timer.wait_until_x()
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
@@ -289,7 +288,7 @@ async def watch_job_event_log(
             )
             tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
-        # get events -- exit when no more events, or took too long
+        # get events -- exit when no more events
         got_new_events = False
         LOGGER.info(f"Reading events from {jel_fpath}...")
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
@@ -312,9 +311,6 @@ async def watch_job_event_log(
                 )
             except UnknownJobEvent as e:
                 LOGGER.debug(f"error: {e}")
-            # check times
-            if interval_timer.has_been_x_seconds():
-                break
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
@@ -371,5 +367,6 @@ async def watch_job_event_log(
                 "/taskforces/tms/report",
                 patch_body,
             )
+            LOGGER.info("UPDATES SENT.")
         else:
             LOGGER.info("NO UPDATES NEEDED FOR EWMS")

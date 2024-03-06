@@ -1,6 +1,7 @@
 """General Utilities."""
 
 
+import asyncio
 import logging
 import time
 from typing import TypeVar
@@ -16,6 +17,14 @@ class EveryXSeconds:
     def __init__(self, seconds: float) -> None:
         self.seconds = seconds
         self._last_time = time.time()
+
+    async def wait_until_x(self) -> None:
+        """Wait until it has been x seconds, 1s at a time."""
+        LOGGER.info(
+            f"waiting until {self.seconds}s has elapsed since last iteration..."
+        )
+        while not self.has_been_x_seconds():
+            await asyncio.sleep(1)
 
     def has_been_x_seconds(self) -> bool:
         """Has it been at least `self.seconds` since last time?"""
