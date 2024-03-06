@@ -73,7 +73,7 @@ def make_condor_job_description(
     # write
     submit_dict = {
         "executable": "/bin/bash",
-        "arguments": arguments,
+        "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "environment": f'"{" ".join(f"{k}={v}" for k, v in environment.items())}"',  # must be quoted
