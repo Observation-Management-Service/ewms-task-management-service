@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.7 (2024-03-06)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`e05b77d`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/e05b77d2ad4b910e2a2f1edc00f508c7f02e5e76))
+* Condor args: escape embedded quotes ([`d753002`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d7530026c3eec0c0d5bffb7234905dbf704cbc5c))
+
 ## v0.1.6 (2024-03-06)
 
 ### Other
