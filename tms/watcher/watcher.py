@@ -362,8 +362,9 @@ async def watch_job_event_log(
                 pass
 
         # send -- one big update that way it can't intermittently fail
+        # remove any "empty" keys
         # (it's okay to send an empty sub-dict, but all empties is pointless)
-        if any(patch_body[k] for k in [_ALL_TOP_ERRORS_KEY, _ALL_COMP_STAT_KEY]):
+        if patch_body := {k: v for k, v in patch_body.items() if v}:
             LOGGER.info("SENDING UPDATES TO EWMS...")
             await ewms_rc.request(
                 "POST",

@@ -20,7 +20,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
     """Watch over all JEL files and send EWMS taskforce updates."""
     LOGGER.info("Starting watcher...")
 
-    in_progress: dict[Path, asyncio.Task[None]] = {}
+    in_progress: list[Path] = []
 
     # make connections -- do now so we don't have any surprises downstream
     LOGGER.info("Connecting to EWMS...")
@@ -31,24 +31,30 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
         ENV.EWMS_CLIENT_SECRET,
     )
 
-    while True:
-        LOGGER.info(
-            f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
-        )
-        for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
-            if jel_fpath in in_progress:
-                continue
-            LOGGER.info(f"Creating new JEL watcher for {jel_fpath}...")
-            task = asyncio.create_task(
-                watcher.watch_job_event_log(
-                    jel_fpath,
-                    ewms_rc,
-                    tmonitors,
-                )
+    # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
+    # on task fail, cancel others then raise original exception(s)
+    async with asyncio.TaskGroup() as tg:
+        while True:
+            LOGGER.info(
+                f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
-            in_progress[jel_fpath] = task
+            for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
+                # check/append
+                if jel_fpath in in_progress:
+                    continue
+                else:
+                    in_progress.append(jel_fpath)
+                # go!
+                LOGGER.info(f"Creating new JEL watcher for {jel_fpath}...")
+                tg.create_task(
+                    watcher.watch_job_event_log(
+                        jel_fpath,
+                        ewms_rc,
+                        tmonitors,
+                    )
+                )
 
-        await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
+            await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
 
 
 async def main() -> None:
