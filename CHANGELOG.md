@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.8 (2024-03-06)
+
+### Other
+
+* Error Handling for EWMS Reports ([#9](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/9)) ([`db0e41f`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/db0e41f1134bfbdd8a438136bff166ea242541c4))
+
 ## v0.1.7 (2024-03-06)
 
 ### Other
