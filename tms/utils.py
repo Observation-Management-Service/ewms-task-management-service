@@ -5,8 +5,6 @@ import logging
 import time
 from typing import TypeVar
 
-from rest_tools.client import RestClient
-
 from . import types
 
 LOGGER = logging.getLogger(__name__)
