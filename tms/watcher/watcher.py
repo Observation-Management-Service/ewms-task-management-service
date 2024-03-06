@@ -273,7 +273,7 @@ async def watch_job_event_log(
 
     while True:
         # wait for JEL to populate (more)
-        await interval_timer.wait_until_x()
+        await interval_timer.wait_until_x(LOGGER)
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
