@@ -364,11 +364,11 @@ async def watch_job_event_log(
         # send -- one big update that way it can't intermittently fail
         # (it's okay to send an empty sub-dict, but all empties is pointless)
         if any(patch_body[k] for k in [_ALL_TOP_ERRORS_KEY, _ALL_COMP_STAT_KEY]):
-            LOGGER.info("Sending updates to EWMS...")
+            LOGGER.info("SENDING UPDATES TO EWMS...")
             await ewms_rc.request(
                 "POST",
                 "/taskforces/tms/report",
                 patch_body,
             )
         else:
-            LOGGER.info("No updates needed for EWMS")
+            LOGGER.info("NO UPDATES NEEDED FOR EWMS")
