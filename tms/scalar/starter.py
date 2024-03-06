@@ -3,10 +3,11 @@
 
 import logging
 from datetime import date
-from typing import Any, Awaitable
+from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
+from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
 from ..config import ENV
@@ -21,6 +22,18 @@ class HaltedByDryRun(Exception):
 class TaskforceNoLongerPendingStarter(Exception):
     """Raise when taskforce is not pending-starter when it is expected to
     be."""
+
+
+async def is_taskforce_still_pending_starter(
+    ewms_rc: RestClient,
+    taskforce_uuid: str,
+) -> bool:
+    """Return whether the taskforce is still pending-starter."""
+    ret = await ewms_rc.request(
+        "GET",
+        f"/taskforce/{taskforce_uuid}",
+    )
+    return ret["tms_most_recent_action"] == "pending-starter"  # type: ignore[no-any-return]
 
 
 def make_condor_job_description(
@@ -155,7 +168,7 @@ def submit(
 
 async def start(
     schedd_obj: htcondor.Schedd,
-    awaitable_is_still_pending_starter: Awaitable[bool],
+    ewms_rc: RestClient,
     #
     taskforce_uuid: str,
     n_workers: int,
@@ -201,7 +214,7 @@ async def start(
     if ENV.DRYRUN:
         LOGGER.critical("Startup Aborted - dryrun enabled")
         raise HaltedByDryRun()
-    if not await awaitable_is_still_pending_starter:
+    if not await is_taskforce_still_pending_starter(ewms_rc, taskforce_uuid):
         LOGGER.critical(
             f"Startup Aborted - taskforce is no longer pending-starter: {taskforce_uuid}"
         )

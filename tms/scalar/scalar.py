@@ -95,9 +95,7 @@ async def scalar_loop(
             try:
                 ewms_condor_submit_attrs = await starter.start(
                     schedd_obj,
-                    utils.is_taskforce_still_pending_starter(
-                        ewms_rc, ewms_pending_starter_attrs["taskforce_uuid"]
-                    ),
+                    ewms_rc,
                     #
                     ewms_pending_starter_attrs["taskforce_uuid"],
                     ewms_pending_starter_attrs["n_workers"],

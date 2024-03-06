@@ -24,11 +24,12 @@ htcondor.enable_debug()
         FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
     ),
 )
+@patch("tms.starter.is_taskforce_still_pending_starter")
 @patch("htcondor.Submit")
-async def test_000(htcs_mock: MagicMock) -> None:
+async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
     """Test the starter."""
-    awaitable_is_still_pending_starter = AsyncMock(return_value=True)
     schedd_obj = MagicMock()
+    itsps_mock.return_value = True
 
     submit_dict = {
         "executable": "/bin/bash",
@@ -76,7 +77,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
 
     ret = await starter.start(
         schedd_obj=schedd_obj,
-        awaitable_is_still_pending_starter=awaitable_is_still_pending_starter(),
+        ewms_rc=MagicMock(),
         #
         n_workers=123,
         # taskforce args
@@ -94,7 +95,7 @@ async def test_000(htcs_mock: MagicMock) -> None:
         worker_memory=4235,
     )
 
-    awaitable_is_still_pending_starter.assert_awaited_once()
+    itsps_mock.assert_awaited_once()
 
     htcs_mock.assert_called_with(submit_dict)
     schedd_obj.submit.assert_called_with(
