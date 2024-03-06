@@ -24,7 +24,7 @@ htcondor.enable_debug()
         FULL_HOSTNAME=os.environ["_TEST_SCHEDD"],
     ),
 )
-@patch("tms.starter.is_taskforce_still_pending_starter")
+@patch("tms.scalar.starter.is_taskforce_still_pending_starter")
 @patch("htcondor.Submit")
 async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
     """Test the starter."""
