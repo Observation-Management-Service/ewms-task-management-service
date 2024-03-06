@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.6 (2024-03-06)
+
+### Other
+
+* Miscellaneous Updates (logging, modularization, etc) ([#8](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/8)) ([`951e69f`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/951e69fd5a245a58776ce99914676a533feea160))
+
 ## v0.1.5 (2024-03-05)
 
 ### Other
