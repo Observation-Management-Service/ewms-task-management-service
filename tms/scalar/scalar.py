@@ -16,28 +16,55 @@ from . import starter, stopper
 LOGGER = logging.getLogger(__name__)
 
 
-async def next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
+async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
     """Get the next taskforce requested for this collector + schedd.
 
     Returns empty dict when there is no taskforce to start.
     """
-    return await ewms_rc.request(  # type: ignore[no-any-return]
+    resp = await ewms_rc.request(
         "GET",
         "/taskforce/tms-action/pending-starter",
         {"collector": get_collector(), "schedd": get_schedd()},
     )
+    LOGGER.debug(f"NEXT TO START: {resp}")
+    return resp  # type: ignore[no-any-return]
 
 
-async def next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
+async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     """Get the next taskforce requested for this collector + schedd.
 
     Returns empty dict when there is no taskforce to stop.
     """
-    return await ewms_rc.request(  # type: ignore[no-any-return]
+    resp = await ewms_rc.request(
         "GET",
         "/taskforce/tms-action/pending-stopper",
         {"collector": get_collector(), "schedd": get_schedd()},
     )
+    LOGGER.debug(f"NEXT TO STOP: {resp}")
+    return resp  # type: ignore[no-any-return]
+
+
+async def confirm_start(
+    ewms_rc: RestClient,
+    taskforce_uuid: str,
+    body: dict[str, Any],
+) -> None:
+    """Send confirmation to EWMS that taskforce was started."""
+    await ewms_rc.request(
+        "POST",
+        f"/taskforce/tms-action/condor-submit/{taskforce_uuid}",
+        body,
+    )
+    LOGGER.info("CONFIRMED TASKFORCE START -- sent taskforce info to EWMS")
+
+
+async def confirm_stop(ewms_rc: RestClient, taskforce_uuid: str) -> None:
+    """Send confirmation to EWMS that taskforce was stopped."""
+    await ewms_rc.request(
+        "DELETE",
+        f"/taskforce/tms-action/pending-stopper/{taskforce_uuid}",
+    )
+    LOGGER.info("CONFIRMED TASKFORCE STOPPED")
 
 
 async def scalar_loop(
@@ -64,7 +91,7 @@ async def scalar_loop(
     while True:
         LOGGER.info("Activating starter...")
         # START(S)
-        while ewms_pending_starter_attrs := await next_to_start(ewms_rc):
+        while ewms_pending_starter_attrs := await get_next_to_start(ewms_rc):
             try:
                 ewms_condor_submit_attrs = await starter.start(
                     schedd_obj,
@@ -82,25 +109,24 @@ async def scalar_loop(
             except starter.TaskforceNoLongerPendingStarter:
                 continue
             # confirm start (otherwise ewms will request this one again -- good for statelessness)
-            await ewms_rc.request(
-                "POST",
-                f"/taskforce/tms-action/condor-submit/{ewms_pending_starter_attrs['taskforce_uuid']}",
+            await confirm_start(
+                ewms_rc,
+                ewms_pending_starter_attrs["taskforce_uuid"],
                 ewms_condor_submit_attrs,
             )
-            LOGGER.info("Sent taskforce info to EWMS")
         LOGGER.info("De-activated starter.")
 
         # STOP(S)
         LOGGER.info("Activating stopper...")
-        while ewms_pending_starter_attrs := await next_to_stop(ewms_rc):
+        while ewms_pending_starter_attrs := await get_next_to_stop(ewms_rc):
             stopper.stop(
                 schedd_obj,
                 ewms_pending_starter_attrs["cluster_id"],
             )
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
-            await ewms_rc.request(
-                "DELETE",
-                f"/taskforce/tms-action/pending-stopper/{ewms_pending_starter_attrs['taskforce_uuid']}",
+            await confirm_stop(
+                ewms_rc,
+                ewms_pending_starter_attrs["taskforce_uuid"],
             )
         LOGGER.info("De-activated stopper.")
 
