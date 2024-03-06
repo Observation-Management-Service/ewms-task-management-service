@@ -5,23 +5,9 @@ import logging
 import time
 from typing import TypeVar
 
-from rest_tools.client import RestClient
-
 from . import types
 
 LOGGER = logging.getLogger(__name__)
-
-
-async def is_taskforce_still_pending_starter(
-    ewms_rc: RestClient,
-    taskforce_uuid: str,
-) -> bool:
-    """Return whether the taskforce is still pending-starter."""
-    ret = await ewms_rc.request(
-        "GET",
-        f"/taskforce/{taskforce_uuid}",
-    )
-    return ret["tms_most_recent_action"] == "pending-starter"  # type: ignore[no-any-return]
 
 
 class EveryXSeconds:
