@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.9 (2024-03-06)
+
+### Other
+
+* Update Logging and `/taskforces/tms/status` ([#10](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/10)) ([`d242650`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d242650b0d5d64f439259b0e000a6cefd530f1f1))
+
 ## v0.1.8 (2024-03-06)
 
 ### Other
