@@ -110,7 +110,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                     {"taskforce_uuid": "def456", "cluster_id": 104500588},
                 ]
             }
-        elif args[:2] == ("POST", "/taskforces/tms/report"):
+        elif args[:2] == ("POST", "/taskforces/tms/status"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
@@ -126,13 +126,13 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     post_calls = [
         c
         for c in rc.request.call_args_list
-        if c.args[:2] == ("POST", "/taskforces/tms/report")
+        if c.args[:2] == ("POST", "/taskforces/tms/status")
     ]
     assert len(post_calls) == n_updates
     assert post_calls == [
         call(
             "POST",
-            "/taskforces/tms/report",
+            "/taskforces/tms/status",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -147,7 +147,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/report",
+            "/taskforces/tms/status",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -162,7 +162,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/report",
+            "/taskforces/tms/status",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -176,7 +176,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/report",
+            "/taskforces/tms/status",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -191,7 +191,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/report",
+            "/taskforces/tms/status",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
