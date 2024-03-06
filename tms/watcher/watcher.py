@@ -364,7 +364,7 @@ async def watch_job_event_log(
             LOGGER.info("SENDING UPDATES TO EWMS...")
             await ewms_rc.request(
                 "POST",
-                "/taskforces/tms/snapshot",
+                "/taskforces/tms/status",
                 patch_body,
             )
             LOGGER.info("UPDATES SENT.")
