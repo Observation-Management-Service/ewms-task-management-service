@@ -83,7 +83,7 @@ def make_condor_job_description(
         #
         "log": str(logs_fpath),
         #
-        "transfer_output_files": [],  # TODO: add ewms-pilot debug directory
+        "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
