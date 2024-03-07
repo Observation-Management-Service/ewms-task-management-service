@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.10 (2024-03-07)
+
+### Other
+
+* Fix Condor File Transfering ([#11](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/11)) ([`4e14d24`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/4e14d24aa49be1d3c32c4ba41790edefa5556afb))
+
 ## v0.1.9 (2024-03-06)
 
 ### Other
