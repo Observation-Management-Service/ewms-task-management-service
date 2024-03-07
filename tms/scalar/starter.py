@@ -82,7 +82,8 @@ def make_condor_job_description(
         "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
         #
         "log": str(logs_fpath),
-        # "transfer_output_files": ... # NOTE: see (way) below
+        #
+        "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
@@ -117,8 +118,6 @@ def make_condor_job_description(
         "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
 
-    transfer_output_files_list = [str(logs_fpath)]  # NOTE: see (way) below
-
     # worker stdout & stderr
     if do_transfer_worker_stdouterr:
         # this is the location where the files will go when/if *returned here*
@@ -129,19 +128,6 @@ def make_condor_job_description(
                 "error": str(cluster_subdir / "$(ProcId).err"),
             }
         )
-        transfer_output_files_list.extend(
-            [
-                submit_dict["output"],  # type: ignore[list-item]  # ci mypy has issue w/ this
-                submit_dict["error"],  # type: ignore[list-item]  # ''
-            ]
-        )
-
-    # transfer_output_files
-    submit_dict.update(
-        {
-            "transfer_output_files": f'"{",".join(transfer_output_files_list)}"',  # must be quoted
-        }
-    )
 
     LOGGER.info(submit_dict)
     return submit_dict
