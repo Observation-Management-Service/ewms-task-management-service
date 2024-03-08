@@ -70,6 +70,14 @@ def make_condor_job_description(
     ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
 
+    # update environment
+    environment.update(
+        {
+            "EWMS_PILOT_HTCHIRP": "True",
+            "EWMS_PILOT_HTCHIRP_VIA_JOB_EVENT_LOG": "True",
+        }
+    )
+
     # write
     submit_dict = {
         "executable": "/bin/bash",
