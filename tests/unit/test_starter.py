@@ -31,12 +31,18 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
     schedd_obj = MagicMock()
     itsps_mock.return_value = True
 
+    envlist = [
+        "EWMS_PILOT_HTCHIRP=True",
+        "EWMS_PILOT_HTCHIRP_DEST=JOB_EVENT_LOG",
+        "abc=932",
+        "def=True",
+    ]
     submit_dict = {
         "executable": "/bin/bash",
         "arguments": "my args",
         "+SingularityImage": '"my_image"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
-        "environment": '"abc=932 def=True"',  # must be quoted
+        "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "transfer_input_files": '"foofile bardir/barfile"',  # must be quoted

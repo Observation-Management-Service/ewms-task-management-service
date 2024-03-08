@@ -70,13 +70,21 @@ def make_condor_job_description(
     ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
 
+    # update environment
+    environment.update(
+        {
+            "EWMS_PILOT_HTCHIRP": "True",
+            "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
+        }
+    )
+
     # write
     submit_dict = {
         "executable": "/bin/bash",
         "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
         "+SingularityImage": f'"{image}"',  # must be quoted
         "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
-        "environment": f'"{" ".join(f"{k}={v}" for k, v in environment.items())}"',  # must be quoted
+        "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
