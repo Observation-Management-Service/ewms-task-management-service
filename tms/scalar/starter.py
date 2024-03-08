@@ -74,7 +74,7 @@ def make_condor_job_description(
     environment.update(
         {
             "EWMS_PILOT_HTCHIRP": "True",
-            "EWMS_PILOT_HTCHIRP_VIA_JOB_EVENT_LOG": "True",
+            "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
         }
     )
 
