@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.11 (2024-03-08)
+
+### Other
+
+* Starter: Auto Set `ewms-pilot` Env Vars ([#12](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/12)) ([`7abded0`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/7abded0399fa6ad692933f518cfb9aa07b9c28a9))
+
 ## v0.1.10 (2024-03-07)
 
 ### Other
