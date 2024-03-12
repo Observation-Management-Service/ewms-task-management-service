@@ -3,6 +3,7 @@
 
 import logging
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
@@ -13,6 +14,10 @@ from ..condor_tools import get_collector, get_schedd
 from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
+
+OUTPUT_DPATH_PATTERN = (
+    ENV.JOB_EVENT_LOG_DIR / "ewms-cluster-$(ClusterId)-taskforce-$(EWMSTaskforceUUID)"
+)
 
 
 class HaltedByDryRun(Exception):
@@ -50,8 +55,12 @@ def make_condor_job_description(
     priority: int,
     worker_disk: int | str,
     worker_memory: int | str,
-) -> dict[str, Any]:
-    """Make the condor job description (dict)."""
+) -> tuple[dict[str, Any], bool]:
+    """Make the condor job description (dict).
+
+    Return the job description along with a bool of whether to make the
+    output subdir.
+    """
 
     # NOTE:
     # In the newest version of condor we could use:
@@ -129,7 +138,7 @@ def make_condor_job_description(
     # worker stdout & stderr
     if do_transfer_worker_stdouterr:
         # this is the location where the files will go when/if *returned here*
-        cluster_subdir = logs_fpath.parent / "tms-cluster-$(ClusterId)"
+        cluster_subdir = logs_fpath.parent
         submit_dict.update(
             {
                 "output": str(cluster_subdir / "$(ProcId).out"),
@@ -138,7 +147,10 @@ def make_condor_job_description(
         )
 
     LOGGER.info(submit_dict)
-    return submit_dict
+    return (
+        submit_dict,
+        do_transfer_worker_stdouterr,  # NOTE: in future, this could be a compound conditional
+    )
 
 
 def submit(
@@ -188,7 +200,7 @@ async def start(
     )
 
     # prep
-    submit_dict = make_condor_job_description(
+    submit_dict, do_make_output_subdir = make_condor_job_description(
         taskforce_uuid,
         #
         image,
@@ -220,6 +232,16 @@ async def start(
         n_workers=n_workers,
         submit_dict=submit_dict,
     )
+
+    # make output subdir?
+    # we have to construct AFTER 'submit' b/c the cluster id is not known prior
+    if do_make_output_subdir:
+        output_subdir = Path(
+            str(OUTPUT_DPATH_PATTERN)
+            .replace("$(ClusterId)", str(submit_result_obj.cluster()))
+            .replace("$(EWMSTaskforceUUID)", taskforce_uuid)
+        )
+        output_subdir.mkdir(parents=True, exist_ok=True)
 
     # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
