@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.14 (2024-03-12)
+
+### Other
+
+* Starter: Make Output Subdir - 2 ([#15](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/15)) ([`e756be5`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/e756be5adb7c60df9318f7d4ae5bafd6fc18db8a))
+
 ## v0.1.13 (2024-03-12)
 
 ### Other
