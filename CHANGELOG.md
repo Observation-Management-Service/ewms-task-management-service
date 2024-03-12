@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.12 (2024-03-12)
+
+### Other
+
+* Add Example Script ([#13](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/13)) ([`b05c7e6`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/b05c7e69b420c901738aa3f293a68248e957c13c))
+
 ## v0.1.11 (2024-03-08)
 
 ### Other
