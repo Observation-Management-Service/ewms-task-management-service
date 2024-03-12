@@ -15,9 +15,12 @@ from ..config import ENV
 
 LOGGER = logging.getLogger(__name__)
 
-OUTPUT_DPATH_MACRO_TEMPLATE = (
-    ENV.JOB_EVENT_LOG_DIR / "ewms-cluster-$(ClusterId)-taskforce-$(EWMSTaskforceUUID)"
-)
+
+def get_output_dpath_macro_template(taskforce_uuid: str) -> Path:
+    """Assemble the path for the output directory."""
+    return (
+        ENV.JOB_EVENT_LOG_DIR / f"ewms-cluster-$(ClusterId)-taskforce-{taskforce_uuid}"
+    )
 
 
 class HaltedByDryRun(Exception):
@@ -140,8 +143,12 @@ def make_condor_job_description(
         # this is the location where the files will go when/if *returned here*
         submit_dict.update(
             {
-                "output": str(OUTPUT_DPATH_MACRO_TEMPLATE / "$(ProcId).out"),
-                "error": str(OUTPUT_DPATH_MACRO_TEMPLATE / "$(ProcId).err"),
+                "output": str(
+                    get_output_dpath_macro_template(taskforce_uuid) / "$(ProcId).out"
+                ),
+                "error": str(
+                    get_output_dpath_macro_template(taskforce_uuid) / "$(ProcId).err"
+                ),
             }
         )
 
@@ -236,9 +243,10 @@ async def start(
     # we have to construct AFTER 'submit' b/c the cluster id is not known prior
     if do_make_output_subdir:
         output_subdir = Path(
-            str(OUTPUT_DPATH_MACRO_TEMPLATE)
-            .replace("$(ClusterId)", str(submit_result_obj.cluster()))
-            .replace("$(EWMSTaskforceUUID)", taskforce_uuid)
+            str(get_output_dpath_macro_template(taskforce_uuid)).replace(
+                "$(ClusterId)",
+                str(submit_result_obj.cluster()),
+            )
         )
         output_subdir.mkdir(parents=True, exist_ok=True)
 
