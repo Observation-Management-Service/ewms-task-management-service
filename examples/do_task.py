@@ -1,4 +1,4 @@
-"""A simple example script to see EWMS pilot in real-time.
+"""A simple example script (task) to run on worker.
 
 See https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/examples/request_task.py
 """
