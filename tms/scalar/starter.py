@@ -138,11 +138,10 @@ def make_condor_job_description(
     # worker stdout & stderr
     if do_transfer_worker_stdouterr:
         # this is the location where the files will go when/if *returned here*
-        cluster_subdir = logs_fpath.parent
         submit_dict.update(
             {
-                "output": str(cluster_subdir / "$(ProcId).out"),
-                "error": str(cluster_subdir / "$(ProcId).err"),
+                "output": str(OUTPUT_DPATH_PATTERN / "$(ProcId).out"),
+                "error": str(OUTPUT_DPATH_PATTERN / "$(ProcId).err"),
             }
         )
 
