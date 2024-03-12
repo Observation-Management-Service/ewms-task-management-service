@@ -70,12 +70,12 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "output": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-cluster-$(ClusterId)-taskforce-9874abcdef"
+            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
             / "$(ProcId).out"
         ),
         "error": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-cluster-$(ClusterId)-taskforce-9874abcdef"
+            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
             / "$(ProcId).err"
         ),
         "transfer_output_files": "",

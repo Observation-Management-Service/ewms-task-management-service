@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 def get_output_dpath_macro_template(taskforce_uuid: str) -> Path:
     """Assemble the path for the output directory."""
     return (
-        ENV.JOB_EVENT_LOG_DIR / f"ewms-cluster-$(ClusterId)-taskforce-{taskforce_uuid}"
+        ENV.JOB_EVENT_LOG_DIR / f"ewms-taskforce-{taskforce_uuid}-cluster-$(ClusterId)"
     )
 
 
