@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.16 (2024-03-13)
+
+### Other
+
+* Use HTCondor's `universe=container` ([#16](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/16)) ([`f26c9b2`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/f26c9b28592a0b38b5b0c1c0d64b035e5408d06b))
+
 ## v0.1.15 (2024-03-12)
 
 ### Other
