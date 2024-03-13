@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.17 (2024-03-13)
+
+### Other
+
+* Use HTCondor's `universe=container` - 2 ([`3084d8c`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/3084d8cbb67a6277d1e10aaf5133981607b545e4))
+
 ## v0.1.16 (2024-03-13)
 
 ### Other
