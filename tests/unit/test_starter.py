@@ -38,16 +38,20 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "def=True",
     ]
     submit_dict = {
-        "executable": "/bin/bash",
+        "universe": "container",
+        "+should_transfer_container": "no",
+        "container_image": '"my_image"',  # must be quoted
+        #
         "arguments": "my args",
-        "+SingularityImage": '"my_image"',  # must be quoted
-        "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
+        #
+        "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
-        "transfer_input_files": '"foofile bardir/barfile"',  # must be quoted
-        #
         "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
+        #
+        "transfer_input_files": '"foofile bardir/barfile"',  # must be quoted
+        "transfer_output_files": "",
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
         #
@@ -60,6 +64,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "request_disk": humanfriendly.format_size(  # 1073741824 -> "1 GiB" -> "1 GB"
             85461235, binary=True
         ).replace("i", ""),
+        #
         "priority": int(100),
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": 95487,  # Execution time limit -- 1 hour default on OSG
@@ -78,7 +83,6 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
             / "$(ProcId).err"
         ),
-        "transfer_output_files": "",
     }
 
     ret = await starter.start(
