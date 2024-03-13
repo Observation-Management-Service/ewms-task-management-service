@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.20 (2024-03-13)
+
+### Other
+
+* Speed Up Example Script ([`170093a`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/170093a4863f37b65562edcbad5387007e8e651c))
+
 ## v0.1.19 (2024-03-13)
 
 ### Other
