@@ -40,7 +40,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": '"my_image"',  # must be quoted
+        "container_image": "my_image",
         #
         "arguments": "my args",
         "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted

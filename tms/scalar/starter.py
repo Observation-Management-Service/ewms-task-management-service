@@ -92,7 +92,7 @@ def make_condor_job_description(
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f'"{image}"',  # must be quoted,
+        "container_image": f"{image}",  # not quoted -- otherwise condor assumes relative path
         #
         "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
