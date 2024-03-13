@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.18 (2024-03-13)
+
+### Other
+
+* Update Deps for Example Script ([#17](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/17)) ([`f1aa812`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/f1aa81269d014cba63268590dc31057f1d7ee3e6))
+
 ## v0.1.17 (2024-03-13)
 
 ### Other
