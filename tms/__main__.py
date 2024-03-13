@@ -39,6 +39,8 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                 f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
+                if not jel_fpath.is_file():
+                    continue
                 # check/append
                 if jel_fpath in in_progress:
                     continue
