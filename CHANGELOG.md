@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.19 (2024-03-13)
+
+### Other
+
+* Watcher: Ignore Non-Files in JEL Dir ([`ec5c008`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ec5c00804330707ac185bd72d676de3d2bad2ac5))
+
 ## v0.1.18 (2024-03-13)
 
 ### Other
