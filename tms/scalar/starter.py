@@ -67,9 +67,7 @@ def make_condor_job_description(
 
     # NOTE:
     # In the newest version of condor we could use:
-    #   universe = container
-    #   container_image = ...
-    #   arguments = python -m ...
+
     # But for now, we're stuck with:
     #   executable = ...
     #   +SingularityImage = ...
@@ -92,29 +90,24 @@ def make_condor_job_description(
 
     # write
     submit_dict = {
-        "executable": "/bin/bash",
-        "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
-        "+SingularityImage": f'"{image}"',  # must be quoted
-        "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
-        "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
-        "+FileSystemDomain": '"blah"',  # must be quoted
+        "universe": "container",
+        "+should_transfer_container": "no",
+        "container_image": f'"{image}"',  # must be quoted,
         #
-        "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
+        "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
+        "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
+        #
+        "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
+        "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "log": str(logs_fpath),
         #
+        "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
         #
-        # Don't transfer executable (/bin/bash) in case of
-        #   version (dependency) mismatch.
-        #     Ex:
-        #     "/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.36' not found"
-        # Technically this is just needed for spooling -- since if
-        #   we don't spool, the executable (/bin/bash) can't be
-        #   transferred anyway and so a local version will be used
         "transfer_executable": "false",
         #
         "request_cpus": str(n_cores),
@@ -130,6 +123,7 @@ def make_condor_job_description(
             humanfriendly.parse_size(str(worker_disk), binary=True),
             binary=True,
         ).replace("i", ""),
+        #
         "priority": int(priority),
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": max_worker_runtime,  # Execution time limit -- 1 hour default on OSG
