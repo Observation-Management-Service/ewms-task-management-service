@@ -29,14 +29,11 @@ import sys
 import time
 import argparse
 import os
-time.sleep(5)
 print('this is a log', file=sys.stderr)
-time.sleep(5)
 output = open('{{INFILE}}').read().strip() * 2
 time.sleep(5)
 print('printed: ' + output)
 print(output, file=open('{{OUTFILE}}','w'))
-time.sleep(5)
 " """,
         queue_incoming=queue_incoming,
         queue_outgoing=queue_outgoing,
