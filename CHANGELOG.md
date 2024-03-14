@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.22 (2024-03-14)
+
+### Other
+
+* Remove `examples/` ([#18](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/18)) ([`2455c25`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/2455c259a721b46d8f79773da264a05e5b028e70))
+
 ## v0.1.21 (2024-03-14)
 
 ### Other
