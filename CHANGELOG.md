@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.21 (2024-03-14)
+
+### Other
+
+* Add `HAS_SINGULARITY` to Condor Requirements ([`0214f92`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/0214f92075c24daf7dd255e915b259ed49600951))
+
 ## v0.1.20 (2024-03-13)
 
 ### Other
