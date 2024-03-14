@@ -97,7 +97,7 @@ def make_condor_job_description(
         "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
         #
-        "Requirements": "HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
+        "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "log": str(logs_fpath),
