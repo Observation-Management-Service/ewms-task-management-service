@@ -105,7 +105,7 @@ class ClusterInfo:
                 )
             )
 
-        LOGGER.debug(pprint.ppformat(job_pilot_compound_statuses, indent=4))
+        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
         if self.tmonitor.aggregate_statuses == job_pilot_compound_statuses:
@@ -138,7 +138,7 @@ class ClusterInfo:
         errors: types.TopTaskErrors = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # is this an update?
-        LOGGER.debug(pprint.ppformat(errors, indent=4))
+        LOGGER.debug(pprint.pformat(errors, indent=4))
 
         if self.tmonitor.top_task_errors == errors:
             raise NoUpdateException("errors did not change")
@@ -308,7 +308,7 @@ async def watch_job_event_log(
 
         LOGGER.info("Done reading events for now")
         LOGGER.debug(
-            pprint.ppformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
         )
 
         patch_body: dict[str, Any] = {
