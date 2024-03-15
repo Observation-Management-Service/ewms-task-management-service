@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.24 (2024-03-15)
+
+### Other
+
+* Logging Fix - 2.1 ([`5c2c18d`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/5c2c18dc174882726d2f3aa05124bf2987ed8303))
+* Logging Fix - 2 ([`e48538e`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/e48538e2d3e7cbbdb8c057cb834a3eb3b9d490e3))
+
 ## v0.1.23 (2024-03-15)
 
 ### Other
