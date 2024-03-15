@@ -5,7 +5,6 @@ import asyncio
 import collections
 import json
 import logging
-import pprint
 from pathlib import Path
 from typing import Any
 
@@ -106,14 +105,7 @@ class ClusterInfo:
                 )
             )
 
-        LOGGER.debug(
-            json.dumps(
-                job_pilot_compound_statuses,
-                sort_keys=True,  # sort -> deterministic
-                ensure_ascii=True,
-                indent=4,  # for logging
-            )
-        )
+        LOGGER.debug(json.dumps(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
         if self.tmonitor.aggregate_statuses == job_pilot_compound_statuses:
@@ -146,14 +138,7 @@ class ClusterInfo:
         errors: types.TopTaskErrors = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # is this an update?
-        LOGGER.debug(
-            json.dumps(
-                errors,
-                sort_keys=True,  # sort -> deterministic
-                ensure_ascii=True,
-                indent=4,  # for logging
-            )
-        )
+        LOGGER.debug(json.dumps(errors, indent=4))
 
         if self.tmonitor.top_task_errors == errors:
             raise NoUpdateException("errors did not change")
@@ -322,9 +307,8 @@ async def watch_job_event_log(
                 continue
 
         LOGGER.info("Done reading events for now")
-        # TODO - remove
         LOGGER.debug(
-            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+            json.dumps({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
         )
 
         patch_body: dict[str, Any] = {
