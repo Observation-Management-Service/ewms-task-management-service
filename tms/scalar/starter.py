@@ -41,7 +41,7 @@ async def is_taskforce_still_pending_starter(
         "GET",
         f"/taskforce/{taskforce_uuid}",
     )
-    return ret["tms_most_recent_action"] == "pending-starter"  # type: ignore[no-any-return]
+    return ret["phase"] == "pending-starter"  # type: ignore[no-any-return]
 
 
 def make_condor_job_description(
