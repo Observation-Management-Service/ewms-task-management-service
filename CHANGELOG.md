@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.25 (2024-04-24)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`5605d5e`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/5605d5ecf38d38fc812138624d07c6ac91c3163d))
+* Update to Use WMS's `phase` ([`86f60b1`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/86f60b1966e347b736dacb33a18146b1a8e2455d))
+
 ## v0.1.24 (2024-03-15)
 
 ### Other
