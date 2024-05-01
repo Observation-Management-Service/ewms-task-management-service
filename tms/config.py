@@ -30,8 +30,10 @@ class EnvConfig:
 
     DRYRUN: bool = False
     CI_TEST: bool = False
+
     LOG_LEVEL: str = "DEBUG"
     LOG_LEVEL_THIRD_PARTY: str = "WARNING"
+    LOG_LEVEL_REST_TOOLS: str = "DEBUG"
 
 
 ENV = from_environment_as_dataclass(EnvConfig)
@@ -56,4 +58,7 @@ def config_logging() -> None:
         first_party_loggers=__name__.split(".", maxsplit=1)[0],
         third_party_level=ENV.LOG_LEVEL_THIRD_PARTY,  # type: ignore[arg-type]
         future_third_parties=[],
+        specialty_loggers={
+            "rest_tools": ENV.LOG_LEVEL_REST_TOOLS,  # type: ignore
+        },
     )
