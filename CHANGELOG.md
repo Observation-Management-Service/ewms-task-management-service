@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.26 (2024-05-01)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`20b0cfd`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/20b0cfd1a845a80cf9789fb9b1e976034218a233))
+* Update CI ([`ae24e4b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ae24e4b5baf0d963d9ea77e950d8c2b1ad89ad6d))
+
 ## v0.1.25 (2024-04-24)
 
 ### Other
