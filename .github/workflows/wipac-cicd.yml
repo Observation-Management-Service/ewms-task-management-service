@@ -1,7 +1,7 @@
 name: wipac ci/cd
 
 
-on: [push]
+on: [ push ]
 
 
 env:
@@ -41,7 +41,7 @@ jobs:
       - uses: WIPACrepo/wipac-dev-flake8-action@v1.0
 
   mypy:
-    needs: [py-versions]
+    needs: [ py-versions ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -57,22 +57,27 @@ jobs:
   py-setup:
     runs-on: ubuntu-latest
     steps:
-      # dependabot can't access normal secrets
-      #   & don't run non-branch triggers (like tags)
-      - if: |
-          github.actor != 'dependabot[bot]' &&
-          github.ref_type == 'branch'
-        name: checkout (only for non-dependabot non-default branches)
+      - if: github.actor != 'dependabot[bot]'
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - if: |
-          github.actor != 'dependabot[bot]' &&
-          github.ref_type == 'branch'
-        name: wipac-dev-py-setup-action (only for non-dependabot non-default branches)
-        uses: WIPACrepo/wipac-dev-py-setup-action@v2.9
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # fyi, dependabot can't access normal secrets
+      - if: github.actor != 'dependabot[bot]'
+        uses: WIPACrepo/wipac-dev-py-setup-action@v3.0
         with:
           base-keywords: WIPAC IceCube "Observation Management Service" "Event Workflow Management Service"
+
+  py-dependencies:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.job }}
+      cancel-in-progress: true
+    steps:
+      - if: github.actor != 'dependabot[bot]'
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # fyi, dependabot can't access normal secrets
+      - if: github.actor != 'dependabot[bot]'
+        uses: WIPACrepo/wipac-dev-py-dependencies-action@v1.0
 
 
   ############################################################################
@@ -120,7 +125,7 @@ jobs:
             ls
 
   unit-test:
-    needs: [py-versions]
+    needs: [ py-versions ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -145,17 +150,25 @@ jobs:
   release:
     # only run on main/master/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
-    needs: [flake8, mypy, py-setup, py-versions, test-build-docker, test-build-singularity]
+    needs: [
+      flake8,
+      mypy,
+      py-setup,
+      py-versions,
+      py-dependencies,
+      test-build-docker,
+      test-build-singularity
+    ]
     runs-on: ubuntu-latest
     concurrency: release
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-    - name: Python Semantic Release
-      uses: python-semantic-release/python-semantic-release@v7.34.6
-      with:
-        github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        # repository_username: __token__
-        # repository_password: ${{ secrets.PYPI_TOKEN }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: Python Semantic Release
+        uses: python-semantic-release/python-semantic-release@v7.34.6
+        with:
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # repository_username: __token__
+          # repository_password: ${{ secrets.PYPI_TOKEN }}
