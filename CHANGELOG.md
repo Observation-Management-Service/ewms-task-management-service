@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.27 (2024-05-01)
+
+### Other
+
+* Add `LOG_LEVEL_REST_TOOLS` ([`4a37647`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/4a3764798822321d115c6505ba7a47aa1acd83e9))
+
 ## v0.1.26 (2024-05-01)
 
 ### Other
