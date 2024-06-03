@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.28 (2024-06-03)
+
+### Other
+
+* Update WMS Requests ([#19](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/19)) ([`aca4f27`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/aca4f2792a45bd29a69622704878f0ee39735e10))
+
 ## v0.1.27 (2024-05-01)
 
 ### Other
