@@ -1,6 +1,5 @@
 """For watching EWMS taskforce workers on an HTCondor cluster."""
 
-
 import asyncio
 import collections
 import logging
@@ -11,9 +10,6 @@ from typing import Any
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
-from .. import condor_tools, types
-from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS
-from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
 from .utils import (
     JobInfoKey,
     JobInfoVal,
@@ -22,6 +18,9 @@ from .utils import (
     query_for_more_taskforces,
     send_condor_complete,
 )
+from .. import condor_tools, types
+from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_ROUTE_VERSION_PREFIX
+from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -348,7 +347,7 @@ async def watch_job_event_log(
             LOGGER.info("SENDING UPDATES TO EWMS...")
             await ewms_rc.request(
                 "POST",
-                "/taskforces/tms/status",
+                f"/{WMS_ROUTE_VERSION_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
             LOGGER.info("UPDATES SENT.")

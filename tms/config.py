@@ -1,6 +1,5 @@
 """config.py."""
 
-
 import dataclasses as dc
 import logging
 from pathlib import Path
@@ -8,6 +7,8 @@ from pathlib import Path
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
 WATCHER_N_TOP_TASK_ERRORS = 10
+
+WMS_ROUTE_VERSION_PREFIX = "v0"
 
 
 @dc.dataclass(frozen=True)
