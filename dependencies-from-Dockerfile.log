@@ -7,174 +7,194 @@
 #  pip freeze
 ########################################################################
 cachetools==5.3.3
-certifi==2024.2.2
+certifi==2024.6.2
 cffi==1.16.0
 charset-normalizer==3.3.2
 coloredlogs==15.0.1
-cryptography==42.0.5
+cryptography==42.0.7
 Deprecated==1.2.14
 googleapis-common-protos==1.59.1
-grpcio==1.63.0
-htcondor==23.6.1
+grpcio==1.64.0
+htcondor==23.7.2
 humanfriendly==10.0
 idna==3.7
-importlib-metadata==7.0.0
-opentelemetry-api==1.24.0
+importlib_metadata==7.1.0
+opentelemetry-api==1.25.0
 opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-exporter-jaeger-proto-grpc==1.21.0
 opentelemetry-exporter-jaeger-thrift==1.21.0
-opentelemetry-exporter-otlp-proto-common==1.24.0
-opentelemetry-exporter-otlp-proto-http==1.24.0
-opentelemetry-proto==1.24.0
-opentelemetry-sdk==1.24.0
-opentelemetry-semantic-conventions==0.45b0
+opentelemetry-exporter-otlp-proto-common==1.25.0
+opentelemetry-exporter-otlp-proto-http==1.25.0
+opentelemetry-proto==1.25.0
+opentelemetry-sdk==1.25.0
+opentelemetry-semantic-conventions==0.46b0
 protobuf==4.25.3
 pycparser==2.22
 PyJWT==2.8.0
 pypng==0.20220715.0
 qrcode==7.4.2
-requests==2.31.0
+requests==2.32.3
 requests-futures==1.0.1
 six==1.16.0
 thrift==0.20.0
 tornado==6.4
-typing_extensions==4.11.0
+typing_extensions==4.12.1
 urllib3==2.2.1
 wipac-dev-tools==1.9.1
-wipac-rest-tools==1.7.3
+wipac-rest-tools==1.7.5
 wipac-telemetry==0.3.0
 wrapt==1.16.0
-zipp==3.18.1
+zipp==3.19.1
 ########################################################################
 #  pipdeptree
 ########################################################################
-cryptography==42.0.5
+cryptography==42.0.7
 └── cffi [required: >=1.12, installed: 1.16.0]
     └── pycparser [required: Any, installed: 2.22]
-pipdeptree==2.19.1
+pipdeptree==2.22.0
 ├── packaging [required: >=23.1, installed: 24.0]
 └── pip [required: >=23.1.2, installed: 24.0]
 setuptools==69.5.1
 tms
-├── htcondor [required: Any, installed: 23.6.1]
+├── htcondor [required: Any, installed: 23.7.2]
 ├── wipac-dev-tools [required: Any, installed: 1.9.1]
-│   ├── requests [required: Any, installed: 2.31.0]
-│   │   ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+│   ├── requests [required: Any, installed: 2.32.3]
+│   │   ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
 │   │   ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
 │   │   ├── idna [required: >=2.5,<4, installed: 3.7]
 │   │   └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
-│   └── typing_extensions [required: Any, installed: 4.11.0]
-└── wipac-rest-tools [required: Any, installed: 1.7.3]
+│   └── typing_extensions [required: Any, installed: 4.12.1]
+└── wipac-rest-tools [required: Any, installed: 1.7.5]
     ├── cachetools [required: Any, installed: 5.3.3]
     ├── PyJWT [required: !=2.6.0, installed: 2.8.0]
     ├── qrcode [required: Any, installed: 7.4.2]
     │   ├── pypng [required: Any, installed: 0.20220715.0]
-    │   └── typing_extensions [required: Any, installed: 4.11.0]
-    ├── requests [required: Any, installed: 2.31.0]
-    │   ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+    │   └── typing_extensions [required: Any, installed: 4.12.1]
+    ├── requests [required: Any, installed: 2.32.3]
+    │   ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
     │   ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
     │   ├── idna [required: >=2.5,<4, installed: 3.7]
     │   └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
     ├── requests-futures [required: Any, installed: 1.0.1]
-    │   └── requests [required: >=1.2.0, installed: 2.31.0]
-    │       ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+    │   └── requests [required: >=1.2.0, installed: 2.32.3]
+    │       ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
     │       ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
     │       ├── idna [required: >=2.5,<4, installed: 3.7]
     │       └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
     ├── tornado [required: Any, installed: 6.4]
     ├── urllib3 [required: >=2.0.4, installed: 2.2.1]
     └── wipac-dev-tools [required: Any, installed: 1.9.1]
-        ├── requests [required: Any, installed: 2.31.0]
-        │   ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+        ├── requests [required: Any, installed: 2.32.3]
+        │   ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
         │   ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
         │   ├── idna [required: >=2.5,<4, installed: 3.7]
         │   └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
-        └── typing_extensions [required: Any, installed: 4.11.0]
+        └── typing_extensions [required: Any, installed: 4.12.1]
 wheel==0.43.0
 wipac-telemetry==0.3.0
 ├── coloredlogs [required: Any, installed: 15.0.1]
 │   └── humanfriendly [required: >=9.1, installed: 10.0]
-├── opentelemetry-api [required: Any, installed: 1.24.0]
+├── opentelemetry-api [required: Any, installed: 1.25.0]
 │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│       └── zipp [required: >=0.5, installed: 3.18.1]
+│   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│       └── zipp [required: >=0.5, installed: 3.19.1]
 ├── opentelemetry-exporter-jaeger [required: Any, installed: 1.21.0]
 │   ├── opentelemetry-exporter-jaeger-proto-grpc [required: ==1.21.0, installed: 1.21.0]
 │   │   ├── googleapis-common-protos [required: ~=1.52,<1.60.0, installed: 1.59.1]
 │   │   │   └── protobuf [required: >=3.19.5,<5.0.0.dev0,!=4.21.5,!=4.21.4,!=4.21.3,!=4.21.2,!=4.21.1,!=3.20.1,!=3.20.0, installed: 4.25.3]
-│   │   ├── grpcio [required: >=1.0.0,<2.0.0, installed: 1.63.0]
-│   │   ├── opentelemetry-api [required: ~=1.3, installed: 1.24.0]
+│   │   ├── grpcio [required: >=1.0.0,<2.0.0, installed: 1.64.0]
+│   │   ├── opentelemetry-api [required: ~=1.3, installed: 1.25.0]
 │   │   │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   │   │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│   │   │       └── zipp [required: >=0.5, installed: 3.18.1]
-│   │   └── opentelemetry-sdk [required: ~=1.11, installed: 1.24.0]
-│   │       ├── opentelemetry-api [required: ==1.24.0, installed: 1.24.0]
+│   │   │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │   │       └── zipp [required: >=0.5, installed: 3.19.1]
+│   │   └── opentelemetry-sdk [required: ~=1.11, installed: 1.25.0]
+│   │       ├── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
 │   │       │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │       │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   │       │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│   │       │       └── zipp [required: >=0.5, installed: 3.18.1]
-│   │       ├── opentelemetry-semantic-conventions [required: ==0.45b0, installed: 0.45b0]
-│   │       └── typing_extensions [required: >=3.7.4, installed: 4.11.0]
+│   │       │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │       │       └── zipp [required: >=0.5, installed: 3.19.1]
+│   │       ├── opentelemetry-semantic-conventions [required: ==0.46b0, installed: 0.46b0]
+│   │       │   └── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
+│   │       │       ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
+│   │       │       │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
+│   │       │       └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │       │           └── zipp [required: >=0.5, installed: 3.19.1]
+│   │       └── typing_extensions [required: >=3.7.4, installed: 4.12.1]
 │   └── opentelemetry-exporter-jaeger-thrift [required: ==1.21.0, installed: 1.21.0]
-│       ├── opentelemetry-api [required: ~=1.3, installed: 1.24.0]
+│       ├── opentelemetry-api [required: ~=1.3, installed: 1.25.0]
 │       │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │       │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│       │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│       │       └── zipp [required: >=0.5, installed: 3.18.1]
-│       ├── opentelemetry-sdk [required: ~=1.11, installed: 1.24.0]
-│       │   ├── opentelemetry-api [required: ==1.24.0, installed: 1.24.0]
+│       │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│       │       └── zipp [required: >=0.5, installed: 3.19.1]
+│       ├── opentelemetry-sdk [required: ~=1.11, installed: 1.25.0]
+│       │   ├── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
 │       │   │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │       │   │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│       │   │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│       │   │       └── zipp [required: >=0.5, installed: 3.18.1]
-│       │   ├── opentelemetry-semantic-conventions [required: ==0.45b0, installed: 0.45b0]
-│       │   └── typing_extensions [required: >=3.7.4, installed: 4.11.0]
+│       │   │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│       │   │       └── zipp [required: >=0.5, installed: 3.19.1]
+│       │   ├── opentelemetry-semantic-conventions [required: ==0.46b0, installed: 0.46b0]
+│       │   │   └── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
+│       │   │       ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
+│       │   │       │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
+│       │   │       └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│       │   │           └── zipp [required: >=0.5, installed: 3.19.1]
+│       │   └── typing_extensions [required: >=3.7.4, installed: 4.12.1]
 │       └── thrift [required: >=0.10.0, installed: 0.20.0]
 │           └── six [required: >=1.7.2, installed: 1.16.0]
-├── opentelemetry-exporter-otlp-proto-http [required: Any, installed: 1.24.0]
+├── opentelemetry-exporter-otlp-proto-http [required: Any, installed: 1.25.0]
 │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
 │   ├── googleapis-common-protos [required: ~=1.52, installed: 1.59.1]
 │   │   └── protobuf [required: >=3.19.5,<5.0.0.dev0,!=4.21.5,!=4.21.4,!=4.21.3,!=4.21.2,!=4.21.1,!=3.20.1,!=3.20.0, installed: 4.25.3]
-│   ├── opentelemetry-api [required: ~=1.15, installed: 1.24.0]
+│   ├── opentelemetry-api [required: ~=1.15, installed: 1.25.0]
 │   │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│   │       └── zipp [required: >=0.5, installed: 3.18.1]
-│   ├── opentelemetry-exporter-otlp-proto-common [required: ==1.24.0, installed: 1.24.0]
-│   │   └── opentelemetry-proto [required: ==1.24.0, installed: 1.24.0]
+│   │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │       └── zipp [required: >=0.5, installed: 3.19.1]
+│   ├── opentelemetry-exporter-otlp-proto-common [required: ==1.25.0, installed: 1.25.0]
+│   │   └── opentelemetry-proto [required: ==1.25.0, installed: 1.25.0]
 │   │       └── protobuf [required: >=3.19,<5.0, installed: 4.25.3]
-│   ├── opentelemetry-proto [required: ==1.24.0, installed: 1.24.0]
+│   ├── opentelemetry-proto [required: ==1.25.0, installed: 1.25.0]
 │   │   └── protobuf [required: >=3.19,<5.0, installed: 4.25.3]
-│   ├── opentelemetry-sdk [required: ~=1.24.0, installed: 1.24.0]
-│   │   ├── opentelemetry-api [required: ==1.24.0, installed: 1.24.0]
+│   ├── opentelemetry-sdk [required: ~=1.25.0, installed: 1.25.0]
+│   │   ├── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
 │   │   │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   │   │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│   │   │       └── zipp [required: >=0.5, installed: 3.18.1]
-│   │   ├── opentelemetry-semantic-conventions [required: ==0.45b0, installed: 0.45b0]
-│   │   └── typing_extensions [required: >=3.7.4, installed: 4.11.0]
-│   └── requests [required: ~=2.7, installed: 2.31.0]
-│       ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+│   │   │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │   │       └── zipp [required: >=0.5, installed: 3.19.1]
+│   │   ├── opentelemetry-semantic-conventions [required: ==0.46b0, installed: 0.46b0]
+│   │   │   └── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
+│   │   │       ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
+│   │   │       │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
+│   │   │       └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │   │           └── zipp [required: >=0.5, installed: 3.19.1]
+│   │   └── typing_extensions [required: >=3.7.4, installed: 4.12.1]
+│   └── requests [required: ~=2.7, installed: 2.32.3]
+│       ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
 │       ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
 │       ├── idna [required: >=2.5,<4, installed: 3.7]
 │       └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
-├── opentelemetry-sdk [required: Any, installed: 1.24.0]
-│   ├── opentelemetry-api [required: ==1.24.0, installed: 1.24.0]
+├── opentelemetry-sdk [required: Any, installed: 1.25.0]
+│   ├── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
 │   │   ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
 │   │   │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
-│   │   └── importlib-metadata [required: >=6.0,<=7.0, installed: 7.0.0]
-│   │       └── zipp [required: >=0.5, installed: 3.18.1]
-│   ├── opentelemetry-semantic-conventions [required: ==0.45b0, installed: 0.45b0]
-│   └── typing_extensions [required: >=3.7.4, installed: 4.11.0]
+│   │   └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │       └── zipp [required: >=0.5, installed: 3.19.1]
+│   ├── opentelemetry-semantic-conventions [required: ==0.46b0, installed: 0.46b0]
+│   │   └── opentelemetry-api [required: ==1.25.0, installed: 1.25.0]
+│   │       ├── Deprecated [required: >=1.2.6, installed: 1.2.14]
+│   │       │   └── wrapt [required: >=1.10,<2, installed: 1.16.0]
+│   │       └── importlib_metadata [required: >=6.0,<=7.1, installed: 7.1.0]
+│   │           └── zipp [required: >=0.5, installed: 3.19.1]
+│   └── typing_extensions [required: >=3.7.4, installed: 4.12.1]
 ├── protobuf [required: Any, installed: 4.25.3]
-├── typing_extensions [required: Any, installed: 4.11.0]
+├── typing_extensions [required: Any, installed: 4.12.1]
 └── wipac-dev-tools [required: Any, installed: 1.9.1]
-    ├── requests [required: Any, installed: 2.31.0]
-    │   ├── certifi [required: >=2017.4.17, installed: 2024.2.2]
+    ├── requests [required: Any, installed: 2.32.3]
+    │   ├── certifi [required: >=2017.4.17, installed: 2024.6.2]
     │   ├── charset-normalizer [required: >=2,<4, installed: 3.3.2]
     │   ├── idna [required: >=2.5,<4, installed: 3.7]
     │   └── urllib3 [required: >=1.21.1,<3, installed: 2.2.1]
-    └── typing_extensions [required: Any, installed: 4.11.0]
+    └── typing_extensions [required: Any, installed: 4.12.1]

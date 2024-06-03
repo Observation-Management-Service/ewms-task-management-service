@@ -1,6 +1,5 @@
 """Unit tests for the watcher."""
 
-
 import asyncio
 import logging
 import os
@@ -11,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import htcondor  # type: ignore[import-untyped]
 import pytest
+
 from tms import config  # noqa: F401  # import in order to set up env vars
 from tms import utils
 from tms.watcher import watcher
@@ -99,18 +99,18 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     def mock_all_requests(*args, **kwargs):
         # fmt: off
-        if args[:2] == ("POST", "/taskforces/find") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
+        if args[:2] == ("POST", "/v0/query/taskforces") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
             # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
             return {"taskforces": []}
         # fmt: on
-        elif args[:2] == ("POST", "/taskforces/find"):
+        elif args[:2] == ("POST", "/v0/query/taskforces"):
             return {
                 "taskforces": [
                     {"taskforce_uuid": "abc123", "cluster_id": 104501503},
                     {"taskforce_uuid": "def456", "cluster_id": 104500588},
                 ]
             }
-        elif args[:2] == ("POST", "/taskforces/tms/status"):
+        elif args[:2] == ("POST", "/v0/tms/statuses/taskforces"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
@@ -126,13 +126,13 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     post_calls = [
         c
         for c in rc.request.call_args_list
-        if c.args[:2] == ("POST", "/taskforces/tms/status")
+        if c.args[:2] == ("POST", "/v0/tms/statuses/taskforces")
     ]
     assert len(post_calls) == n_updates
     assert post_calls == [
         call(
             "POST",
-            "/taskforces/tms/status",
+            "/v0/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -147,7 +147,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/status",
+            "/v0/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -162,7 +162,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/status",
+            "/v0/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -176,7 +176,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/status",
+            "/v0/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -191,7 +191,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/taskforces/tms/status",
+            "/v0/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {

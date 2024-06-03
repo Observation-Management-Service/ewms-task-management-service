@@ -1,6 +1,5 @@
 """For starting EWMS taskforce workers on an HTCondor cluster."""
 
-
 import logging
 from datetime import date
 from pathlib import Path
@@ -11,7 +10,7 @@ import humanfriendly
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV
+from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ async def is_taskforce_still_pending_starter(
     """Return whether the taskforce is still pending-starter."""
     ret = await ewms_rc.request(
         "GET",
-        f"/taskforce/{taskforce_uuid}",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/taskforces/{taskforce_uuid}",
     )
     return ret["phase"] == "pending-starter"  # type: ignore[no-any-return]
 

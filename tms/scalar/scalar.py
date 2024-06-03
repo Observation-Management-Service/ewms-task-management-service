@@ -1,16 +1,15 @@
 """Scalar entrypoint."""
 
-
 import logging
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import ClientCredentialsAuth, RestClient
 
+from . import starter, stopper
 from .. import utils
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV
-from . import starter, stopper
+from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
     """
     resp = await ewms_rc.request(
         "GET",
-        "/taskforce/tms-action/pending-starter",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-starter/taskforces",
         {"collector": get_collector(), "schedd": get_schedd()},
     )
     LOGGER.debug(f"NEXT TO START: {resp}")
@@ -36,7 +35,7 @@ async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
     """
     resp = await ewms_rc.request(
         "GET",
-        "/taskforce/tms-action/pending-stopper",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces",
         {"collector": get_collector(), "schedd": get_schedd()},
     )
     LOGGER.debug(f"NEXT TO STOP: {resp}")
@@ -51,7 +50,7 @@ async def confirm_start(
     """Send confirmation to EWMS that taskforce was started."""
     await ewms_rc.request(
         "POST",
-        f"/taskforce/tms-action/condor-submit/{taskforce_uuid}",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}",
         body,
     )
     LOGGER.info("CONFIRMED TASKFORCE START -- sent taskforce info to EWMS")
@@ -61,7 +60,7 @@ async def confirm_stop(ewms_rc: RestClient, taskforce_uuid: str) -> None:
     """Send confirmation to EWMS that taskforce was stopped."""
     await ewms_rc.request(
         "DELETE",
-        f"/taskforce/tms-action/pending-stopper/{taskforce_uuid}",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces/{taskforce_uuid}",
     )
     LOGGER.info("CONFIRMED TASKFORCE STOPPED")
 
