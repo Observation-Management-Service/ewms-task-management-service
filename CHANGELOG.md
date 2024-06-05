@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.29 (2024-06-05)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`ea38ae1`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ea38ae1dcedeea298a4f8e49fd6cfaff214df967))
+* <bot> update README.md ([`affa699`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/affa69966ca600b43a725e5088588c7a6f5b49ce))
+* Update README ([`ce4c459`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ce4c45900779a3d457048ac41be5971330f1fe37))
+
 ## v0.1.28 (2024-06-03)
 
 ### Other
