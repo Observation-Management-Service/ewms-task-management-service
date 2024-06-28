@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.31 (2024-06-28)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`824b14a`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/824b14a5fdfafa83347cf06ca065717494fbd2f3))
+* <bot> update setup.cfg ([`a6b8290`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/a6b8290bb86fc3b2f22e19d9ec6a7344771b0a24))
+* Pin `htcondor==23.7.2` ([`52cc327`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/52cc3275782688949cb4625d01d151965d57d667))
+
 ## v0.1.30 (2024-06-28)
 
 ### Other
