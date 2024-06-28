@@ -48,7 +48,7 @@ def make_condor_job_description(
     # container_config
     image: str,
     arguments: str,
-    environment: dict[str, str],
+    environment: dict[str, Any],
     input_files: list[str],
     # worker_config
     do_transfer_worker_stdouterr: bool,
@@ -87,6 +87,19 @@ def make_condor_job_description(
         }
     )
 
+    def to_envval(val: Any) -> str:
+        """Convert an arbitrary value to a string to be used as an environment variable."""
+        if isinstance(val, list):
+            # this is used by the pilot for handling multiple queues
+            # WMS makes lists for:
+            #    EWMS_PILOT_QUEUE_INCOMING / EWMS_PILOT_QUEUE_OUTGOING
+            #    EWMS_PILOT_QUEUE_*_AUTH_TOKEN
+            #    EWMS_PILOT_QUEUE_*_BROKER_TYPE
+            #    EWMS_PILOT_QUEUE_*_BROKER_ADDRESS
+            return ";".join(val)
+        else:
+            return str(val)
+
     # write
     submit_dict = {
         "universe": "container",
@@ -94,7 +107,7 @@ def make_condor_job_description(
         "container_image": f"{image}",  # not quoted -- otherwise condor assumes relative path
         #
         "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
-        "environment": f'"{" ".join(f"{k}={v}" for k, v in sorted(environment.items()))}"',  # must be quoted
+        "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(environment.items()))}"',  # must be quoted
         #
         "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "+FileSystemDomain": '"blah"',  # must be quoted
@@ -180,7 +193,7 @@ async def start(
     # container_config
     image: str,
     arguments: str,
-    environment: dict[str, str],
+    environment: dict[str, Any],
     input_files: list[str],
     # worker_config
     do_transfer_worker_stdouterr: bool,
