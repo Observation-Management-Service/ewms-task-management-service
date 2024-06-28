@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.30 (2024-06-28)
+
+### Other
+
+* Bump to `apptainer-version: 1.3.2` ([`509ec08`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/509ec08c774f10c7e1396a223b799a827ae09ccd))
+* <bot> update dependencies*.log files(s) ([`438dfcf`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/438dfcf00ff0ba5667dd311ccbe05790656b2faf))
+* Update for WMS List-Based Env Var Values ([`0e2b8b1`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/0e2b8b103ad2d71058b98813117c812d3ce60922))
+
 ## v0.1.29 (2024-06-05)
 
 ### Other
