@@ -231,7 +231,7 @@ class ClusterInfo:
         #
         # OTHER
         else:
-            raise UnknownJobEvent(f"not an important event: {job_event.type.name}")
+            raise NoUpdateException(f"not an important event: {job_event.type.name}")
 
 
 ########################################################################################
@@ -293,8 +293,8 @@ async def watch_job_event_log(
                     cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
-            except UnknownJobEvent as e:
-                LOGGER.debug(f"error: {e}")
+            except NoUpdateException:
+                pass  # nothing important happened, too common to log
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
