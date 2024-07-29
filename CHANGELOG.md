@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.32 (2024-07-29)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`1def75b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/1def75b36baf6050f7b8ae65b4bab4262c175e12))
+* Don't Log Unimportant Job Events ([`8ce7f73`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/8ce7f73bf7beff314d40d2ef255c6bd590796fa0))
+
 ## v0.1.31 (2024-06-28)
 
 ### Other
