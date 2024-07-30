@@ -98,7 +98,7 @@ async def scalar_loop(
                     ewms_pending_starter_attrs["taskforce_uuid"],
                     ewms_pending_starter_attrs["n_workers"],
                     #
-                    **{  # append prefix to each to clear some ambiguity
+                    **{  # append prefix to each to clear ambiguity
                         f"pilot_{k}": v
                         for k, v in ewms_pending_starter_attrs["pilot_config"].items()
                     },
