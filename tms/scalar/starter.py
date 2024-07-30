@@ -47,7 +47,6 @@ def make_condor_job_description(
     taskforce_uuid: str,
     # pilot_config
     pilot_image: str,
-    pilot_arguments: str,
     pilot_environment: dict[str, Any],
     pilot_input_files: list[str],
     # worker_config
@@ -106,7 +105,7 @@ def make_condor_job_description(
         "+should_transfer_container": "no",
         "container_image": f"{pilot_image}",  # not quoted -- otherwise condor assumes relative path
         #
-        "arguments": pilot_arguments.replace('"', r"\""),  # escape embedded quotes
+        "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted
         #
         "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
@@ -192,7 +191,6 @@ async def start(
     n_workers: int,
     # pilot_config
     pilot_image: str,
-    pilot_arguments: str,
     pilot_environment: dict[str, Any],
     pilot_input_files: list[str],
     # worker_config
@@ -216,7 +214,6 @@ async def start(
         taskforce_uuid,
         #
         pilot_image,
-        pilot_arguments,
         pilot_environment,
         pilot_input_files,
         #
