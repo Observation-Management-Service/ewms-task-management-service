@@ -100,7 +100,7 @@ def make_condor_job_description(
             out_val = str(val)
         # ret
         if " " in out_val:
-            return f'"{out_val}"'  # quote it
+            return f"'{out_val}'"  # quote it
         else:
             return out_val
 
