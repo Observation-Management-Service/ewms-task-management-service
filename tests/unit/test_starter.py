@@ -1,6 +1,5 @@
 """Unit tests for the starter functionality."""
 
-
 import logging
 import os
 from datetime import date
@@ -8,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import htcondor  # type: ignore[import-untyped]
 import humanfriendly
+
 from tms import config  # noqa: F401  # setup env vars
 from tms.scalar import starter
 
@@ -91,10 +91,10 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         n_workers=123,
         # taskforce args
-        image="my_image",
-        arguments="my args",
-        environment={"abc": "932", "def": "True"},
-        input_files=["foofile", "bardir/barfile"],
+        pilot_image="my_image",
+        pilot_arguments="my args",
+        pilot_environment={"abc": "932", "def": "True"},
+        pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",
         # condor args
         do_transfer_worker_stdouterr=True,
