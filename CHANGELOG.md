@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.34 (2024-07-30)
+
+### Other
+
+* Use `pilot_config` ([#20](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/20)) ([`72734d1`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/72734d12e51ff4b760f56ca045bccd3299f2a9d9))
+
 ## v0.1.33 (2024-07-30)
 
 ### Other
