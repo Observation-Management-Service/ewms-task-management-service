@@ -95,9 +95,14 @@ def make_condor_job_description(
             #    EWMS_PILOT_QUEUE_*_AUTH_TOKEN
             #    EWMS_PILOT_QUEUE_*_BROKER_TYPE
             #    EWMS_PILOT_QUEUE_*_BROKER_ADDRESS
-            return ";".join(val)
+            out_val = ";".join(val)
         else:
-            return str(val)
+            out_val = str(val)
+        # ret
+        if " " in out_val:
+            return f'"{out_val}"'  # quote it
+        else:
+            return out_val
 
     # write
     submit_dict = {
