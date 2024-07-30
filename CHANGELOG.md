@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.35 (2024-07-30)
+
+### Other
+
+* Allow Spaces in Env Var Values ([`f569727`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/f569727c5e0313d2f6b1851dff0533182044633c))
+
 ## v0.1.34 (2024-07-30)
 
 ### Other
