@@ -42,7 +42,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "+should_transfer_container": "no",
         "container_image": "my_image",
         #
-        "arguments": "my args",
+        "arguments": "",
         "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
         #
         "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
@@ -92,7 +92,6 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         n_workers=123,
         # taskforce args
         pilot_image="my_image",
-        pilot_arguments="my args",
         pilot_environment={"abc": "932", "def": "True"},
         pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",
