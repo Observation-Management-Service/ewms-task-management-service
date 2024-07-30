@@ -45,11 +45,10 @@ async def is_taskforce_still_pending_starter(
 
 def make_condor_job_description(
     taskforce_uuid: str,
-    # container_config
-    image: str,
-    arguments: str,
-    environment: dict[str, Any],
-    input_files: list[str],
+    # pilot_config
+    pilot_image: str,
+    pilot_environment: dict[str, Any],
+    pilot_input_files: list[str],
     # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
@@ -80,7 +79,7 @@ def make_condor_job_description(
     logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
 
     # update environment
-    environment.update(
+    pilot_environment.update(
         {
             "EWMS_PILOT_HTCHIRP": "True",
             "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
@@ -104,17 +103,17 @@ def make_condor_job_description(
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f"{image}",  # not quoted -- otherwise condor assumes relative path
+        "container_image": f"{pilot_image}",  # not quoted -- otherwise condor assumes relative path
         #
-        "arguments": arguments.replace('"', r"\""),  # escape embedded quotes
-        "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(environment.items()))}"',  # must be quoted
+        "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
+        "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted
         #
         "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "log": str(logs_fpath),
         #
-        "transfer_input_files": f'"{" ".join(input_files)}"',  # must be quoted
+        "transfer_input_files": f'"{" ".join(pilot_input_files)}"',  # must be quoted
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
@@ -190,11 +189,10 @@ async def start(
     #
     taskforce_uuid: str,
     n_workers: int,
-    # container_config
-    image: str,
-    arguments: str,
-    environment: dict[str, Any],
-    input_files: list[str],
+    # pilot_config
+    pilot_image: str,
+    pilot_environment: dict[str, Any],
+    pilot_input_files: list[str],
     # worker_config
     do_transfer_worker_stdouterr: bool,
     max_worker_runtime: int,
@@ -215,10 +213,9 @@ async def start(
     submit_dict, do_make_output_subdir = make_condor_job_description(
         taskforce_uuid,
         #
-        image,
-        arguments,
-        environment,
-        input_files,
+        pilot_image,
+        pilot_environment,
+        pilot_input_files,
         #
         do_transfer_worker_stdouterr,
         max_worker_runtime,
