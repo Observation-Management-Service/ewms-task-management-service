@@ -197,7 +197,10 @@ class ClusterInfo:
         #
         # CHIRP -- pilot status
         if job_event.type == htcondor.JobEventType.GENERIC:
-            jie, chirp_value = self._get_ewms_pilot_chirp_value(job_event)
+            try:
+                jie, chirp_value = self._get_ewms_pilot_chirp_value(job_event)
+            except UnknownJobEvent as e:
+                raise NoUpdateException() from e
             self._set_job_status(job_event, jie, chirp_value)
         #
         # JOB STATUS
