@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.33 (2024-07-30)
+
+### Other
+
+* Fix Chirp Parsing ([`86fad8a`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/86fad8aeccee6a51768da9ae23d92c98081f7847))
+
 ## v0.1.32 (2024-07-29)
 
 ### Other
