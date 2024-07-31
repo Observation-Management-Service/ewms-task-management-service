@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.37 (2024-07-31)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`d79e7bb`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d79e7bba3c22bdd8752808bf247469427a5f3c58))
+* Prepend CVMFS Path to `pilot_image` ([`09fc9b8`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/09fc9b8f27f133a973a53c882d11c6e641af8ecb))
+
 ## v0.1.36 (2024-07-30)
 
 ### Other
