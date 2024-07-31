@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.38 (2024-07-31)
+
+### Other
+
+* Prepend CVMFS Path to `pilot_image` - 2 ([`83474f3`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/83474f3411152c093ec7b32f5b8968c9161e9a08))
+
 ## v0.1.37 (2024-07-31)
 
 ### Other
