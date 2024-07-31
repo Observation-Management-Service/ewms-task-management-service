@@ -28,8 +28,6 @@ class JobInfoKey(enum.Enum):
     NOTE - enum members are singletons -> good for memory reduction
     """
 
-    # pylint:disable=invalid-name
-
     ClusterId = enum.auto()
     JobStatus = enum.auto()
     EnteredCurrentStatus = enum.auto()

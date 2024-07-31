@@ -40,7 +40,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": "my_image",
+        "container_image": "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot:my_image",
         #
         "arguments": "",
         "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted

@@ -108,7 +108,7 @@ def make_condor_job_description(
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f"{pilot_image}",  # not quoted -- otherwise condor assumes relative path
+        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_image}",  # not quoted -- otherwise condor assumes relative path
         #
         "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted

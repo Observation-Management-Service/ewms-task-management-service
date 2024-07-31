@@ -15,8 +15,6 @@ WMS_ROUTE_VERSION_PREFIX = "v0"
 class EnvConfig:
     """Environment variables."""
 
-    # pylint:disable=invalid-name
-
     # REQUIRED
     EWMS_ADDRESS: str
     EWMS_TOKEN_URL: str
@@ -28,6 +26,10 @@ class EnvConfig:
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
+
+    CVMFS_PILOT_PATH: str = (
+        "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
+    )
 
     DRYRUN: bool = False
     CI_TEST: bool = False
