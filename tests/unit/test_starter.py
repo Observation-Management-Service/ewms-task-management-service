@@ -45,7 +45,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "arguments": "",
         "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
         #
-        "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
+        "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2 && OSG_OS_VERSION =?= 8",
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
