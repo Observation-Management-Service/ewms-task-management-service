@@ -121,7 +121,7 @@ def make_condor_job_description(
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             "has_avx && has_avx2 && "
-            "OSG_OS_VERSION =?= 8"  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167
+            'OSG_OS_VERSION =?= "8"'  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
