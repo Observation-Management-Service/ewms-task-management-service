@@ -117,7 +117,12 @@ def make_condor_job_description(
         "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted
         #
-        "Requirements": "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && HAS_CVMFS_icecube_opensciencegrid_org && has_avx && has_avx2",
+        "Requirements": (
+            "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
+            "HAS_CVMFS_icecube_opensciencegrid_org && "
+            "has_avx && has_avx2 && "
+            "OSG_OS_VERSION =?= 8"  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167
+        ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         "log": str(logs_fpath),
