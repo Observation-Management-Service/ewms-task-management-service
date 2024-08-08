@@ -79,12 +79,16 @@ def make_condor_job_description(
     logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
 
     # update environment
-    pilot_environment.update(
-        {
-            "EWMS_PILOT_HTCHIRP": "True",
-            "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
-        }
-    )
+    # order of precedence (descending): WMS's values, runtime-specific, constant
+    pilot_envvar_defaults = {
+        # constant
+        "EWMS_PILOT_HTCHIRP": "True",
+        "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
+        # runtime-specific
+        **ENV.TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT,
+    }
+    for k, v in pilot_envvar_defaults.items():
+        pilot_environment.setdefault(k, v)  # does not override
 
     def to_envval(val: Any) -> str:
         """Convert an arbitrary value to a string to be used as an environment variable."""

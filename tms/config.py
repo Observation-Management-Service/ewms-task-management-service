@@ -3,6 +3,7 @@
 import dataclasses as dc
 import logging
 from pathlib import Path
+from typing import Dict
 
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
@@ -22,14 +23,17 @@ class EnvConfig:
     EWMS_CLIENT_SECRET: str
     JOB_EVENT_LOG_DIR: Path
 
+    # OPTIONAL
+
+    # ex: "foo=1 bar=barbar baz=1"
+    TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT: Dict[str, str] = dc.field(default_factory=dict)
+
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
 
-    CVMFS_PILOT_PATH: str = (
-        "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
-    )
+    CVMFS_PILOT_PATH: str = "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
 
     DRYRUN: bool = False
     CI_TEST: bool = False
