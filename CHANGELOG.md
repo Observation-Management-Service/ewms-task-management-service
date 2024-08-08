@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.40 (2024-08-08)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`35bdb2d`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/35bdb2d66514a516a913499ad4fe572e789b3a2b))
+* Add `OSG_OS_VERSION =?= 8` to Starter Requirements - 2 ([`79173fb`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/79173fbc1da0d543ac0e51cc83b49bd4d4b438ce))
+* Add `OSG_OS_VERSION =?= 8` to Starter Requirements ([`d926320`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d9263206b3a55191ff131c24e7c27764b540b85c))
+
 ## v0.1.39 (2024-08-08)
 
 ### Other
