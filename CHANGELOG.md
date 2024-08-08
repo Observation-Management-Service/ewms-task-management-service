@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.39 (2024-08-08)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`83498ba`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/83498ba08a3b59ce0e043989f1a66d0840400a41))
+* Add `TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT`, Don't Override WMS Values ([`332a34b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/332a34b373d2ed809548385efa16e7e3456e402a))
+
 ## v0.1.38 (2024-07-31)
 
 ### Other
