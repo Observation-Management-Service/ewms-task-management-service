@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.44 (2024-08-09)
+
+### Other
+
+* Handle Failed Condor Submit - 2 ([`5d46997`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/5d46997a4929ded37f5682e8d3cf6b24f077f07f))
+* Make the Release ([`f58e593`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/f58e59384ae1c67c93f2285aa0637f44e4a83847))
+* Handle Failed Condor Submit ([`78c44b7`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/78c44b738358dbc2dc193d84675a375326ab8fc3))
+
 ## v0.1.43 (2024-08-09)
 
 ### Other
