@@ -102,11 +102,10 @@ def make_condor_job_description(
             out_val = ";".join(val)
         else:
             out_val = str(val)
-        # ret
         if " " in out_val:
-            return f"'{out_val}'"  # quote it
-        else:
-            return out_val
+            out_val = f"'{out_val}'"  # quote it
+        out_val = out_val.replace("\n", " ")  # no new-lines!
+        return out_val
 
     # write
 
