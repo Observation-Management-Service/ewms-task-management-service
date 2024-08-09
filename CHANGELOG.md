@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.43 (2024-08-09)
+
+### Other
+
+* Disallow New-Lines in Task Env Vars ([`98d4bbd`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/98d4bbd22d5740386713569dc7ad1b9787c9c636))
+
 ## v0.1.42 (2024-08-09)
 
 ### Other
