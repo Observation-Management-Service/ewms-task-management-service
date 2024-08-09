@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.41 (2024-08-09)
+
+### Other
+
+* Add `OSG_OS_VERSION =?= 8` to Starter Requirements - 3 ([`25df53f`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/25df53f6e51121f1bdb36534e5d9b76273452f0a))
+
 ## v0.1.40 (2024-08-08)
 
 ### Other
