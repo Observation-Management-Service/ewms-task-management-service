@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.42 (2024-08-09)
+
+### Other
+
+* Remove `has_avx2` Requirement ([`5bfd0b8`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/5bfd0b859d847c8de4fa24f14c134e8704b40c8a))
+
 ## v0.1.41 (2024-08-09)
 
 ### Other
