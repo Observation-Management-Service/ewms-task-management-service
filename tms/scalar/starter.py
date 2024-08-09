@@ -181,7 +181,7 @@ def submit(
     schedd_obj: htcondor.Schedd,
     n_workers: int,
     submit_dict: dict[str, Any],
-) -> htcondor.SubmitResult:
+) -> tuple[int, int]:
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
     LOGGER.info(submit_obj)
@@ -193,7 +193,7 @@ def submit(
     )
     LOGGER.info(submit_result_obj)
 
-    return submit_result_obj
+    return submit_result_obj.cluster_id, submit_result_obj.num_procs
 
 
 async def start(
@@ -249,11 +249,19 @@ async def start(
         raise TaskforceNoLongerPendingStarter()
 
     # submit
-    submit_result_obj = submit(
-        schedd_obj=schedd_obj,
-        n_workers=n_workers,
-        submit_dict=submit_dict,
-    )
+    try:
+        cluster_id, num_procs = submit(
+            schedd_obj=schedd_obj,
+            n_workers=n_workers,
+            submit_dict=submit_dict,
+        )
+    except htcondor.HTCondorInternalError as e:
+        return dict(
+            cluster_id=-1,
+            n_workers=0,
+            submit_dict=submit_dict,
+            job_event_log_fpath=f"failed: {str(e)}",  # TODO: need more robust error API design
+        )
 
     # make output subdir?
     # we have to construct AFTER 'submit' b/c the cluster id is not known prior
@@ -261,15 +269,15 @@ async def start(
         output_subdir = Path(
             str(get_output_dpath_macro_template(taskforce_uuid)).replace(
                 "$(ClusterId)",
-                str(submit_result_obj.cluster()),
+                str(cluster_id),
             )
         )
         output_subdir.mkdir(parents=True, exist_ok=True)
 
     # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
-        cluster_id=submit_result_obj.cluster(),
-        n_workers=submit_result_obj.num_procs(),
+        cluster_id=cluster_id,
+        n_workers=num_procs,
         submit_dict=submit_dict,
         job_event_log_fpath=submit_dict["log"],
     )

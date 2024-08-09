@@ -107,7 +107,7 @@ async def scalar_loop(
                 )
             except starter.TaskforceNoLongerPendingStarter:
                 continue
-            # confirm start (otherwise ewms will request this one again -- good for statelessness)
+            # confirm start (otherwise tms will pull this one again -- good for statelessness)
             await confirm_start(
                 ewms_rc,
                 ewms_pending_starter_attrs["taskforce_uuid"],
