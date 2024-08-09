@@ -193,7 +193,7 @@ def submit(
     )
     LOGGER.info(submit_result_obj)
 
-    return submit_result_obj.cluster_id, submit_result_obj.num_procs
+    return submit_result_obj.cluster(), submit_result_obj.num_procs()
 
 
 async def start(

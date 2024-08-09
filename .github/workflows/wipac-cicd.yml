@@ -161,8 +161,8 @@ jobs:
       py-versions,
       py-dependencies,
       test-build-docker,
-      test-build-singularity
-      #      unit-test
+      test-build-singularity,
+      unit-test
     ]
     runs-on: ubuntu-latest
     concurrency: release
