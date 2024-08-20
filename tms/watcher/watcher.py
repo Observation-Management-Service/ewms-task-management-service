@@ -347,12 +347,16 @@ async def watch_job_event_log(
         # remove any "empty" keys
         # (it's okay to send an empty sub-dict, but all empties is pointless)
         if patch_body := {k: v for k, v in patch_body.items() if v}:
-            LOGGER.info("SENDING UPDATES TO EWMS...")
+            LOGGER.info(
+                f"SENDING UPDATES TO EWMS ("
+                f"statuses={list(patch_body[_ALL_COMP_STAT_KEY].keys())}, "
+                f"errors={list(patch_body[_ALL_TOP_ERRORS_KEY].keys())})"
+            )
             await ewms_rc.request(
                 "POST",
                 f"/{WMS_ROUTE_VERSION_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
-            LOGGER.info("UPDATES SENT.")
+            LOGGER.info("updates sent.")
         else:
-            LOGGER.info("NO UPDATES NEEDED FOR EWMS")
+            LOGGER.info("no updates needed for ewms.")
