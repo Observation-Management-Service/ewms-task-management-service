@@ -87,7 +87,7 @@ async def scalar_loop(
     interval_timer = utils.EveryXSeconds(ENV.TMS_OUTER_LOOP_WAIT)
 
     while True:
-        LOGGER.info("Activating starter...")
+        LOGGER.debug("Activating starter...")
         # START(S)
         while ewms_pending_starter_attrs := await get_next_to_start(ewms_rc):
             try:
@@ -113,10 +113,10 @@ async def scalar_loop(
                 ewms_pending_starter_attrs["taskforce_uuid"],
                 ewms_condor_submit_attrs,
             )
-        LOGGER.info("De-activated starter.")
+        LOGGER.debug("De-activated starter.")
 
         # STOP(S)
-        LOGGER.info("Activating stopper...")
+        LOGGER.debug("Activating stopper...")
         while ewms_pending_starter_attrs := await get_next_to_stop(ewms_rc):
             stopper.stop(
                 schedd_obj,
@@ -127,7 +127,7 @@ async def scalar_loop(
                 ewms_rc,
                 ewms_pending_starter_attrs["taskforce_uuid"],
             )
-        LOGGER.info("De-activated stopper.")
+        LOGGER.debug("De-activated stopper.")
 
         # throttle
         await interval_timer.wait_until_x(LOGGER)

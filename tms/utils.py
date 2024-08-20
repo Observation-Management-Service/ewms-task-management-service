@@ -1,6 +1,5 @@
 """General Utilities."""
 
-
 import asyncio
 import logging
 import time
@@ -20,7 +19,7 @@ class EveryXSeconds:
 
     async def wait_until_x(self, logger: logging.Logger) -> None:
         """Wait until it has been x seconds, 1s at a time."""
-        logger.info(
+        logger.debug(
             f"waiting until {self.seconds}s has elapsed since last iteration..."
         )
         while not self.has_been_x_seconds(logger):
@@ -32,7 +31,7 @@ class EveryXSeconds:
         yes = diff >= self.seconds
         if yes:
             self._last_time = time.time()
-            logger.info(f"has been at least {self.seconds}s (actually {diff}s)")
+            logger.debug(f"has been at least {self.seconds}s (actually {diff}s)")
         return yes
 
 

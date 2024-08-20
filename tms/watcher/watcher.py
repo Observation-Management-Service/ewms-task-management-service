@@ -277,7 +277,7 @@ async def watch_job_event_log(
 
         # get events -- exit when no more events
         got_new_events = False
-        LOGGER.info(f"Reading events from {jel_fpath}...")
+        LOGGER.debug(f"Reading events from {jel_fpath}...")
         for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
             await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
@@ -308,7 +308,7 @@ async def watch_job_event_log(
             else:
                 continue
 
-        LOGGER.info("Done reading events for now")
+        LOGGER.debug("Done reading events for now")
         LOGGER.debug(
             pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
         )
@@ -325,7 +325,7 @@ async def watch_job_event_log(
         #  Alternatively, we could re-parse the entire JEL every time.
         for cid, info in cluster_infos.items():
             try:
-                LOGGER.info(
+                LOGGER.debug(
                     f"Getting top task errors {info.taskforce_uuid=} / {cid=}..."
                 )
                 patch_body[_ALL_TOP_ERRORS_KEY][
@@ -334,7 +334,7 @@ async def watch_job_event_log(
             except NoUpdateException:
                 pass
             try:
-                LOGGER.info(
+                LOGGER.debug(
                     f"Aggregating compound statuses {info.taskforce_uuid=} / {cid=}..."
                 )
                 patch_body[_ALL_COMP_STAT_KEY][

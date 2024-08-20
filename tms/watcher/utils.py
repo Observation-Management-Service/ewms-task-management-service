@@ -93,7 +93,7 @@ async def query_for_more_taskforces(
     taskforce_uuids: list[str],
 ) -> AsyncIterator[tuple[str, types.ClusterId]]:
     """Get new taskforce uuids."""
-    LOGGER.info("Querying for more taskforces from EWMS...")
+    LOGGER.debug("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
         "POST",
         f"/{WMS_ROUTE_VERSION_PREFIX}/query/taskforces",
