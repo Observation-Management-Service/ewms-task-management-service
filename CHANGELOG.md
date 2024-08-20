@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.45 (2024-08-20)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`cb8932a`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/cb8932af24690f6de53969b1ecac674a955b3c1e))
+* Demote Some Loggers to "debug" ([`921a8d3`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/921a8d3055e1ce5af374a0265a37b0bbbdd52d37))
+
 ## v0.1.44 (2024-08-09)
 
 ### Other
