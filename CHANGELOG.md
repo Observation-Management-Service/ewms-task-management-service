@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.46 (2024-08-20)
+
+### Other
+
+* Fix Chirp Parsing - 2 ([`51ff86d`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/51ff86db0e8aafdabb50b9d329a0f73f5cc962be))
+* Fix Chirp Parsing ([`ef06b37`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ef06b377c60225eeb4fb863d901795c8bb0d9741))
+* Log Taskforce ID ([`c79f74d`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/c79f74d4ccc2a09e4b3dc9db53952d6ab83b28e6))
+
 ## v0.1.45 (2024-08-20)
 
 ### Other
