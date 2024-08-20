@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
+from htcondor import classad  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .utils import (
@@ -155,20 +156,28 @@ class ClusterInfo:
         """Parse out the chirp value."""
         if "info" not in job_event:
             raise UnknownJobEvent("no 'info' attribute")
+
         # ex: "HTChirpEWMSPilotStatus: foo bar baz"
         if not job_event["info"].startswith("HTChirpEWMSPilot"):
             raise UnknownJobEvent(
                 f"not a 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
             )
+
         # parse
         try:
-            attr, value = job_event["info"].split(":", maxsplit=1)
-            jie = JobInfoKey[attr]
+            _attr, value = job_event["info"].split(":", maxsplit=1)
+            jie = JobInfoKey[_attr]  # convert to enum
+            value = value.strip()
+            try:
+                value = classad.unquote(value)  # value was *probably* quoted
+            except classad.ClassAdParseError:
+                pass
         except (ValueError, KeyError) as e:
             raise UnknownJobEvent(
                 f"invalid 'HTChirpEWMSPilot*' chirp: {job_event['info']}"
             ) from e
-        return jie, value.strip()
+
+        return jie, value
 
     def _set_job_status(
         self,
