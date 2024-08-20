@@ -358,8 +358,8 @@ async def watch_job_event_log(
         if patch_body := {k: v for k, v in patch_body.items() if v}:
             LOGGER.info(
                 f"SENDING UPDATES TO EWMS ("
-                f"statuses={list(patch_body[_ALL_COMP_STAT_KEY].keys())}, "
-                f"errors={list(patch_body[_ALL_TOP_ERRORS_KEY].keys())})"
+                f"statuses={list(patch_body.get(_ALL_COMP_STAT_KEY,{}).keys())}, "
+                f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
             await ewms_rc.request(
                 "POST",
