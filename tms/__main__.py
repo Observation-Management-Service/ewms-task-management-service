@@ -1,6 +1,5 @@
 """Entrypoint for TMS."""
 
-
 import asyncio
 import logging
 from pathlib import Path
@@ -10,7 +9,7 @@ from rest_tools.client import ClientCredentialsAuth
 
 from .config import ENV, config_logging
 from .scalar.scalar import scalar_loop
-from .utils import AppendOnlyList, TaskforceMonitor
+from .utils import AppendOnlyList, LogFileLogic, TaskforceMonitor
 from .watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                 f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
-                if not jel_fpath.is_file():
+                if not LogFileLogic.is_log_file(jel_fpath):
                     continue
                 # check/append
                 if jel_fpath in in_progress:

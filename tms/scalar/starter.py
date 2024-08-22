@@ -1,7 +1,6 @@
 """For starting EWMS taskforce workers on an HTCondor cluster."""
 
 import logging
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +10,7 @@ from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
 from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
+from ..utils import LogFileLogic
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,10 +74,6 @@ def make_condor_job_description(
     #   entrypoint, and loading the icetray env file
     #   directly from cvmfs messes up the paths" -DS
 
-    # cluster logs -- shared w/ other clusters
-    ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    logs_fpath = ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
-
     # update environment
     # order of precedence (descending): WMS's values, runtime-specific, constant
     pilot_envvar_defaults = {
@@ -126,7 +122,8 @@ def make_condor_job_description(
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
-        "log": str(logs_fpath),
+        # cluster logs -- shared w/ other clusters
+        "log": str(LogFileLogic.make_log_file_name()),
         #
         "transfer_input_files": f'"{" ".join(pilot_input_files)}"',  # must be quoted
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
