@@ -17,7 +17,7 @@ class LogFileLogic:
     """Logic for setting up and detecting log files."""
 
     @staticmethod
-    def make_log_file_name() -> str:
+    def make_log_file_name() -> Path:
         """Generate a log file name."""
         ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
         return ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
