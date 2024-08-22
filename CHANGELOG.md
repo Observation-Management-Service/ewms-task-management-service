@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.47 (2024-08-22)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`9000349`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/9000349d9b829a994cec23f5f6f429dbedec98f2))
+* Update Log File Detection - 2 ([`0404ced`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/0404ced91123e2c1b56088b94c5a854a26b86726))
+* Update Log File Detection ([`4dd7498`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/4dd7498698c04a0a6d7045696b57b31b4cd63312))
+
 ## v0.1.46 (2024-08-20)
 
 ### Other
