@@ -33,14 +33,16 @@ class EnvConfig:
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
 
-    CVMFS_PILOT_PATH: str = "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
+    CVMFS_PILOT_PATH: str = (
+        "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
+    )
 
     DRYRUN: bool = False
     CI_TEST: bool = False
 
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: str = "INFO"
     LOG_LEVEL_THIRD_PARTY: str = "WARNING"
-    LOG_LEVEL_REST_TOOLS: str = "DEBUG"
+    LOG_LEVEL_REST_TOOLS: str = "INFO"
 
 
 ENV = from_environment_as_dataclass(EnvConfig)
