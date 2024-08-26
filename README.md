@@ -40,22 +40,22 @@ cd /scratch/$USER && \
 
 ### Workflow
 
-This object _does not exist_ within the TMS.
+**Does not exist** within the TMS.
 
-- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
+Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
 
 ### Task
 
-A _task_ is not a first-order object in the TMS. Each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task.
+A **task** is not a first-order object in the TMS. Each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task.
 
-- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
+Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
 
 ### Task Directive
 
-This object _does not exist_ within the TMS.
+**Does not exist** within the TMS.
 
-- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
+Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
 
 ### Taskforce
 
-- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
+Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
