@@ -54,20 +54,20 @@ cd /scratch/$USER && \
 
 ### Workflow
 
-_Does not exist within the TMS._ _[Compare to WMS.]_(https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
+_Does not exist within the TMS._ [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
 
 ### Task
 
-A **task** is not a first-order object in the TMS. However, each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task. _[Compare to WMS.]_(https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
+A **task** is not a first-order object in the TMS. However, each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task. [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
 
 ### Task Directive
 
-_Does not exist within the TMS._ _[Compare to WMS.]_(https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
+_Does not exist within the TMS._ [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
 
 ### Taskforce
 
 The **taskforce** is the primary object within the TMS. It is associated with one condor cluster. See Taskforce's [`cluster_id`](https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/Docs/Models/TaskforceObject.md).  
-_[Compare to WMS.]_(https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
+[_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
 
 #### Cluster
 
