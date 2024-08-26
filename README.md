@@ -18,8 +18,7 @@ cd /scratch/$USER && \
     export JOB_EVENT_LOG_DIR="$PWD/tms_scratchdir" && \
     export EWMS_ADDRESS="https://ewms-dev.icecube.aq" && \
     export EWMS_CLIENT_SECRET=XXX && \
-    export EWMS_TOKEN_URL="https://keycloak.
-    icecube.wisc.edu/auth/realms/IceCube" && \
+    export EWMS_TOKEN_URL="https://keycloak.icecube.wisc.edu/auth/realms/IceCube" && \
     export EWMS_CLIENT_ID="ewms-tms-dev" && \
     export TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT="_EWMS_PILOT_APPTAINER_BUILD_WORKDIR=/srv/var_tmp/" && \
     apptainer run \
