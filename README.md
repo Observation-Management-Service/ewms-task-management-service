@@ -52,10 +52,9 @@ A **task** is not a first-order object in the TMS. Each taskforce holds a refere
 
 ### Taskforce
 
-The **taskforce** is the primary object within the TMS. It is associated with one condor cluster, see Taskforce's [`cluster_id`](https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/Docs/Models/TaskforceObject.md).
-
-Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
+The **taskforce** is the primary object within the TMS. It is associated with one condor cluster. See Taskforce's [`cluster_id`](https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/Docs/Models/TaskforceObject.md).  
+(Compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce))
 
 #### Cluster
 
-The HTCondor cluster maps 1:1 with a taskforce, and so, it's only purpose is within the context of an HTCondor pool, the event log, and debugging. As opposed to the [Taskforce](#taskforce), this object is not relevant in the wider EWMS-context.
+The HTCondor cluster maps 1:1 with a taskforce and is used only within the context of an HTCondor pool, event log, and debugging. Unlike the [Taskforce](#taskforce), this object is not relevant in the wider EWMS context.
