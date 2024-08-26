@@ -1,14 +1,22 @@
 <!--- Top of README Badges (automated) --->
-[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![Lines of code](https://img.shields.io/tokei/lines/github/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen) 
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![Lines of code](https://img.shields.io/tokei/lines/github/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
 <!--- End of README Badges (automated) --->
 
 # ewms-task-management-service
 
 A Task Management Service for EWMS
 
-## How to Run
+The TMS is the singular component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. This service:
 
-The `image-publish.yml` GitHub Actions workflow publishes this package as an Apptainer image in CVMFS.
+- **starts** condor clusters for new taskforces (1:1), see [taskforce](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce),
+- **stops** condor clusters (`condor_rm`) when needed, and
+- **watches** condor clusters, aggregates taskforce-level stats, and relays information to the WMS.
+
+## How to Build
+
+The `image-publish.yml` GitHub Actions workflow publishes this package as an Apptainer image in CVMFS when a new release is made.
+
+## How to Run
 
 Replace the placeholder values, then run this as a one-liner _on sub-2_:
 
@@ -27,3 +35,27 @@ cd /scratch/$USER && \
         --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
         /cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service\:A.B.C
 ```
+
+## EWMS Glossary Applied to the TMS
+
+### Workflow
+
+This object _does not exist_ within the TMS.
+
+- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
+
+### Task
+
+A _task_ is not a first-order object in the TMS. Each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task.
+
+- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
+
+### Task Directive
+
+This object _does not exist_ within the TMS.
+
+- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
+
+### Taskforce
+
+- compare to WMS, [see here](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
