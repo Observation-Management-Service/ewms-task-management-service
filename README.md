@@ -1,5 +1,5 @@
 <!--- Top of README Badges (automated) --->
-[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![Lines of code](https://img.shields.io/tokei/lines/github/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen) 
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![Lines of code](https://img.shields.io/tokei/lines/github/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
 <!--- End of README Badges (automated) --->
 
 # ewms-task-management-service
@@ -54,20 +54,20 @@ cd /scratch/$USER && \
 
 ### Workflow
 
-_Does not exist within the TMS._ [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)
+_Does not exist within the TMS._ _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)_
 
 ### Task
 
-A **task** is not a first-order object in the TMS. However, each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task. [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)
+A **task** is not a first-order object in the TMS. However, each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task. _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)_
 
 ### Task Directive
 
-_Does not exist within the TMS._ [_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)
+_Does not exist within the TMS._ _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)_
 
 ### Taskforce
 
 The **taskforce** is the primary object within the TMS. It is associated with one condor cluster. See Taskforce's [`cluster_id`](https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/Docs/Models/TaskforceObject.md).  
-[_Compare to WMS._](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)
+_[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)_
 
 #### Cluster
 
