@@ -6,7 +6,7 @@
 
 A Task Management Service for EWMS
 
-The TMS is the central component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. It runs on an HTCondor access point (AP). This service:
+The TMS is the central component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. It runs on an HTCondor Access Point (AP). This service:
 
 - **Starts** condor clusters for new taskforces (1:1), see [taskforce](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce).
 - **Stops** condor clusters (`condor_rm`) when necessary.
@@ -32,7 +32,7 @@ The `image-publish.yml` GitHub Actions workflow publishes this package as an App
 
 ## How to Run
 
-Replace the placeholder values, then run this as a one-liner _on sub-2_:
+Replace the placeholder values, then run this as a one-liner a HTCondor Access Point (AP):
 
 ```bash
 cd /scratch/$USER && \
