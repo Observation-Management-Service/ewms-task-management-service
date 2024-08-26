@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.49 (2024-08-26)
+
+### Other
+
+* <bot> update README.md ([`c68e1ed`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/c68e1edc005c573f880f175833364488e8ee0b62))
+* Update README Followups ([`d8dcdb7`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d8dcdb768c7216b8d82b0b34fb1def60c9bcb1da))
+
 ## v0.1.48 (2024-08-26)
 
 ### Other
