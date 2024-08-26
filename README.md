@@ -6,11 +6,25 @@
 
 A Task Management Service for EWMS
 
-The TMS is the singular component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. This service:
+The TMS is the singular component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool: it is ran on a HTCondor access point (AP). This service:
 
 - **starts** condor clusters for new taskforces (1:1), see [taskforce](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce),
 - **stops** condor clusters (`condor_rm`) when needed, and
 - **watches** condor clusters, aggregates taskforce-level stats, and relays information to the WMS.
+
+## Overview
+
+In short, the TMS receives its orders from the Workflow Management Service ([WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service)).
+
+### Starting and Stopping Taskforces/Clusters
+
+Internally, the service makes routine calls to the WMS for whether to start or stop clusters for specified taskforces.
+
+### Watching the Job Event Logs
+
+Concurrently, the service sends relevant updates to the WMS for each taskforce in a job event log. Taskforces will share a job event log if they commence on the same day. A new file is created when needed. Files are deleted after a period of inactivity.
+
+For statelessness, when the TMS restarts, aggregated taskforce updates will be re-sent to the WMS. The WMS knows how to deal with this.
 
 ## How to Build
 
