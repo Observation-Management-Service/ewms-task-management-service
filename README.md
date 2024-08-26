@@ -71,4 +71,4 @@ The **taskforce** is the primary object within the TMS. It is associated with on
 
 #### Cluster
 
-The HTCondor cluster maps 1:1 with a taskforce and is used only within the context of an HTCondor pool, event log, and debugging. Unlike the [Taskforce](#taskforce), this object is not relevant in the wider EWMS context.
+The HTCondor **cluster** maps 1:1 with a taskforce and is used only within the context of an HTCondor pool, event log, and debugging. Unlike the [Taskforce](#taskforce), this object is not relevant in the wider EWMS context.
