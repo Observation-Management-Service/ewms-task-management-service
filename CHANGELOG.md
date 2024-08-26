@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.48 (2024-08-26)
+
+### Other
+
+* Update README ([#21](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/21)) ([`908647f`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/908647fa253824887df262948bba64f93e5945d2))
+
 ## v0.1.47 (2024-08-22)
 
 ### Other
