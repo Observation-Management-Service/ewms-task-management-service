@@ -20,7 +20,8 @@ cd /scratch/$USER  &&  \
     export EWMS_CLIENT_SECRET=XXX  &&  \
     export EWMS_TOKEN_URL="https://keycloak.icecube.wisc.edu/auth/realms/IceCube"  &&  \
     export EWMS_CLIENT_ID="ewms-tms-dev"  &&  \
-    apptainer run  --mount type=bind,source=$PWD,dst=$PWD  \
+    apptainer run  \
+    --mount type=bind,source=$PWD,dst=$PWD  \
     --mount type=bind,source=/etc/condor/,dst=/etc/condor/,ro  \
     --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro   \
     /cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service\:A.B.C
