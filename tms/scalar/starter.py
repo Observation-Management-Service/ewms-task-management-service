@@ -181,16 +181,23 @@ def submit(
 ) -> tuple[int, int]:
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
+
+    LOGGER.info("This submit object will be submitted:")
     LOGGER.info(submit_obj)
 
     # submit
+    LOGGER.info("Submitting request to condor...")
     submit_result_obj = schedd_obj.submit(
         submit_obj,
         count=n_workers,  # submit N workers
     )
+    cluster_id, num_procs = submit_result_obj.clustoer(), submit_result_obj.num_procs()
+    LOGGER.info(f"SUCCESS: Submitted request to condor ({cluster_id=}, {num_procs=}).")
+
+    LOGGER.info("This submit classad has been submitted:")
     LOGGER.info(submit_result_obj)
 
-    return submit_result_obj.cluster(), submit_result_obj.num_procs()
+    return cluster_id, num_procs
 
 
 async def start(
