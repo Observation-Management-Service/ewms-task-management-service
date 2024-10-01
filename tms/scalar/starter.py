@@ -75,7 +75,7 @@ def make_condor_job_description(
     #   directly from cvmfs messes up the paths" -DS
 
     # update environment
-    # order of precedence (descending): WMS's values, runtime-specific, constant
+    # -> order of precedence (descending): WMS's values, runtime-specific, constant
     pilot_envvar_defaults = {
         # constant
         "EWMS_PILOT_HTCHIRP": "True",
@@ -85,6 +85,12 @@ def make_condor_job_description(
     }
     for k, v in pilot_envvar_defaults.items():
         pilot_environment.setdefault(k, v)  # does not override
+    # -> override these values
+    pilot_environment.update(
+        {
+            "_EWMS_PILOT_CONTAINER_PLATFORM": "apptainer",
+        }
+    )
 
     def to_envval(val: Any) -> str:
         """Convert an arbitrary value to a string to be used as an environment variable."""
