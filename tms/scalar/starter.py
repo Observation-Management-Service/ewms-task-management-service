@@ -80,8 +80,13 @@ def make_condor_job_description(
         # constant
         "EWMS_PILOT_HTCHIRP": "True",
         "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
-        # runtime-specific
-        **ENV.TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT,
+        # runtime-specific (from user)
+        **{
+            k: v
+            for k, v in ENV.TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT.items()
+            # prevent the user from defining env vars that could have adverse effects
+            if k.startswith("EWMS_PILOT_")
+        },
     }
     for k, v in pilot_envvar_defaults.items():
         pilot_environment.setdefault(k, v)  # does not override
