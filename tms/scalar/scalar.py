@@ -105,7 +105,7 @@ async def scalar_loop(
                     #
                     **ewms_pending_starter_attrs["worker_config"],
                 )
-            except starter.TaskforceNoLongerPendingStarter:
+            except starter.TaskforceNotToBeStarted:
                 continue
             except htcondor.HTCondorInternalError as e:
                 LOGGER.error(e)

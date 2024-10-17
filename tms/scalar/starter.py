@@ -26,9 +26,8 @@ class HaltedByDryRun(Exception):
     """Raise when doing a dry run and no further progress is needed."""
 
 
-class TaskforceNoLongerPendingStarter(Exception):
-    """Raise when taskforce is not pending-starter when it is expected to
-    be."""
+class TaskforceNotToBeStarted(Exception):
+    """Raise when the taskforce is no longer intended to start as previously expected."""
 
 
 async def is_taskforce_still_pending_starter(
@@ -255,7 +254,7 @@ async def start(
         LOGGER.critical(
             f"Startup Aborted - taskforce is no longer pending-starter: {taskforce_uuid}"
         )
-        raise TaskforceNoLongerPendingStarter()
+        raise TaskforceNotToBeStarted()
 
     # submit
     cluster_id, num_procs = submit(  # -> htcondor.HTCondorInternalError (let it raise)
