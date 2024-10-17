@@ -80,6 +80,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # fyi, dependabot can't access normal secrets
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:py-dep-this
       - if: github.actor != 'dependabot[bot]'
         uses: WIPACrepo/wipac-dev-py-dependencies-action@v2.0
 
