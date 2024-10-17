@@ -196,7 +196,7 @@ def submit(
         submit_obj,
         count=n_workers,  # submit N workers
     )
-    cluster_id, num_procs = submit_result_obj.clustoer(), submit_result_obj.num_procs()
+    cluster_id, num_procs = submit_result_obj.cluster(), submit_result_obj.num_procs()
     LOGGER.info(f"SUCCESS: Submitted request to condor ({cluster_id=}, {num_procs=}).")
 
     LOGGER.info("This submit classad has been submitted:")
