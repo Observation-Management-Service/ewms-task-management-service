@@ -26,9 +26,8 @@ class HaltedByDryRun(Exception):
     """Raise when doing a dry run and no further progress is needed."""
 
 
-class TaskforceNoLongerPendingStarter(Exception):
-    """Raise when taskforce is not pending-starter when it is expected to
-    be."""
+class TaskforceNotToBeStarted(Exception):
+    """Raise when the taskforce is no longer intended to start as previously expected."""
 
 
 async def is_taskforce_still_pending_starter(
@@ -80,8 +79,13 @@ def make_condor_job_description(
         # constant
         "EWMS_PILOT_HTCHIRP": "True",
         "EWMS_PILOT_HTCHIRP_DEST": "JOB_EVENT_LOG",
-        # runtime-specific
-        **ENV.TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT,
+        # runtime-specific (from user)
+        **{
+            k: v
+            for k, v in ENV.TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT.items()
+            # prevent the user from defining env vars that could have adverse effects
+            if k.startswith("EWMS_PILOT_")
+        },
     }
     for k, v in pilot_envvar_defaults.items():
         pilot_environment.setdefault(k, v)  # does not override
@@ -181,16 +185,23 @@ def submit(
 ) -> tuple[int, int]:
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
+
+    LOGGER.info("This submit object will be submitted:")
     LOGGER.info(submit_obj)
 
     # submit
+    LOGGER.info("Submitting request to condor...")
     submit_result_obj = schedd_obj.submit(
         submit_obj,
         count=n_workers,  # submit N workers
     )
+    cluster_id, num_procs = submit_result_obj.cluster(), submit_result_obj.num_procs()
+    LOGGER.info(f"SUCCESS: Submitted request to condor ({cluster_id=}, {num_procs=}).")
+
+    LOGGER.info("This submit classad has been submitted:")
     LOGGER.info(submit_result_obj)
 
-    return submit_result_obj.cluster(), submit_result_obj.num_procs()
+    return cluster_id, num_procs
 
 
 async def start(
@@ -243,22 +254,14 @@ async def start(
         LOGGER.critical(
             f"Startup Aborted - taskforce is no longer pending-starter: {taskforce_uuid}"
         )
-        raise TaskforceNoLongerPendingStarter()
+        raise TaskforceNotToBeStarted()
 
     # submit
-    try:
-        cluster_id, num_procs = submit(
-            schedd_obj=schedd_obj,
-            n_workers=n_workers,
-            submit_dict=submit_dict,
-        )
-    except htcondor.HTCondorInternalError as e:
-        return dict(
-            cluster_id=-1,
-            n_workers=0,
-            submit_dict=submit_dict,
-            job_event_log_fpath=f"failed: {str(e)}",  # TODO: need more robust error API design
-        )
+    cluster_id, num_procs = submit(  # -> htcondor.HTCondorInternalError (let it raise)
+        schedd_obj=schedd_obj,
+        n_workers=n_workers,
+        submit_dict=submit_dict,
+    )
 
     # make output subdir?
     # we have to construct AFTER 'submit' b/c the cluster id is not known prior
