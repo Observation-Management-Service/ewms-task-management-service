@@ -107,12 +107,17 @@ async def scalar_loop(
                 )
             except starter.TaskforceNoLongerPendingStarter:
                 continue
-            # confirm start (otherwise tms will pull this one again -- good for statelessness)
-            await confirm_start(
-                ewms_rc,
-                ewms_pending_starter_attrs["taskforce_uuid"],
-                ewms_condor_submit_attrs,
-            )
+            except htcondor.HTCondorInternalError as e:
+                LOGGER.error(e)
+                # TODO: send to wms that this one failed
+                continue
+            else:
+                # confirm start (otherwise tms will pull this one again -- good for statelessness)
+                await confirm_start(
+                    ewms_rc,
+                    ewms_pending_starter_attrs["taskforce_uuid"],
+                    ewms_condor_submit_attrs,
+                )
         LOGGER.debug("De-activated starter.")
 
         # STOP(S)

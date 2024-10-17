@@ -258,19 +258,11 @@ async def start(
         raise TaskforceNoLongerPendingStarter()
 
     # submit
-    try:
-        cluster_id, num_procs = submit(
-            schedd_obj=schedd_obj,
-            n_workers=n_workers,
-            submit_dict=submit_dict,
-        )
-    except htcondor.HTCondorInternalError as e:
-        return dict(
-            cluster_id=-1,
-            n_workers=0,
-            submit_dict=submit_dict,
-            job_event_log_fpath=f"failed: {str(e)}",  # TODO: need more robust error API design
-        )
+    cluster_id, num_procs = submit(  # -> htcondor.HTCondorInternalError (let it raise)
+        schedd_obj=schedd_obj,
+        n_workers=n_workers,
+        submit_dict=submit_dict,
+    )
 
     # make output subdir?
     # we have to construct AFTER 'submit' b/c the cluster id is not known prior
