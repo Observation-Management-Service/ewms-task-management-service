@@ -106,11 +106,11 @@ async def scalar_loop(
                     **ewms_pending_starter_attrs["worker_config"],
                 )
             except starter.TaskforceNotToBeStarted:
-                continue
+                continue  # do not sleep, ask for next TF
             except htcondor.HTCondorInternalError as e:
                 LOGGER.error(e)
                 # TODO: send to wms that this one failed
-                continue
+                continue  # do not sleep, ask for next TF
             else:
                 # confirm start (otherwise tms will pull this one again -- good for statelessness)
                 await confirm_start(
@@ -123,15 +123,21 @@ async def scalar_loop(
         # STOP(S)
         LOGGER.debug("Activating stopper...")
         while ewms_pending_starter_attrs := await get_next_to_stop(ewms_rc):
-            stopper.stop(
-                schedd_obj,
-                ewms_pending_starter_attrs["cluster_id"],
-            )
-            # confirm stop (otherwise ewms will request this one again -- good for statelessness)
-            await confirm_stop(
-                ewms_rc,
-                ewms_pending_starter_attrs["taskforce_uuid"],
-            )
+            try:
+                stopper.stop(
+                    schedd_obj,
+                    ewms_pending_starter_attrs["cluster_id"],
+                )
+            except htcondor.HTCondorInternalError as e:
+                LOGGER.error(e)
+                # TODO: send to wms that this one failed
+                continue  # do not sleep, ask for next TF
+            else:
+                # confirm stop (otherwise ewms will request this one again -- good for statelessness)
+                await confirm_stop(
+                    ewms_rc,
+                    ewms_pending_starter_attrs["taskforce_uuid"],
+                )
         LOGGER.debug("De-activated stopper.")
 
         # throttle
