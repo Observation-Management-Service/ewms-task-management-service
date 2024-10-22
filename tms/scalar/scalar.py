@@ -85,8 +85,8 @@ class EWMSCaller:
     ) -> None:
         """Send confirmation to EWMS that taskforce was stopped."""
         await ewms_rc.request(
-            "DELETE",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces/{taskforce_uuid}",
+            "POST",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}",
         )
         LOGGER.info("CONFIRMED TASKFORCE STOPPED")
 
