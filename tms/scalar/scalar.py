@@ -19,85 +19,89 @@ LOGGER = logging.getLogger(__name__)
 # Helper functions
 
 
-async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
-    """Get the next taskforce requested for this collector + schedd.
+class EWMSCaller:
+    """Several REST calls to EWMS."""
 
-    Returns empty dict when there is no taskforce to start.
-    """
-    resp = await ewms_rc.request(
-        "GET",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-starter/taskforces",
-        {"collector": get_collector(), "schedd": get_schedd()},
-    )
-    LOGGER.debug(f"NEXT TO START: {resp}")
-    return resp  # type: ignore[no-any-return]
+    @staticmethod
+    async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any]:
+        """Get the next taskforce requested for this collector + schedd.
 
+        Returns empty dict when there is no taskforce to start.
+        """
+        resp = await ewms_rc.request(
+            "GET",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-starter/taskforces",
+            {"collector": get_collector(), "schedd": get_schedd()},
+        )
+        LOGGER.debug(f"NEXT TO START: {resp}")
+        return resp  # type: ignore[no-any-return]
 
-async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
-    """Get the next taskforce requested for this collector + schedd.
+    @staticmethod
+    async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any]:
+        """Get the next taskforce requested for this collector + schedd.
 
-    Returns empty dict when there is no taskforce to stop.
-    """
-    resp = await ewms_rc.request(
-        "GET",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces",
-        {"collector": get_collector(), "schedd": get_schedd()},
-    )
-    LOGGER.debug(f"NEXT TO STOP: {resp}")
-    return resp  # type: ignore[no-any-return]
+        Returns empty dict when there is no taskforce to stop.
+        """
+        resp = await ewms_rc.request(
+            "GET",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces",
+            {"collector": get_collector(), "schedd": get_schedd()},
+        )
+        LOGGER.debug(f"NEXT TO STOP: {resp}")
+        return resp  # type: ignore[no-any-return]
 
+    @staticmethod
+    async def confirm_condor_submit(
+        ewms_rc: RestClient,
+        taskforce_uuid: str,
+        body: dict[str, Any],
+    ) -> None:
+        """Send confirmation to EWMS that taskforce was started."""
+        await ewms_rc.request(
+            "POST",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}",
+            body,
+        )
+        LOGGER.info("CONFIRMED TASKFORCE START -- sent taskforce info to EWMS")
 
-async def confirm_start(
-    ewms_rc: RestClient,
-    taskforce_uuid: str,
-    body: dict[str, Any],
-) -> None:
-    """Send confirmation to EWMS that taskforce was started."""
-    await ewms_rc.request(
-        "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}",
-        body,
-    )
-    LOGGER.info("CONFIRMED TASKFORCE START -- sent taskforce info to EWMS")
+    @staticmethod
+    async def notify_failed_condor_submit(
+        ewms_rc: RestClient,
+        taskforce_uuid: str,
+        error: str,
+    ) -> None:
+        """Send notification to EWMS that taskforce failed to start."""
+        await ewms_rc.request(
+            "POST",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}/failed",
+            {"error": error},
+        )
+        LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO START -- {error}")
 
+    @staticmethod
+    async def confirm_condor_rm(
+        ewms_rc: RestClient,
+        taskforce_uuid: str,
+    ) -> None:
+        """Send confirmation to EWMS that taskforce was stopped."""
+        await ewms_rc.request(
+            "DELETE",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces/{taskforce_uuid}",
+        )
+        LOGGER.info("CONFIRMED TASKFORCE STOPPED")
 
-async def notify_error_during_start(
-    ewms_rc: RestClient,
-    taskforce_uuid: str,
-    error: str,
-) -> None:
-    """Send notification to EWMS that taskforce failed to start."""
-    await ewms_rc.request(
-        "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}/failed",
-        {"error": error},
-    )
-    LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO START -- {error}")
-
-
-async def confirm_stop(
-    ewms_rc: RestClient,
-    taskforce_uuid: str,
-) -> None:
-    """Send confirmation to EWMS that taskforce was stopped."""
-    await ewms_rc.request(
-        "DELETE",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces/{taskforce_uuid}",
-    )
-    LOGGER.info("CONFIRMED TASKFORCE STOPPED")
-
-
-async def notify_error_during_stop(
-    ewms_rc: RestClient,
-    taskforce_uuid: str,
-    error: str,
-) -> None:
-    """Send notification to EWMS that taskforce failed to stop."""
-    await ewms_rc.request(
-        "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}/failed",
-    )
-    LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO STOP -- {error}")
+    @staticmethod
+    async def notify_failed_condor_rm(
+        ewms_rc: RestClient,
+        taskforce_uuid: str,
+        error: str,
+    ) -> None:
+        """Send notification to EWMS that taskforce failed to stop."""
+        await ewms_rc.request(
+            "POST",
+            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}/failed",
+        )
+        LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO STOP -- {error}")
 
 
 ########################################################################################
@@ -145,7 +149,7 @@ async def start_all(
     ewms_rc: RestClient,
 ) -> None:
     """Invoke the starter on every designated taskforce."""
-    while ewms_pending_starter_attrs := await get_next_to_start(ewms_rc):
+    while ewms_pending_starter_attrs := await EWMSCaller.get_next_to_start(ewms_rc):
         try:
             ewms_condor_submit_attrs = await starter.start(
                 schedd_obj,
@@ -165,7 +169,7 @@ async def start_all(
             continue  # do not sleep, ask for next TF
         except htcondor.HTCondorInternalError as e:
             LOGGER.error(e)
-            await notify_error_during_start(
+            await EWMSCaller.notify_failed_condor_submit(
                 ewms_rc,
                 ewms_pending_starter_attrs["taskforce_uuid"],
                 str(e),
@@ -174,7 +178,7 @@ async def start_all(
             continue  # ask for next TF
         else:
             # confirm start (otherwise tms will pull this one again -- good for statelessness)
-            await confirm_start(
+            await EWMSCaller.confirm_condor_submit(
                 ewms_rc,
                 ewms_pending_starter_attrs["taskforce_uuid"],
                 ewms_condor_submit_attrs,
@@ -186,7 +190,7 @@ async def stop_all(
     ewms_rc: RestClient,
 ) -> None:
     """Invoke the stopper on every designated taskforce."""
-    while ewms_pending_stopper_attrs := await get_next_to_stop(ewms_rc):
+    while ewms_pending_stopper_attrs := await EWMSCaller.get_next_to_stop(ewms_rc):
         try:
             stopper.stop(
                 schedd_obj,
@@ -194,7 +198,7 @@ async def stop_all(
             )
         except htcondor.HTCondorInternalError as e:
             LOGGER.error(e)
-            await notify_error_during_stop(
+            await EWMSCaller.notify_failed_condor_rm(
                 ewms_rc,
                 ewms_pending_stopper_attrs["taskforce_uuid"],
                 str(e),
@@ -203,7 +207,7 @@ async def stop_all(
             continue  # ask for next TF
         else:
             # confirm stop (otherwise ewms will request this one again -- good for statelessness)
-            await confirm_stop(
+            await EWMSCaller.confirm_condor_rm(
                 ewms_rc,
                 ewms_pending_stopper_attrs["taskforce_uuid"],
             )
