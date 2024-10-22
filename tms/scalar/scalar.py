@@ -95,7 +95,7 @@ async def notify_error_during_stop(
     """Send notification to EWMS that taskforce failed to stop."""
     await ewms_rc.request(
         "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces/{taskforce_uuid}/failed",
+        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}/failed",
     )
     LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO STOP -- {error}")
 
