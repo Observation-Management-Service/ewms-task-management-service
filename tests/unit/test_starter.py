@@ -96,7 +96,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         n_workers=123,
         # taskforce args
-        pilot_image="my_image",
+        pilot_tag="my_image",
         pilot_environment={"abc": "932", "def": "True"},
         pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",

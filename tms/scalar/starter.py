@@ -45,7 +45,7 @@ async def is_taskforce_still_pending_starter(
 def make_condor_job_description(
     taskforce_uuid: str,
     # pilot_config
-    pilot_image: str,
+    pilot_tag: str,
     pilot_environment: dict[str, Any],
     pilot_input_files: list[str],
     # worker_config
@@ -113,7 +113,7 @@ def make_condor_job_description(
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_image}",  # not quoted -- otherwise condor assumes relative path
+        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_tag}",  # not quoted -- otherwise condor assumes relative path
         #
         "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted
@@ -211,7 +211,7 @@ async def start(
     taskforce_uuid: str,
     n_workers: int,
     # pilot_config
-    pilot_image: str,
+    pilot_tag: str,
     pilot_environment: dict[str, Any],
     pilot_input_files: list[str],
     # worker_config
@@ -234,7 +234,7 @@ async def start(
     submit_dict, do_make_output_subdir = make_condor_job_description(
         taskforce_uuid,
         #
-        pilot_image,
+        pilot_tag,
         pilot_environment,
         pilot_input_files,
         #
