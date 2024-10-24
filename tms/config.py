@@ -32,6 +32,10 @@ class EnvConfig:
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
+    TMS_ERROR_WAIT: int = (
+        # how much time to wait after an error, with the intention that the error may be transient
+        10
+    )
 
     CVMFS_PILOT_PATH: str = (
         "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot"
