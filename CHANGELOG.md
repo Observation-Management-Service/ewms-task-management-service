@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.50 (2024-10-29)
+
+### Other
+
+* Followups from Skymap Scanner Test Runs ([#23](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/23)) ([`62e7500`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/62e75007e7d1656ea457ab977ef3c83664c71e80))
+
 ## v0.1.49 (2024-08-26)
 
 ### Other
