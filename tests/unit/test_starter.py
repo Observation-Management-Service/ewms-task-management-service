@@ -37,6 +37,11 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "abc=932",
         "def=True",
     ]
+    envfile = (
+        config.ENV.JOB_EVENT_LOG_DIR
+        / "ewms-taskforce-9874abcdef"
+        / "ewms_htcondor_envfile.sh"
+    )
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
@@ -59,7 +64,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             f'"'  # must be quoted
             f"foofile "
             f"bardir/barfile "
-            f'{config.ENV.JOB_EVENT_LOG_DIR/"ewms-taskforce-9874abcdef"/"ewms_htcondor_envfile.sh"}'
+            f"{envfile}"
             f'"'  # must be quoted
         ),
         "transfer_output_files": "",
@@ -97,6 +102,13 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             / "$(ProcId).err"
         ),
     }
+    with open(envfile) as f:
+        got_env = []
+        for line in f:
+            if line.startswith("export "):
+                line = line.strip().replace("export ", "")
+                got_env.append(line)
+        assert sorted(got_env) == sorted(envlist)
 
     ret = await starter.start(
         schedd_obj=schedd_obj,

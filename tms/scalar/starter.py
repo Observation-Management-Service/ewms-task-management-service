@@ -76,7 +76,7 @@ def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
 
         f.write("set -x\n")  # enable command tracing
         # Write environment variables
-        for key, value in env_vars.items():
+        for key, value in sorted(env_vars.items()):
             f.write(f"export {key}={to_envval(value)}\n")
         f.write("set +x\n")  # disable command tracing
 
