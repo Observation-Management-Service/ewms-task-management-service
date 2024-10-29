@@ -55,7 +55,13 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
         #
-        "transfer_input_files": '"foofile bardir/barfile"',  # must be quoted
+        "transfer_input_files": (
+            f'"'  # must be quoted
+            f"foofile "
+            f"bardir/barfile "
+            f'{config.ENV.JOB_EVENT_LOG_DIR/"ewms-taskforce-9874abcdef"/"ewms_htcondor_envfile.sh"}'
+            f'"'  # must be quoted
+        ),
         "transfer_output_files": "",
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
@@ -80,12 +86,14 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "output": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
+            / "ewms-taskforce-9874abcdef"
+            / "cluster-$(ClusterId)"
             / "$(ProcId).out"
         ),
         "error": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
+            / "ewms-taskforce-9874abcdef"
+            / "cluster-$(ClusterId)"
             / "$(ProcId).err"
         ),
     }
