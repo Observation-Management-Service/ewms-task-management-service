@@ -60,7 +60,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
         #
-        "transfer_input_files": ",".join(["foofile", "bardir/barfile", envfile]),
+        "transfer_input_files": ",".join(["foofile", "bardir/barfile", str(envfile)]),
         "transfer_output_files": "",
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
