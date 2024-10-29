@@ -1,6 +1,7 @@
 """For starting EWMS taskforce workers on an HTCondor cluster."""
 
 import logging
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -58,9 +59,8 @@ def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
             out_val = ";".join(val)
         else:
             out_val = str(val)
-        if " " in out_val:
-            out_val = f'"{out_val}"'  # quote it
         out_val = out_val.replace("\n", " ")  # no new-lines!
+        out_val = shlex.quote(out_val)  # escape special chars
         return out_val
 
     # make file
