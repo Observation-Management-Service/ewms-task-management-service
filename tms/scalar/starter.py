@@ -15,11 +15,11 @@ from ..utils import LogFileLogic
 LOGGER = logging.getLogger(__name__)
 
 
-def get_output_dpath_macro_template(taskforce_uuid: str) -> Path:
-    """Assemble the path for the output directory."""
-    return (
-        ENV.JOB_EVENT_LOG_DIR / f"ewms-taskforce-{taskforce_uuid}-cluster-$(ClusterId)"
-    )
+def get_ap_taskforce_dir(taskforce_uuid: str) -> Path:
+    """Assemble and mkdir the taskforce's directory on the AP."""
+    path = ENV.JOB_EVENT_LOG_DIR / f"ewms-taskforce-{taskforce_uuid}"
+    path.mkdir(exist_ok=True)
+    return path
 
 
 class HaltedByDryRun(Exception):
@@ -40,6 +40,53 @@ async def is_taskforce_still_pending_starter(
         f"/{WMS_ROUTE_VERSION_PREFIX}/taskforces/{taskforce_uuid}",
     )
     return ret["phase"] == "pending-starter"  # type: ignore[no-any-return]
+
+
+def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
+    """Construct the envfile to be transferred."""
+    envfile = Path(get_ap_taskforce_dir(taskforce_uuid)) / "ewms_htcondor_envfile.sh"
+
+    def to_envval(val: Any) -> str:
+        """Convert an arbitrary value to a string to be used as an environment variable."""
+        if isinstance(val, list):
+            # this is used by the pilot for handling multiple queues
+            # WMS makes lists for:
+            #    EWMS_PILOT_QUEUE_INCOMING / EWMS_PILOT_QUEUE_OUTGOING
+            #    EWMS_PILOT_QUEUE_*_AUTH_TOKEN
+            #    EWMS_PILOT_QUEUE_*_BROKER_TYPE
+            #    EWMS_PILOT_QUEUE_*_BROKER_ADDRESS
+            out_val = ";".join(val)
+        else:
+            out_val = str(val)
+        if " " in out_val:
+            out_val = f'"{out_val}"'  # quote it
+        out_val = out_val.replace("\n", " ")  # no new-lines!
+        return out_val
+
+    # make file
+    with open(envfile, "w") as f:
+        f.write("#!/bin/bash\n\n")
+
+        # header comment
+        f.write("# Environment setup for HTCondor worker\n")
+        f.write(
+            "# This file is auto-generated and sets necessary environment variables.\n"
+        )
+        f.write("# Sourced automatically by the EWMS Pilot's container entrypoint.\n\n")
+
+        f.write("set -x\n")  # enable command tracing
+        # Write environment variables
+        for key, value in env_vars.items():
+            f.write(f"export {key}={to_envval(value)}\n")
+        f.write("set +x\n")  # disable command tracing
+
+        # footer comment
+        f.write("\n# End of environment file\n")
+
+    # make the file executable
+    envfile.chmod(0o755)  # execute permissions
+
+    return envfile
 
 
 def make_condor_job_description(
@@ -89,34 +136,17 @@ def make_condor_job_description(
     }
     for k, v in pilot_envvar_defaults.items():
         pilot_environment.setdefault(k, v)  # does not override
+    envfile = write_envfile(taskforce_uuid, pilot_environment)
+    pilot_input_files.append(str(envfile))
 
-    def to_envval(val: Any) -> str:
-        """Convert an arbitrary value to a string to be used as an environment variable."""
-        if isinstance(val, list):
-            # this is used by the pilot for handling multiple queues
-            # WMS makes lists for:
-            #    EWMS_PILOT_QUEUE_INCOMING / EWMS_PILOT_QUEUE_OUTGOING
-            #    EWMS_PILOT_QUEUE_*_AUTH_TOKEN
-            #    EWMS_PILOT_QUEUE_*_BROKER_TYPE
-            #    EWMS_PILOT_QUEUE_*_BROKER_ADDRESS
-            out_val = ";".join(val)
-        else:
-            out_val = str(val)
-        if " " in out_val:
-            out_val = f"'{out_val}'"  # quote it
-        out_val = out_val.replace("\n", " ")  # no new-lines!
-        return out_val
-
-    # write
-
-    # worker stdout & stderr
+    # assemble submit dict
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
         "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_tag}",  # not quoted -- otherwise condor assumes relative path
         #
         "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
-        "environment": f'"{" ".join(f"{k}={to_envval(v)}" for k, v in sorted(pilot_environment.items()))}"',  # must be quoted
+        "environment": "",  # NOTE: use envfile instead
         #
         "Requirements": (
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
@@ -163,10 +193,12 @@ def make_condor_job_description(
         submit_dict.update(
             {
                 "output": str(
-                    get_output_dpath_macro_template(taskforce_uuid) / "$(ProcId).out"
+                    get_ap_taskforce_dir(taskforce_uuid)
+                    / "cluster-$(ClusterId)/$(ProcId).out"
                 ),
                 "error": str(
-                    get_output_dpath_macro_template(taskforce_uuid) / "$(ProcId).err"
+                    get_ap_taskforce_dir(taskforce_uuid)
+                    / "cluster-$(ClusterId)/$(ProcId).err"
                 ),
             }
         )
@@ -264,14 +296,8 @@ async def start(
     )
 
     # make output subdir?
-    # we have to construct AFTER 'submit' b/c the cluster id is not known prior
     if do_make_output_subdir:
-        output_subdir = Path(
-            str(get_output_dpath_macro_template(taskforce_uuid)).replace(
-                "$(ClusterId)",
-                str(cluster_id),
-            )
-        )
+        output_subdir = Path(str(get_ap_taskforce_dir(taskforce_uuid) / "outputs"))
         output_subdir.mkdir(parents=True, exist_ok=True)
 
     # assemble attrs for EWMS
