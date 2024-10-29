@@ -159,7 +159,7 @@ def make_condor_job_description(
         # cluster logs -- shared w/ other clusters
         "log": str(LogFileLogic.make_log_file_name()),
         #
-        "transfer_input_files": f'"{" ".join(pilot_input_files)}"',  # must be quoted
+        "transfer_input_files": ",".join(pilot_input_files),
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
