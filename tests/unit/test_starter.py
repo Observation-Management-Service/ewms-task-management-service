@@ -37,13 +37,18 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "abc=932",
         "def=True",
     ]
+    envfile = (
+        config.ENV.JOB_EVENT_LOG_DIR
+        / "ewms-taskforce-9874abcdef"
+        / "ewms_htcondor_envfile.sh"
+    )
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
         "container_image": "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot:my_image",
         #
-        "arguments": "",
-        "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
+        # "arguments": "",
+        # "environment": "",
         #
         "Requirements": (
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
@@ -55,7 +60,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
         #
-        "transfer_input_files": '"foofile bardir/barfile"',  # must be quoted
+        "transfer_input_files": ",".join(["foofile", "bardir/barfile", str(envfile)]),
         "transfer_output_files": "",
         "should_transfer_files": "YES",
         "when_to_transfer_output": "ON_EXIT_OR_EVICT",
@@ -80,12 +85,14 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         "output": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
+            / "ewms-taskforce-9874abcdef"
+            / "cluster-$(ClusterId)"
             / "$(ProcId).out"
         ),
         "error": str(
             config.ENV.JOB_EVENT_LOG_DIR
-            / "ewms-taskforce-9874abcdef-cluster-$(ClusterId)"
+            / "ewms-taskforce-9874abcdef"
+            / "cluster-$(ClusterId)"
             / "$(ProcId).err"
         ),
     }
@@ -96,7 +103,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         #
         n_workers=123,
         # taskforce args
-        pilot_image="my_image",
+        pilot_tag="my_image",
         pilot_environment={"abc": "932", "def": "True"},
         pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",
@@ -117,6 +124,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         count=123,  # submit N workers
     )
 
+    # assert submit dict
     assert ret == dict(
         cluster_id=schedd_obj.submit.return_value.cluster.return_value,
         n_workers=schedd_obj.submit.return_value.num_procs.return_value,
@@ -125,3 +133,11 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
         ),
     )
+    # assert envfile
+    with open(envfile) as f:
+        got_env = []
+        for line in f:
+            if line.startswith("export "):
+                line = line.strip().replace("export ", "")
+                got_env.append(line)
+        assert sorted(got_env) == sorted(envlist)
