@@ -102,13 +102,6 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             / "$(ProcId).err"
         ),
     }
-    with open(envfile) as f:
-        got_env = []
-        for line in f:
-            if line.startswith("export "):
-                line = line.strip().replace("export ", "")
-                got_env.append(line)
-        assert sorted(got_env) == sorted(envlist)
 
     ret = await starter.start(
         schedd_obj=schedd_obj,
@@ -137,6 +130,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         count=123,  # submit N workers
     )
 
+    # assert submit dict
     assert ret == dict(
         cluster_id=schedd_obj.submit.return_value.cluster.return_value,
         n_workers=schedd_obj.submit.return_value.num_procs.return_value,
@@ -145,3 +139,11 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
         ),
     )
+    # assert envfile
+    with open(envfile) as f:
+        got_env = []
+        for line in f:
+            if line.startswith("export "):
+                line = line.strip().replace("export ", "")
+                got_env.append(line)
+        assert sorted(got_env) == sorted(envlist)
