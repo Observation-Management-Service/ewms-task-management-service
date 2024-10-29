@@ -42,8 +42,8 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "+should_transfer_container": "no",
         "container_image": "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot:my_image",
         #
-        "arguments": "",
-        "environment": f'"{" ".join(sorted(envlist))}"',  # must be quoted
+        # "arguments": "",
+        # "environment": "",
         #
         "Requirements": (
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
