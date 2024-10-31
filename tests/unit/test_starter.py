@@ -116,7 +116,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             priority=100,
             worker_disk=85461235,
             worker_memory=4235,
-            requirements="foo",
+            condor_requirements="foo",
         ),
     )
 
