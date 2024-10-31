@@ -10,7 +10,7 @@ import humanfriendly
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
+from ..config import DEFAULT_CONDOR_REQUIREMENTS, ENV, WMS_ROUTE_VERSION_PREFIX
 from ..utils import LogFileLogic
 
 LOGGER = logging.getLogger(__name__)
@@ -102,6 +102,7 @@ def make_condor_job_description(
     priority: int,
     worker_disk: int | str,
     worker_memory: int | str,
+    condor_requirements: str,
 ) -> tuple[dict[str, Any], bool]:
     """Make the condor job description (dict).
 
@@ -139,6 +140,12 @@ def make_condor_job_description(
     envfile = write_envfile(taskforce_uuid, pilot_environment)
     pilot_input_files.append(str(envfile))
 
+    # assemble requirements string
+    if condor_requirements.strip():
+        all_reqs_str = f"{DEFAULT_CONDOR_REQUIREMENTS} && {condor_requirements.strip()}"
+    else:
+        all_reqs_str = DEFAULT_CONDOR_REQUIREMENTS
+
     # assemble submit dict
     submit_dict = {
         "universe": "container",
@@ -148,12 +155,7 @@ def make_condor_job_description(
         # "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         # "environment": "",  # NOTE: use envfile instead
         #
-        "Requirements": (
-            "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
-            "HAS_CVMFS_icecube_opensciencegrid_org && "
-            # "has_avx && has_avx2 && "
-            'OSG_OS_VERSION =?= "8"'  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167
-        ),
+        "Requirements": all_reqs_str,
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         # cluster logs -- shared w/ other clusters
@@ -253,6 +255,7 @@ async def start(
     priority: int,
     worker_disk: int | str,
     worker_memory: int | str,
+    condor_requirements: str,
 ) -> dict[str, Any]:
     """Start an EWMS taskforce workers on an HTCondor cluster.
 
@@ -276,6 +279,7 @@ async def start(
         priority,
         worker_disk,
         worker_memory,
+        condor_requirements,
     )
 
     # final checks
