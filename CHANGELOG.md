@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.51 (2024-10-31)
+
+### Other
+
+* Use User-Provided Condor Requirements ([#25](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/25)) ([`1563139`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/15631390325bf80715d3f769dd4c0bef27a164fd))
+
 ## v0.1.50 (2024-10-29)
 
 ### Other
