@@ -54,7 +54,8 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
-            'OSG_OS_VERSION =?= "8"'
+            'OSG_OS_VERSION =?= "8" && '
+            "foo"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
@@ -108,13 +109,14 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             environment={"abc": "932", "def": "True"},
             input_files=["foofile", "bardir/barfile"],
         ),
-        condor_config=dict(
+        worker_config=dict(
             do_transfer_worker_stdouterr=True,
             max_worker_runtime=95487,
             n_cores=64,
             priority=100,
             worker_disk=85461235,
             worker_memory=4235,
+            requirements="foo",
         ),
     )
 
