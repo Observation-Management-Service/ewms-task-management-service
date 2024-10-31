@@ -54,7 +54,8 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
-            'OSG_OS_VERSION =?= "8"'
+            'OSG_OS_VERSION =?= "8" && '
+            "foo"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
@@ -101,19 +102,22 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         schedd_obj=schedd_obj,
         ewms_rc=MagicMock(),
         #
-        n_workers=123,
-        # taskforce args
-        pilot_tag="my_image",
-        pilot_environment={"abc": "932", "def": "True"},
-        pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",
-        # condor args
-        do_transfer_worker_stdouterr=True,
-        max_worker_runtime=95487,
-        n_cores=64,
-        priority=100,
-        worker_disk=85461235,
-        worker_memory=4235,
+        n_workers=123,
+        pilot_config=dict(
+            tag="my_image",
+            environment={"abc": "932", "def": "True"},
+            input_files=["foofile", "bardir/barfile"],
+        ),
+        worker_config=dict(
+            do_transfer_worker_stdouterr=True,
+            max_worker_runtime=95487,
+            n_cores=64,
+            priority=100,
+            worker_disk=85461235,
+            worker_memory=4235,
+            condor_requirements="foo",
+        ),
     )
 
     itsps_mock.assert_awaited_once()

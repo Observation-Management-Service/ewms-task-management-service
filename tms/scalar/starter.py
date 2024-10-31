@@ -10,7 +10,7 @@ import humanfriendly
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
+from ..config import DEFAULT_CONDOR_REQUIREMENTS, ENV, WMS_ROUTE_VERSION_PREFIX
 from ..utils import LogFileLogic
 
 LOGGER = logging.getLogger(__name__)
@@ -91,17 +91,8 @@ def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
 
 def make_condor_job_description(
     taskforce_uuid: str,
-    # pilot_config
-    pilot_tag: str,
-    pilot_environment: dict[str, Any],
-    pilot_input_files: list[str],
-    # worker_config
-    do_transfer_worker_stdouterr: bool,
-    max_worker_runtime: int,
-    n_cores: int,
-    priority: int,
-    worker_disk: int | str,
-    worker_memory: int | str,
+    pilot_config: dict,
+    worker_config: dict,
 ) -> tuple[dict[str, Any], bool]:
     """Make the condor job description (dict).
 
@@ -135,31 +126,32 @@ def make_condor_job_description(
         },
     }
     for k, v in pilot_envvar_defaults.items():
-        pilot_environment.setdefault(k, v)  # does not override
-    envfile = write_envfile(taskforce_uuid, pilot_environment)
-    pilot_input_files.append(str(envfile))
+        pilot_config["environment"].setdefault(k, v)  # does not override
+    envfile = write_envfile(taskforce_uuid, pilot_config["environment"])
+    pilot_config["input_files"].append(str(envfile))
+
+    # assemble requirements string
+    if worker_config["condor_requirements"].strip():
+        all_reqs_str = f"{DEFAULT_CONDOR_REQUIREMENTS} && {worker_config['condor_requirements'].strip()}"
+    else:
+        all_reqs_str = DEFAULT_CONDOR_REQUIREMENTS
 
     # assemble submit dict
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_tag}",  # not quoted -- otherwise condor assumes relative path
+        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_config['tag']}",  # not quoted -- otherwise condor assumes relative path
         #
         # "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         # "environment": "",  # NOTE: use envfile instead
         #
-        "Requirements": (
-            "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
-            "HAS_CVMFS_icecube_opensciencegrid_org && "
-            # "has_avx && has_avx2 && "
-            'OSG_OS_VERSION =?= "8"'  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167
-        ),
+        "Requirements": all_reqs_str,
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         # cluster logs -- shared w/ other clusters
         "log": str(LogFileLogic.make_log_file_name()),
         #
-        "transfer_input_files": ",".join(pilot_input_files),
+        "transfer_input_files": ",".join(pilot_config["input_files"]),
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
         # https://htcondor.readthedocs.io/en/latest/users-manual/file-transfer.html#specifying-if-and-when-to-transfer-files
         "should_transfer_files": "YES",
@@ -167,28 +159,31 @@ def make_condor_job_description(
         #
         "transfer_executable": "false",
         #
-        "request_cpus": str(n_cores),
+        "request_cpus": str(worker_config["n_cores"]),
         # NOTE: condor uses binary sizes but formats like decimal
         "request_memory": humanfriendly.format_size(
             # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
-            humanfriendly.parse_size(str(worker_memory), binary=True),
+            humanfriendly.parse_size(str(worker_config["worker_memory"]), binary=True),
             binary=True,
         ).replace("i", ""),
         # NOTE: condor uses binary sizes but formats like decimal
         "request_disk": humanfriendly.format_size(
             # "1073741824" -> 1073741824 -> "1 GiB" -> "1 GB" (or "3 MB" -> 3221225472 -> "3 MB")
-            humanfriendly.parse_size(str(worker_disk), binary=True),
+            humanfriendly.parse_size(str(worker_config["worker_disk"]), binary=True),
             binary=True,
         ).replace("i", ""),
         #
-        "priority": int(priority),
+        "priority": int(worker_config["priority"]),
         "+WantIOProxy": "true",  # for HTChirp
-        "+OriginalTime": max_worker_runtime,  # Execution time limit -- 1 hour default on OSG
+        "+OriginalTime": worker_config[
+            # Execution time limit -- 1 hour default on OSG
+            "max_worker_runtime"
+        ],
         #
         "+EWMSTaskforceUUID": f'"{taskforce_uuid}"',  # must be quoted
         "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
-    if do_transfer_worker_stdouterr:
+    if worker_config["do_transfer_worker_stdouterr"]:
         # this is the location where the files will go when/if *returned here*
         submit_dict.update(
             {
@@ -206,7 +201,8 @@ def make_condor_job_description(
     LOGGER.info(submit_dict)
     return (
         submit_dict,
-        do_transfer_worker_stdouterr,  # NOTE: in future, this could be a compound conditional
+        worker_config["do_transfer_worker_stdouterr"],
+        # NOTE: ^^^ in future, this could be a compound conditional
     )
 
 
@@ -242,17 +238,8 @@ async def start(
     #
     taskforce_uuid: str,
     n_workers: int,
-    # pilot_config
-    pilot_tag: str,
-    pilot_environment: dict[str, Any],
-    pilot_input_files: list[str],
-    # worker_config
-    do_transfer_worker_stdouterr: bool,
-    max_worker_runtime: int,
-    n_cores: int,
-    priority: int,
-    worker_disk: int | str,
-    worker_memory: int | str,
+    pilot_config: dict,
+    worker_config: dict,
 ) -> dict[str, Any]:
     """Start an EWMS taskforce workers on an HTCondor cluster.
 
@@ -265,17 +252,8 @@ async def start(
     # prep
     submit_dict, do_make_output_subdir = make_condor_job_description(
         taskforce_uuid,
-        #
-        pilot_tag,
-        pilot_environment,
-        pilot_input_files,
-        #
-        do_transfer_worker_stdouterr,
-        max_worker_runtime,
-        n_cores,
-        priority,
-        worker_disk,
-        worker_memory,
+        pilot_config,
+        worker_config,
     )
 
     # final checks

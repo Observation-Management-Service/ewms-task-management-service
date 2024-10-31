@@ -11,6 +11,13 @@ WATCHER_N_TOP_TASK_ERRORS = 10
 
 WMS_ROUTE_VERSION_PREFIX = "v0"
 
+DEFAULT_CONDOR_REQUIREMENTS = (
+    "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
+    "HAS_CVMFS_icecube_opensciencegrid_org && "
+    # "has_avx && has_avx2 && "
+    'OSG_OS_VERSION =?= "8"'  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
+)
+
 
 @dc.dataclass(frozen=True)
 class EnvConfig:
