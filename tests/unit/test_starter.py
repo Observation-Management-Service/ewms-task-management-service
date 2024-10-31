@@ -101,19 +101,21 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         schedd_obj=schedd_obj,
         ewms_rc=MagicMock(),
         #
-        n_workers=123,
-        # taskforce args
-        pilot_tag="my_image",
-        pilot_environment={"abc": "932", "def": "True"},
-        pilot_input_files=["foofile", "bardir/barfile"],
         taskforce_uuid="9874abcdef",
-        # condor args
-        do_transfer_worker_stdouterr=True,
-        max_worker_runtime=95487,
-        n_cores=64,
-        priority=100,
-        worker_disk=85461235,
-        worker_memory=4235,
+        n_workers=123,
+        pilot_config=dict(
+            tag="my_image",
+            environment={"abc": "932", "def": "True"},
+            input_files=["foofile", "bardir/barfile"],
+        ),
+        condor_config=dict(
+            do_transfer_worker_stdouterr=True,
+            max_worker_runtime=95487,
+            n_cores=64,
+            priority=100,
+            worker_disk=85461235,
+            worker_memory=4235,
+        ),
     )
 
     itsps_mock.assert_awaited_once()

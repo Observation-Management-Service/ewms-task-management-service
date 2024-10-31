@@ -158,12 +158,9 @@ async def start_all(
                 ewms_pending_starter_attrs["taskforce_uuid"],
                 ewms_pending_starter_attrs["n_workers"],
                 #
-                **{  # append prefix to each to remove ambiguity
-                    f"pilot_{k}": v
-                    for k, v in ewms_pending_starter_attrs["pilot_config"].items()
-                },
+                ewms_pending_starter_attrs["pilot_config"],
                 #
-                **ewms_pending_starter_attrs["worker_config"],
+                ewms_pending_starter_attrs["worker_config"],
             )
         except starter.TaskforceNotToBeStarted:
             continue  # do not sleep, ask for next TF
