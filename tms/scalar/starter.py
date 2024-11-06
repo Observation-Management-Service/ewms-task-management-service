@@ -122,7 +122,7 @@ def make_condor_job_description(
 
     # assemble requirements string
     if worker_config["condor_requirements"].strip():
-        all_reqs_str = f"{DEFAULT_CONDOR_REQUIREMENTS} && {worker_config['condor_requirements'].strip()}"
+        all_reqs_str = f"{DEFAULT_CONDOR_REQUIREMENTS} && ({worker_config['condor_requirements'].strip()})"
     else:
         all_reqs_str = DEFAULT_CONDOR_REQUIREMENTS
 
