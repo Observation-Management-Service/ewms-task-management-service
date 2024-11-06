@@ -84,11 +84,10 @@ def make_condor_job_description(
     taskforce_uuid: str,
     pilot_config: dict,
     worker_config: dict,
-) -> tuple[dict[str, Any], bool]:
+) -> tuple[dict[str, Any], Path | None]:
     """Make the condor job description (dict).
 
-    Return the job description along with a bool of whether to make the
-    output subdir.
+    Return the job description along with the output subdir (or None).
     """
 
     # NOTE:
@@ -174,27 +173,21 @@ def make_condor_job_description(
         "+EWMSTaskforceUUID": f'"{taskforce_uuid}"',  # must be quoted
         "job_ad_information_attrs": "EWMSTaskforceUUID",
     }
+
     if worker_config["do_transfer_worker_stdouterr"]:
         # this is the location where the files will go when/if *returned here*
+        output_subdir = get_ap_taskforce_dir(taskforce_uuid) / "cluster-$(ClusterId)"
         submit_dict.update(
             {
-                "output": str(
-                    get_ap_taskforce_dir(taskforce_uuid)
-                    / "cluster-$(ClusterId)/$(ProcId).out"
-                ),
-                "error": str(
-                    get_ap_taskforce_dir(taskforce_uuid)
-                    / "cluster-$(ClusterId)/$(ProcId).err"
-                ),
+                "output": str(output_subdir / "$(ProcId).out"),
+                "error": str(output_subdir / "$(ProcId).err"),
             }
         )
+    else:
+        output_subdir = None
 
     LOGGER.info(submit_dict)
-    return (
-        submit_dict,
-        worker_config["do_transfer_worker_stdouterr"],
-        # NOTE: ^^^ in future, this could be a compound conditional
-    )
+    return submit_dict, output_subdir
 
 
 def submit(
@@ -241,7 +234,7 @@ async def start(
     )
 
     # prep
-    submit_dict, do_make_output_subdir = make_condor_job_description(
+    submit_dict, output_subdir = make_condor_job_description(
         taskforce_uuid,
         pilot_config,
         worker_config,
@@ -265,8 +258,10 @@ async def start(
     )
 
     # make output subdir?
-    if do_make_output_subdir:
-        output_subdir = Path(str(get_ap_taskforce_dir(taskforce_uuid) / "outputs"))
+    if output_subdir:
+        output_subdir = Path(
+            str(output_subdir).replace("$(ClusterId)", str(cluster_id))
+        )
         output_subdir.mkdir(parents=True, exist_ok=True)
 
     # assemble attrs for EWMS
