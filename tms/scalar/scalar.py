@@ -38,21 +38,17 @@ class EWMSCaller:
             return None
         LOGGER.debug(f"NEXT TO START: {resp}")
 
-        def envjson(enviro: dict) -> str:
-            """Convert the env dict to a json string unless it's empty."""
-            if not enviro:
-                return ""
-            return json.dumps(enviro)
-
         # inject task-related attrs into 'environment' dict
         resp["taskforce"]["pilot_config"]["environment"].update(
             {
+                # fmt: off
                 "EWMS_PILOT_TASK_IMAGE": resp["task_directive"]["task_image"],
                 "EWMS_PILOT_TASK_ARGS": resp["task_directive"]["task_args"],
-                "EWMS_PILOT_TASK_ENV_JSON": envjson(resp["task_directive"]["task_env"]),
+                "EWMS_PILOT_TASK_ENV_JSON": json.dumps(resp["task_directive"]["task_env"]),
                 "EWMS_PILOT_INIT_IMAGE": resp["task_directive"]["init_image"],
                 "EWMS_PILOT_INIT_ARGS": resp["task_directive"]["init_args"],
-                "EWMS_PILOT_INIT_ENV_JSON": envjson(resp["task_directive"]["init_env"]),
+                "EWMS_PILOT_INIT_ENV_JSON": json.dumps(resp["task_directive"]["init_env"]),
+                # fmt: on
             }
         )
 
