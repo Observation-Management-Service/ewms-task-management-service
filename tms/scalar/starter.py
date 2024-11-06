@@ -84,7 +84,7 @@ def make_condor_job_description(
     taskforce_uuid: str,
     pilot_config: dict,
     worker_config: dict,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], bool]:
     """Make the condor job description (dict).
 
     Return the job description along with a bool of whether to make the
@@ -190,7 +190,11 @@ def make_condor_job_description(
         )
 
     LOGGER.info(submit_dict)
-    return submit_dict
+    return (
+        submit_dict,
+        worker_config["do_transfer_worker_stdouterr"],
+        # NOTE: ^^^ in future, this could be a compound conditional
+    )
 
 
 def submit(
@@ -237,7 +241,7 @@ async def start(
     )
 
     # prep
-    submit_dict = make_condor_job_description(
+    submit_dict, do_make_output_subdir = make_condor_job_description(
         taskforce_uuid,
         pilot_config,
         worker_config,
@@ -261,8 +265,9 @@ async def start(
     )
 
     # make output subdir?
-    output_subdir = Path(str(get_ap_taskforce_dir(taskforce_uuid) / "outputs"))
-    output_subdir.mkdir(parents=True, exist_ok=True)
+    if do_make_output_subdir:
+        output_subdir = Path(str(get_ap_taskforce_dir(taskforce_uuid) / "outputs"))
+        output_subdir.mkdir(parents=True, exist_ok=True)
 
     # assemble attrs for EWMS
     ewms_taskforce_attrs = dict(
