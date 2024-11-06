@@ -49,16 +49,7 @@ def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
 
     def to_envval(val: Any) -> str:
         """Convert an arbitrary value to a string to be used as an environment variable."""
-        if isinstance(val, list):
-            # this is used by the pilot for handling multiple queues
-            # WMS makes lists for:
-            #    EWMS_PILOT_QUEUE_INCOMING / EWMS_PILOT_QUEUE_OUTGOING
-            #    EWMS_PILOT_QUEUE_*_AUTH_TOKEN
-            #    EWMS_PILOT_QUEUE_*_BROKER_TYPE
-            #    EWMS_PILOT_QUEUE_*_BROKER_ADDRESS
-            out_val = ";".join(val)
-        else:
-            out_val = str(val)
+        out_val = str(val)  # just in case this slipped past the value typechecking
         out_val = out_val.replace("\n", " ")  # no new-lines!
         out_val = shlex.quote(out_val)  # escape special chars
         return out_val
