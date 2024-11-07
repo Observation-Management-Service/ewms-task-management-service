@@ -55,7 +55,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
             'OSG_OS_VERSION =?= "8" && '
-            "foo"
+            "(foo)"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
