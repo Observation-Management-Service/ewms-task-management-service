@@ -20,6 +20,64 @@ LOGGER = logging.getLogger(__name__)
 # Helper functions
 
 
+def inject_needed_envvars_into_taskforce(resp: dict) -> dict:
+    """There are several values that need to go into the taskforce's env vars."""
+    environment = resp["taskforce"]["pilot_config"]["environment"]
+
+    # inject task-related attrs into 'environment' dict
+    environment.update(
+        {
+            "EWMS_PILOT_TASK_IMAGE": resp["task_directive"]["task_image"],
+            "EWMS_PILOT_TASK_ARGS": resp["task_directive"]["task_args"],
+            "EWMS_PILOT_INIT_IMAGE": resp["task_directive"]["init_image"],
+            "EWMS_PILOT_INIT_ARGS": resp["task_directive"]["init_args"],
+        }
+    )
+    if val := resp["task_directive"]["task_env"]:
+        environment.update({"EWMS_PILOT_TASK_ENV_JSON": json.dumps(val)})
+    if val := resp["task_directive"]["init_env"]:
+        environment.update({"EWMS_PILOT_INIT_ENV_JSON": json.dumps(val)})
+
+    def append_to_delim_str(_existing_val: str | None, _val: str) -> str:
+        """Append the new value with `;`-delimiter, ensuring no leading `;` if empty."""
+        if _existing_val:
+            return f"{_existing_val};{_val}"
+        else:
+            return _val
+
+    # inject mq-related attrs into 'environment' dict
+    for mqprofile in resp["mqprofiles"]:
+        mqid = mqprofile["mqid"]
+        auth_token = mqprofile["auth_token"]
+        broker_type = mqprofile["broker_type"]
+        broker_address = mqprofile["broker_address"]
+
+        # NOTE: these two conditions are not mutually exclusive, think: self loop (recursive)
+        # INCOMING QUEUE(S)
+        if mqid in resp["task_directive"]["input_queues"]:
+            attr_vals = {
+                "EWMS_PILOT_QUEUE_INCOMING": mqid,
+                "EWMS_PILOT_QUEUE_INCOMING_AUTH_TOKEN": auth_token,
+                "EWMS_PILOT_QUEUE_INCOMING_BROKER_TYPE": broker_type,
+                "EWMS_PILOT_QUEUE_INCOMING_BROKER_ADDRESS": broker_address,
+            }
+            for attr, val in attr_vals.items():
+                environment[attr] = append_to_delim_str(environment.get(attr), val)
+        # OUTGOING QUEUE(S)
+        # NOTE: not an *elif*, see note above
+        if mqid in resp["task_directive"]["output_queues"]:
+            attr_vals = {
+                "EWMS_PILOT_QUEUE_OUTGOING": mqid,
+                "EWMS_PILOT_QUEUE_OUTGOING_AUTH_TOKEN": auth_token,
+                "EWMS_PILOT_QUEUE_OUTGOING_BROKER_TYPE": broker_type,
+                "EWMS_PILOT_QUEUE_OUTGOING_BROKER_ADDRESS": broker_address,
+            }
+            for attr, val in attr_vals.items():
+                environment[attr] = append_to_delim_str(environment.get(attr), val)
+
+    return resp
+
+
 class EWMSCaller:
     """Several REST calls to EWMS."""
 
@@ -38,59 +96,8 @@ class EWMSCaller:
             return None
         LOGGER.debug(f"NEXT TO START: {resp}")
 
-        # inject task-related attrs into 'environment' dict
-        resp["taskforce"]["pilot_config"]["environment"].update(
-            {
-                # fmt: off
-                "EWMS_PILOT_TASK_IMAGE": resp["task_directive"]["task_image"],
-                "EWMS_PILOT_TASK_ARGS": resp["task_directive"]["task_args"],
-                "EWMS_PILOT_TASK_ENV_JSON": json.dumps(resp["task_directive"]["task_env"]),
-                "EWMS_PILOT_INIT_IMAGE": resp["task_directive"]["init_image"],
-                "EWMS_PILOT_INIT_ARGS": resp["task_directive"]["init_args"],
-                "EWMS_PILOT_INIT_ENV_JSON": json.dumps(resp["task_directive"]["init_env"]),
-                # fmt: on
-            }
-        )
-
-        def append_to_delim_str(_existing_val: str | None, _val: str) -> str:
-            """Append the new value with `;`-delimiter, ensuring no leading `;` if empty."""
-            if _existing_val:
-                return f"{_existing_val};{_val}"
-            else:
-                return _val
-
-        # inject mq-related attrs into 'environment' dict
-        for mqprofile in resp["mqprofiles"]:
-            environment = resp["taskforce"]["pilot_config"]["environment"]
-            mqid = mqprofile["mqid"]
-            auth_token = mqprofile["auth_token"]
-            broker_type = mqprofile["broker_type"]
-            broker_address = mqprofile["broker_address"]
-
-            # NOTE: these two conditions are not mutually exclusive, think: self loop (recursive)
-            # INCOMING QUEUE(S)
-            if mqid in resp["task_directive"]["input_queues"]:
-                attr_vals = {
-                    "EWMS_PILOT_QUEUE_INCOMING": mqid,
-                    "EWMS_PILOT_QUEUE_INCOMING_AUTH_TOKEN": auth_token,
-                    "EWMS_PILOT_QUEUE_INCOMING_BROKER_TYPE": broker_type,
-                    "EWMS_PILOT_QUEUE_INCOMING_BROKER_ADDRESS": broker_address,
-                }
-                for attr, val in attr_vals.items():
-                    environment[attr] = append_to_delim_str(environment.get(attr), val)
-            # OUTGOING QUEUE(S)
-            # NOTE: not an *elif*, see note above
-            if mqid in resp["task_directive"]["output_queues"]:
-                attr_vals = {
-                    "EWMS_PILOT_QUEUE_OUTGOING": mqid,
-                    "EWMS_PILOT_QUEUE_OUTGOING_AUTH_TOKEN": auth_token,
-                    "EWMS_PILOT_QUEUE_OUTGOING_BROKER_TYPE": broker_type,
-                    "EWMS_PILOT_QUEUE_OUTGOING_BROKER_ADDRESS": broker_address,
-                }
-                for attr, val in attr_vals.items():
-                    environment[attr] = append_to_delim_str(environment.get(attr), val)
-
-        return resp["taskforce"]  # type: ignore[no-any-return]
+        resp = inject_needed_envvars_into_taskforce(resp)
+        return resp["taskforce"]
 
     @staticmethod
     async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any] | None:
