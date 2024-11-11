@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.52 (2024-11-11)
+
+### Other
+
+* <bot> update dependencies*.log files(s) ([`b11464b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/b11464beee6fc58bcfb12abb09408ca0dd0697c3))
+* Use New "Next to Start" Schema ([#26](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/26)) ([`13ddb95`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/13ddb956c14be0c0805a8aacbec529822505d098))
+
 ## v0.1.51 (2024-10-31)
 
 ### Other
