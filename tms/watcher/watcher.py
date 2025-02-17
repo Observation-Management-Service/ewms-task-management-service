@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
-from htcondor import JobEventLog, classad  # type: ignore[import-untyped]
+from htcondor import classad  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
