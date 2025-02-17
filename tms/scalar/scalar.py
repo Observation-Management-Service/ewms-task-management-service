@@ -194,9 +194,7 @@ async def scalar_loop(
         ENV.EWMS_CLIENT_SECRET,
     )
 
-    timer = IntervalTimer(
-        ENV.TMS_OUTER_LOOP_WAIT, logging.getLogger(f"{LOGGER.name}.timer")
-    )
+    timer = IntervalTimer(ENV.TMS_OUTER_LOOP_WAIT, f"{LOGGER.name}.timer")
 
     while True:
         # START(S)
