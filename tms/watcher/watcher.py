@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
-from htcondor import classad  # type: ignore[import-untyped]
+from htcondor import JobEventLog, classad  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
@@ -23,6 +23,8 @@ from .utils import (
 from .. import condor_tools, types
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_ROUTE_VERSION_PREFIX
 from ..utils import AppendOnlyList, TaskforceMonitor
+
+sdict = dict[str, Any]
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -250,45 +252,71 @@ class ClusterInfo:
 ########################################################################################
 
 
-async def watch_job_event_log(
-    jel_fpath: Path,
-    ewms_rc: RestClient,
-    tmonitors: AppendOnlyList[TaskforceMonitor],
-) -> None:
-    """Watch over one JEL file, containing multiple taskforces.
+class JobEventLogRetired(Exception):
+    """Raised when a job event log file will no longer be updated / was deleted."""
 
-    NOTE:
-        1. a taskforce is never split among multiple files, it uses only one
-        2. if this process crashes, the file will be re-read from the top;
-            so, there's no need to track progress.
-    """
-    LOGGER.info(f"This watcher will read {jel_fpath}")
 
-    cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
-    timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
-    jel = htcondor.JobEventLog(str(jel_fpath))
+class JobEventLogWatcher:
+    """Used to watch and communicate job event log updates to ewms."""
 
-    while True:
-        # wait for JEL to populate more
-        await timer.wait_until_interval()
+    def __init__(
+        self,
+        jel_fpath: Path,
+        ewms_rc: RestClient,
+        tmonitors: AppendOnlyList[TaskforceMonitor],
+    ):
+        self.jel_fpath = jel_fpath
+        self.ewms_rc = ewms_rc
+        self.tmonitors = tmonitors
+
+    async def watch_job_event_log(self) -> None:
+        """Watch over one JEL file, containing multiple taskforces.
+
+        NOTE:
+            1. a taskforce is never split among multiple files, it uses only one
+            2. if this process crashes, the file will be re-read from the top;
+                so, there's no need to track progress.
+        """
+        LOGGER.info(f"This watcher will read {self.jel_fpath}")
+
+        cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
+        timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
+        jel = htcondor.JobEventLog(str(self.jel_fpath))
+
+        while True:
+            # wait for JEL to populate more
+            await timer.wait_until_interval()
+            # parse & update
+            try:
+                await self._look_at_job_event_log(cluster_infos, jel)
+            except JobEventLogRetired:
+                return
+
+    async def _look_at_job_event_log(
+        self,
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+        jel: htcondor.JobEventLog,
+    ) -> None:
+        """The main logic for parsing a job event log and sending updates to EWMS."""
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the JEL)
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
-            ewms_rc,
-            jel_fpath,
+            self.ewms_rc,
+            self.jel_fpath,
             list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
             cluster_infos[cluster_id] = ClusterInfo(
                 TaskforceMonitor(taskforce_uuid, cluster_id)
             )
-            tmonitors.append(cluster_infos[cluster_id].tmonitor)
+            self.tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
         # get events -- exit when no more events
         got_new_events = False
-        LOGGER.debug(f"Reading events from {jel_fpath}...")
-        for job_event in jel.events(stop_after=0):  # 0 -> only get currently available
+        LOGGER.debug(f"Reading events from {self.jel_fpath}...")
+        for job_event in jel.events(stop_after=0):
+            # ^^^ 'stop_after=0' -> only get events currently available
             await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
             # update
@@ -302,7 +330,7 @@ async def watch_job_event_log(
                 continue
             except ReceivedClusterRemovedJobEvent as e:
                 await send_condor_complete(
-                    ewms_rc,
+                    self.ewms_rc,
                     cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
@@ -311,24 +339,31 @@ async def watch_job_event_log(
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            if await is_jel_okay_to_delete(ewms_rc, jel_fpath):
-                jel_fpath.unlink()  # delete file
-                LOGGER.warning(f"Deleted JEL file {jel_fpath}")
-                return
+            if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
+                self.jel_fpath.unlink()  # delete file
+                LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
+                raise JobEventLogRetired()
             else:
-                continue
+                return
+        else:
+            LOGGER.debug("Done reading events for now")
+            LOGGER.debug(
+                pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+            )
 
-        LOGGER.debug("Done reading events for now")
-        LOGGER.debug(
-            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
-        )
+            # aggregate cluster_infos, then update ewms
+            patch_body = self._aggregate_cluster_infos(cluster_infos)
+            await self._update_ewms(patch_body)
 
-        patch_body: dict[str, Any] = {
+    @staticmethod
+    def _aggregate_cluster_infos(
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+    ) -> sdict:
+        patch_body: sdict = {
             _ALL_TOP_ERRORS_KEY: {},
             _ALL_COMP_STAT_KEY: {},
         }
 
-        # aggregate
         # NOTE: We unfortunately cannot reduce the data after aggregating.
         #  Once we aggregate we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
@@ -353,6 +388,9 @@ async def watch_job_event_log(
             except NoUpdateException:
                 pass
 
+        return patch_body
+
+    async def _update_ewms(self, patch_body: sdict) -> None:
         # send -- one big update that way it can't intermittently fail
         # remove any "empty" keys
         # (it's okay to send an empty sub-dict, but all empties is pointless)
@@ -362,7 +400,7 @@ async def watch_job_event_log(
                 f"statuses={list(patch_body.get(_ALL_COMP_STAT_KEY,{}).keys())}, "
                 f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
-            await ewms_rc.request(
+            await self.ewms_rc.request(
                 "POST",
                 f"/{WMS_ROUTE_VERSION_PREFIX}/tms/statuses/taskforces",
                 patch_body,
