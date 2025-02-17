@@ -163,4 +163,4 @@ cython_debug/
 # wipac-dev-py-setup-action
 !dependencies*.log
 
-tms-(.*)env
+tms-*env

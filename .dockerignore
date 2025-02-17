@@ -4,4 +4,4 @@ __pycache__
 .terraform
 aws_ec2
 
-tms-(.*)env
+tms-*env
