@@ -265,9 +265,7 @@ async def watch_job_event_log(
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
-    timer = IntervalTimer(
-        ENV.TMS_WATCHER_INTERVAL, logging.getLogger(f"{LOGGER.name}.timer")
-    )
+    timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
