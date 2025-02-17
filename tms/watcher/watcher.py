@@ -10,6 +10,7 @@ from typing import Any
 import htcondor  # type: ignore[import-untyped]
 from htcondor import classad  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
+from wipac_dev_tools.timing_tools import IntervalTimer
 
 from .utils import (
     JobInfoKey,
@@ -21,7 +22,7 @@ from .utils import (
 )
 from .. import condor_tools, types
 from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_ROUTE_VERSION_PREFIX
-from ..utils import AppendOnlyList, EveryXSeconds, TaskforceMonitor
+from ..utils import AppendOnlyList, TaskforceMonitor
 
 _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
@@ -264,12 +265,14 @@ async def watch_job_event_log(
     LOGGER.info(f"This watcher will read {jel_fpath}")
 
     cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
-    interval_timer = EveryXSeconds(ENV.TMS_WATCHER_INTERVAL)
+    timer = IntervalTimer(
+        ENV.TMS_WATCHER_INTERVAL, logging.getLogger(f"{LOGGER.name}.timer")
+    )
     jel = htcondor.JobEventLog(str(jel_fpath))
 
     while True:
-        # wait for JEL to populate (more)
-        await interval_timer.wait_until_x(LOGGER)
+        # wait for JEL to populate more
+        await timer.wait_until_interval()
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor

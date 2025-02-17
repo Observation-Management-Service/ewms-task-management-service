@@ -7,6 +7,7 @@ from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import ClientCredentialsAuth, RestClient
+from wipac_dev_tools.timing_tools import IntervalTimer
 
 from . import starter, stopper
 from .. import utils
@@ -193,7 +194,7 @@ async def scalar_loop(
         ENV.EWMS_CLIENT_SECRET,
     )
 
-    interval_timer = utils.EveryXSeconds(ENV.TMS_OUTER_LOOP_WAIT)
+    timer = IntervalTimer(ENV.TMS_OUTER_LOOP_WAIT, LOGGER)
 
     while True:
         # START(S)
@@ -207,7 +208,7 @@ async def scalar_loop(
         LOGGER.debug("De-activated stopper.")
 
         # throttle
-        await interval_timer.wait_until_x(LOGGER)
+        await timer.wait_until_interval()
 
 
 async def start_all(
