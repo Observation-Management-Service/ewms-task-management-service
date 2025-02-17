@@ -3,3 +3,5 @@ __pycache__
 .git
 .terraform
 aws_ec2
+
+tms-(.*)env
