@@ -165,7 +165,10 @@ jobs:
       - name: run singularity container
         run: |
           set -euo pipefail
-          singularity run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
+          # use sudo, else:
+          #   ERROR  : Could not write info to setgroups: Permission denied
+          #   ERROR  : Error while waiting event for user namespace mappings: no event received
+          sudo singularity run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
             ls
 
   unit-test:
