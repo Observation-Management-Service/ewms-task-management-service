@@ -252,8 +252,8 @@ class ClusterInfo:
 ########################################################################################
 
 
-class JobEventLogRetired(Exception):
-    """Raised when a job event log file will no longer be updated / was deleted."""
+class JobEventLogDeleted(Exception):
+    """Raised when a job event log file was deleted."""
 
 
 class JobEventLogWatcher:
@@ -289,7 +289,7 @@ class JobEventLogWatcher:
             # parse & update
             try:
                 await self._look_at_job_event_log(cluster_infos, jel)
-            except JobEventLogRetired:
+            except JobEventLogDeleted:
                 return
 
     async def _look_at_job_event_log(
@@ -342,7 +342,7 @@ class JobEventLogWatcher:
             if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
                 self.jel_fpath.unlink()  # delete file
                 LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
-                raise JobEventLogRetired()
+                raise JobEventLogDeleted()
             else:
                 return
         else:
