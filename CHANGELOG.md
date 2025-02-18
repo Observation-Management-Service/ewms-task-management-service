@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.53 (2025-02-18)
+
+### Other
+
+* Add systemd File ([#31](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/31)) ([`46f3a89`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/46f3a897b961dc775349368db6de21783fac2eac))
+
 ## v0.1.52 (2024-11-11)
 
 ### Other
