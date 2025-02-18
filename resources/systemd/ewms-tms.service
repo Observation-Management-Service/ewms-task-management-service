@@ -1,0 +1,47 @@
+[Unit]
+Description=EWMS Task Management Service
+Wants=basic.target
+After=basic.target network.target condor.service
+Requires=condor.service
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=ewms
+Group=ewms
+
+# Load environment variables from a file
+EnvironmentFile=/home/ewms/tms-dev-env
+
+# Use the TMS_BASE_DIR environment variable
+WorkingDirectory=${TMS_BASE_DIR}
+
+# Pre-check environment variables before starting
+ExecStartPre=/bin/bash -c '\
+    REQUIRED_VARS="EWMS_ADDRESS EWMS_CLIENT_ID EWMS_CLIENT_SECRET \
+                   EWMS_TOKEN_URL JOB_EVENT_LOG_DIR TMS_BASE_DIR \
+                   TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT \
+                   TMS_TAG TMS_WATCHER_INTERVAL"; \
+    for VAR in $REQUIRED_VARS; do \
+        if [[ -z "${!VAR}" ]]; then \
+            echo "Error: Required environment variable $VAR is not set." >&2; \
+            exit 1; \
+        fi; \
+    done'
+
+ExecStart=/usr/bin/apptainer run \
+    --mount type=bind,source="${TMS_BASE_DIR}",dst="${TMS_BASE_DIR}" \
+    --mount type=bind,source=/etc/condor/,dst=/etc/condor/,ro \
+    --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
+    --env LOG_LEVEL=INFO \
+    --env LOG_LEVEL_REST_TOOLS=INFO \
+    "/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service:{$TMS_TAG}"
+
+# Ensure the service restarts if it crashes
+Restart=always
+RestartSec=5
+
+# Set logging behavior
+StandardOutput=journal
+StandardError=journal

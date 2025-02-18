@@ -11,8 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import htcondor  # type: ignore[import-untyped]
 import pytest
 
-from tms import config  # noqa: F401  # import in order to set up env vars
-from tms import utils
+from tms import config, utils  # noqa: F401  # import in order to set up env vars
 from tms.watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
@@ -118,7 +117,8 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=mock_all_requests)
-    await watcher.watch_job_event_log(jel_file_wrapper.live_file, rc, tmonitors)
+    jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc, tmonitors)
+    await jel_watcher.watch_job_event_log()
 
     assert len(tmonitors) == 2  # check that the taskforce monitors is still here
 

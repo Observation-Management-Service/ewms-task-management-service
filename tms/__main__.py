@@ -40,20 +40,21 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
                 if not LogFileLogic.is_log_file(jel_fpath):
                     continue
+
                 # check/append
                 if jel_fpath in in_progress:
                     continue
                 else:
                     in_progress.append(jel_fpath)
+
                 # go!
                 LOGGER.info(f"Creating new JEL watcher for {jel_fpath}...")
-                tg.create_task(
-                    watcher.watch_job_event_log(
-                        jel_fpath,
-                        ewms_rc,
-                        tmonitors,
-                    )
+                jel_watcher = watcher.JobEventLogWatcher(
+                    jel_fpath,
+                    ewms_rc,
+                    tmonitors,
                 )
+                tg.create_task(jel_watcher.watch_job_event_log())
 
             await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
 

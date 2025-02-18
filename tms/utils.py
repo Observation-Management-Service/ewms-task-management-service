@@ -1,8 +1,6 @@
 """General Utilities."""
 
-import asyncio
 import logging
-import time
 from datetime import date
 from pathlib import Path
 from typing import TypeVar
@@ -28,31 +26,6 @@ class LogFileLogic:
         return bool(
             fpath.is_file() and fpath.name.startswith("tms-") and fpath.suffix == ".log"
         )
-
-
-class EveryXSeconds:
-    """Keep track of durations."""
-
-    def __init__(self, seconds: float) -> None:
-        self.seconds = seconds
-        self._last_time = time.time()
-
-    async def wait_until_x(self, logger: logging.Logger) -> None:
-        """Wait until it has been x seconds, 1s at a time."""
-        logger.debug(
-            f"waiting until {self.seconds}s has elapsed since last iteration..."
-        )
-        while not self.has_been_x_seconds(logger):
-            await asyncio.sleep(1)
-
-    def has_been_x_seconds(self, logger: logging.Logger) -> bool:
-        """Has it been at least `self.seconds` since last time?"""
-        diff = time.time() - self._last_time
-        yes = diff >= self.seconds
-        if yes:
-            self._last_time = time.time()
-            logger.debug(f"has been at least {self.seconds}s (actually {diff}s)")
-        return yes
 
 
 class TaskforceMonitor:
