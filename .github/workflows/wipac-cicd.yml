@@ -160,7 +160,7 @@ jobs:
       - name: build apptainer image (.sif)
         run: |
           set -euo pipefail
-          sudo apptainer build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
+          apptainer build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
           ls -lh $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif
       - name: run apptainer container
         run: |
