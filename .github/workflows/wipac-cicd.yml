@@ -157,6 +157,7 @@ jobs:
       - name: install apptainer
         run: |
           set -euo pipefail
+          set -x
           
           # https://apptainer.org/docs/admin/main/installation.html#install-unprivileged-from-pre-built-binaries
           curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | \
