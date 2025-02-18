@@ -154,13 +154,20 @@ jobs:
           file: Dockerfile
           tags: ${{ env.DOCKER_IMAGE_NAME }}:local
           load: true
-      - uses: eWaterCycle/setup-apptainer@v2
-        with:
-          apptainer-version: 1.3.2
-      - name: config apptainer
+      - name: install apptainer
         run: |
           set -euo pipefail
-          # from: https://github.com/apptainer/apptainer/blob/main/INSTALL.md#apparmor-profile-ubuntu-2310
+          
+          apptainer --version | echo "no apptainer"
+          
+          # https://apptainer.org/docs/admin/main/installation.html#install-unprivileged-from-pre-built-binaries
+          curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | \
+            bash -s - install-dir
+          install-dir/bin/apptainer
+          
+          apptainer --version
+          
+          # https://github.com/apptainer/apptainer/blob/main/INSTALL.md#apparmor-profile-ubuntu-2310
           sudo tee /etc/apparmor.d/apptainer << 'EOF'
           # Permit unprivileged user namespace creation for apptainer starter
           abi <abi/4.0>,
