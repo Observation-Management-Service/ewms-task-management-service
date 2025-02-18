@@ -140,7 +140,7 @@ jobs:
           file: Dockerfile
           tags: ${{ env.DOCKER_IMAGE_NAME }}:local
 
-  test-build-singularity:
+  test-build-apptainer:
     needs: test-build-docker
     runs-on: ubuntu-latest
     steps:
@@ -157,18 +157,18 @@ jobs:
       - uses: eWaterCycle/setup-apptainer@v2
         with:
           apptainer-version: 1.3.2
-      - name: build singularity image
+      - name: build apptainer image (.sif)
         run: |
           set -euo pipefail
-          sudo singularity build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
+          sudo apptainer build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
           ls -lh $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif
-      - name: run singularity container
+      - name: run apptainer container
         run: |
           set -euo pipefail
           # use sudo, else:
           #   ERROR  : Could not write info to setgroups: Permission denied
           #   ERROR  : Error while waiting event for user namespace mappings: no event received
-          sudo singularity run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
+          sudo apptainer run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
             ls
 
   unit-test:
@@ -205,7 +205,7 @@ jobs:
       py-versions,
       py-dependencies,
       test-build-docker,
-      test-build-singularity,
+      test-build-apptainer,
       unit-test
     ]
     runs-on: ubuntu-latest
