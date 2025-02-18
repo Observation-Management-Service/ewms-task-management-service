@@ -163,7 +163,7 @@ jobs:
             bash -s - install-dir
           install-dir/bin/apptainer
           
-          apptainer --version
+          apptainer version
           
           # https://github.com/apptainer/apptainer/blob/main/INSTALL.md#apparmor-profile-ubuntu-2310
           sudo tee /etc/apparmor.d/apptainer << 'EOF'
