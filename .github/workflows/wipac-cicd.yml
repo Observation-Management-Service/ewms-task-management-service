@@ -165,10 +165,7 @@ jobs:
       - name: run apptainer container
         run: |
           set -euo pipefail
-          # use sudo, else:
-          #   ERROR  : Could not write info to setgroups: Permission denied
-          #   ERROR  : Error while waiting event for user namespace mappings: no event received
-          sudo apptainer run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
+          apptainer run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
             ls
 
   unit-test:
