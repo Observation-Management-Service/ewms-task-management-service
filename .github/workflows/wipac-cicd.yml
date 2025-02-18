@@ -158,8 +158,6 @@ jobs:
         run: |
           set -euo pipefail
           
-          apptainer --version | echo "no apptainer"
-          
           # https://apptainer.org/docs/admin/main/installation.html#install-unprivileged-from-pre-built-binaries
           curl -s https://raw.githubusercontent.com/apptainer/apptainer/main/tools/install-unprivileged.sh | \
             bash -s - install-dir
