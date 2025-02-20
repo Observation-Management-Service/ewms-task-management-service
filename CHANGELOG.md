@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.54 (2025-02-20)
+
+### Other
+
+* `systemd` File: Remove Env Var Refs, Add Restarter ([#32](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/32)) ([`fb644ed`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/fb644ede9a7db35c3a68cf75556cf9080642b03d))
+
 ## v0.1.53 (2025-02-18)
 
 ### Other
