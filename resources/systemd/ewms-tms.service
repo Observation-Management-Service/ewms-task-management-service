@@ -2,20 +2,16 @@
 Description=EWMS Task Management Service
 Wants=basic.target
 After=basic.target network.target condor.service
-Requires=condor.service
 
 [Install]
 WantedBy=multi-user.target
 
 [Service]
-User=ewms
-Group=ewms
-
 # Load environment variables from a file
 EnvironmentFile=/home/ewms/tms/dev-env
 
 # Use the TMS_BASE_DIR environment variable
-WorkingDirectory=/scratch/tms/
+WorkingDirectory=/scratch/ewms/tms/
 
 # Pre-check environment variables before starting
 ExecStartPre=/bin/bash -c '\
@@ -31,7 +27,7 @@ ExecStartPre=/bin/bash -c '\
     done'
 
 ExecStart=/usr/bin/apptainer run \
-    --mount type=bind,source=/scratch/tms/,dst=/scratch/tms/ \
+    --mount type=bind,source=/scratch/ewms/tms/,dst=/scratch/ewms/tms/ \
     --mount type=bind,source=/etc/condor/,dst=/etc/condor/,ro \
     --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
     --env LOG_LEVEL=INFO \
