@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.55 (2025-02-21)
+
+### Other
+
+* Remove directives that dont work with user systemd; fix working dir path ([`ff36fae`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ff36fae6b8545982f2a50d5c58de7d6cd7675ee5))
+
 ## v0.1.54 (2025-02-20)
 
 ### Other
