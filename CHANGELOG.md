@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.56 (2025-02-24)
+
+### Other
+
+* Move systemd logging to /scratch/ewms instead of journal ([`de37ab2`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/de37ab2a743d7240da88237c6425dc986c81f4a6))
+
 ## v0.1.55 (2025-02-21)
 
 ### Other
