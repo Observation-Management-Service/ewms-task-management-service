@@ -8,7 +8,7 @@ WantedBy=multi-user.target
 
 [Service]
 # Load environment variables from a file
-EnvironmentFile=/home/ewms/tms/dev-env
+EnvironmentFile=/home/ewms/tms/envfile
 
 # Use the TMS_BASE_DIR environment variable
 WorkingDirectory=/scratch/ewms/tms/
@@ -39,5 +39,6 @@ Restart=always
 RestartSec=5
 
 # Set logging behavior
-StandardOutput=journal
-StandardError=journal
+SyslogIdentifier=ewms-tms
+StandardOutput=append:/scratch/ewms/tms/logs/ewms-tms.log
+StandardError=append:/scratch/ewms/tms/logs/ewms-tms.log
