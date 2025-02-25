@@ -298,6 +298,7 @@ class JobEventLogWatcher:
         jel: htcondor.JobEventLog,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
+        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
 
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
@@ -353,7 +354,7 @@ class JobEventLogWatcher:
 
             # aggregate cluster_infos, then update ewms
             patch_body = self._aggregate_cluster_infos(cluster_infos)
-            await self._update_ewms(patch_body)
+            await self._update_ewms(patch_body, no_updates_logging_timer)
 
     @staticmethod
     def _aggregate_cluster_infos(
@@ -390,7 +391,11 @@ class JobEventLogWatcher:
 
         return patch_body
 
-    async def _update_ewms(self, patch_body: sdict) -> None:
+    async def _update_ewms(
+        self,
+        patch_body: sdict,
+        no_updates_logging_timer: IntervalTimer,
+    ) -> None:
         # send -- one big update that way it can't intermittently fail
         # remove any "empty" keys
         # (it's okay to send an empty sub-dict, but all empties is pointless)
@@ -406,5 +411,7 @@ class JobEventLogWatcher:
                 patch_body,
             )
             LOGGER.info("updates sent.")
+            no_updates_logging_timer.fastforward()  # so next time, "no updates" will be logged
         else:
-            LOGGER.info("no updates needed for ewms.")
+            if no_updates_logging_timer.has_interval_elapsed():
+                LOGGER.info("no updates needed for ewms.")

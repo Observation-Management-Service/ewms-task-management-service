@@ -39,6 +39,9 @@ class EnvConfig:
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
+    TMS_MAX_LOGGING_INTERVAL: int = (  # something will be logged at least this often
+        5 * 60
+    )
     TMS_ERROR_WAIT: int = (
         # how much time to wait after an error, with the intention that the error may be transient
         10
