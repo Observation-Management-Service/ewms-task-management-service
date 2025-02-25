@@ -186,7 +186,7 @@ def make_condor_job_description(
     else:
         output_subdir = None
 
-    LOGGER.info(submit_dict)
+    LOGGER.debug(submit_dict)
     return submit_dict, output_subdir
 
 
@@ -198,8 +198,8 @@ def submit(
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
 
-    LOGGER.info("This submit object will be submitted:")
-    LOGGER.info(submit_obj)
+    LOGGER.debug("This submit object will be submitted:")
+    LOGGER.debug(submit_obj)
 
     # submit
     LOGGER.info("Submitting request to condor...")
@@ -208,10 +208,7 @@ def submit(
         count=n_workers,  # submit N workers
     )
     cluster_id, num_procs = submit_result_obj.cluster(), submit_result_obj.num_procs()
-    LOGGER.info(f"SUCCESS: Submitted request to condor ({cluster_id=}, {num_procs=}).")
-
-    LOGGER.info("This submit classad has been submitted:")
-    LOGGER.info(submit_result_obj)
+    LOGGER.info(submit_result_obj)  # includes cluster_id and num_procs
 
     return cluster_id, num_procs
 
