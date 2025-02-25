@@ -410,8 +410,8 @@ class JobEventLogWatcher:
                 f"/{WMS_ROUTE_VERSION_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
-            # LOGGER.info("updates sent.")
-            no_updates_logging_timer.fastforward()  # so next time, "no updates" will be logged
+            LOGGER.debug("updates sent.")
+            no_updates_logging_timer.fastforward()  # so next time, "no updates" can be logged
         else:
             if no_updates_logging_timer.has_interval_elapsed():
                 LOGGER.info("no updates needed for ewms.")
