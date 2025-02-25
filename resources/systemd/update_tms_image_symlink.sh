@@ -44,9 +44,9 @@ tms_image_tag="$1"
 
 ################################################################################
 # constants
-cvmfs_base="/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service"
+readonly cvmfs_base="/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service"
 
-full_image_path="$cvmfs_base:$tms_image_tag"
+readonly full_image_path="$cvmfs_base:$tms_image_tag"
 if [[ ! -d "$full_image_path" ]]; then
     echo "Error: Image not found on CVMFS: $full_image_path"
     exit 2
@@ -60,4 +60,4 @@ ln -snf "$full_image_path" "./apptainer_container_symlink"
 # Touch envfile so systemd restarts the app
 touch "./envfile"
 
-echo "Successfully updated symlink to: $full_image_path"
+echo "Successfully updated symlink to: $(readlink -f ./apptainer_container_symlink)"
