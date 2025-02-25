@@ -198,11 +198,9 @@ def submit(
     """Start taskforce on Condor cluster."""
     submit_obj = htcondor.Submit(submit_dict)
 
-    LOGGER.debug("This submit object will be submitted:")
-    LOGGER.debug(submit_obj)
-
     # submit
     LOGGER.info("Submitting request to condor...")
+    LOGGER.info(submit_obj)
     submit_result_obj = schedd_obj.submit(
         submit_obj,
         count=n_workers,  # submit N workers
