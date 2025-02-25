@@ -35,7 +35,7 @@ if [[ -z "$1" ]]; then
     echo "Error: Missing argument. Usage: $0 TMS_IMAGE_TAG"
     exit 1
 fi
-tms_image_tag="$1"
+readonly tms_image_tag="$1"
 
 ################################################################################
 # constants
