@@ -54,7 +54,10 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
-            'OSG_OS_VERSION =?= "8" && '
+            '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9") && '
+            'GLIDEIN_Site =!= "San Diego Supercomputer Center" && '
+            'GLIDEIN_Site =!= "SDSC-PRP" && '
+            'GLIDEIN_Site =!= "Kansas State University" && '
             "(foo)"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
