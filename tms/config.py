@@ -11,12 +11,24 @@ WATCHER_N_TOP_TASK_ERRORS = 10
 
 WMS_ROUTE_VERSION_PREFIX = "v0"
 
-DEFAULT_CONDOR_REQUIREMENTS = (
-    "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
-    "HAS_CVMFS_icecube_opensciencegrid_org && "
-    # "has_avx && has_avx2 && "
-    'OSG_OS_VERSION =?= "8"'  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
-)
+
+_BASE_REQUIREMENTS = [
+    "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity)",
+    "HAS_CVMFS_icecube_opensciencegrid_org",
+    # 'has_avx && has_avx2',
+    'OSG_OS_VERSION =?= "8"',  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
+]
+_EXCLUDED_SITES = [
+    f'GLIDEIN_Site != "{site}"'
+    for site in [
+        # exclude sites lacking apptainer support:
+        # ex: FATAL   [U=532362,P=1725534]Master()                      container creation failed: mount hook function failure: mount proc->/proc error: while mounting proc: can't mount proc filesystem to /proc: operation not permitted
+        "San Diego Supercomputer Center",  # 2024-11-08
+        "SDSC-PRP",  # 2024-11-08
+        "Kansas State University",  # 2025-02-26
+    ]
+]
+DEFAULT_CONDOR_REQUIREMENTS = " && ".join(_BASE_REQUIREMENTS + _EXCLUDED_SITES)
 
 
 @dc.dataclass(frozen=True)
