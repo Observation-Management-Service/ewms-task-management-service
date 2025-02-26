@@ -13,13 +13,17 @@ WMS_ROUTE_VERSION_PREFIX = "v0"
 
 
 _BASE_REQUIREMENTS = [
+    # singularity support -- note: sub-2 meets this req by default
     "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity)",
+    #
+    # cvmfs support -- note: sub-2 meets this req by default
     "HAS_CVMFS_icecube_opensciencegrid_org",
-    # 'has_avx && has_avx2',
-    'OSG_OS_VERSION =?= "8"',  # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
+    #
+    # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
+    '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9")',
 ]
 _EXCLUDED_SITES = [
-    f'GLIDEIN_Site != "{site}"'
+    f'GLIDEIN_Site =!= "{site}"'  # '=!=' -> 'not equal or undefined'
     for site in [
         # exclude sites lacking apptainer support:
         # ex: FATAL   [U=532362,P=1725534]Master()                      container creation failed: mount hook function failure: mount proc->/proc error: while mounting proc: can't mount proc filesystem to /proc: operation not permitted
