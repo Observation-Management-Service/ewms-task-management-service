@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.57 (2025-02-26)
+
+### Other
+
+* Add systemd Helper Script ([#33](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/33)) ([`ea9c92c`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ea9c92c12ddc183a60f2d99874b40f91be5a4098))
+
 ## v0.1.56 (2025-02-24)
 
 ### Other
