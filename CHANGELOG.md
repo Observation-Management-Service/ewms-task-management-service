@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.58 (2025-02-26)
+
+### Other
+
+* Exclude Sites Lacking Apptainer Support ([#34](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/34)) ([`347468b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/347468b630fae42d6484d0f6ce870735c49ba6da))
+
 ## v0.1.57 (2025-02-26)
 
 ### Other
