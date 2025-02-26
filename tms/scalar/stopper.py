@@ -1,6 +1,5 @@
 """For stopping EWMS taskforce workers on an HTCondor cluster."""
 
-
 import logging
 
 import htcondor  # type: ignore[import-untyped]
@@ -22,7 +21,6 @@ def stop(
     )
 
     # Remove workers -- may not be instantaneous
-    LOGGER.info("Requesting removal...")
     act_obj = schedd_obj.act(
         htcondor.JobAction.Remove,
         f"ClusterId == {cluster_id}",
