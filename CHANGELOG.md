@@ -2,6 +2,14 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.60 (2025-03-27)
+
+### Other
+
+* Add retries to `update_tms_image_symlink.sh` ([`4d60b97`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/4d60b97053403a0c998737aeedd6a972f6204639))
+* Merge remote-tracking branch 'origin/main' ([`92284ec`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/92284ec42d0929af2eec58a8a8d86f8ee0bb24b0))
+* Update `update_tms_image_symlink.sh` ([`d948fff`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/d948fff7abc7ecccfaeee36dc8ba77b47e7bd9ab))
+
 ## v0.1.59 (2025-03-27)
 
 ### Other
