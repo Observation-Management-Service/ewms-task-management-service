@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.61 (2025-03-27)
+
+### Other
+
+* Update `pilot_config.image_source`: "auto" ([`a12eb1c`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/a12eb1c9fa64c1211a852381dbec37e6f7f40a71))
+
 ## v0.1.60 (2025-03-27)
 
 ### Other
