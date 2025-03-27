@@ -109,6 +109,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         n_workers=123,
         pilot_config=dict(
             tag="my_image",
+            image_source="cvmfs",
             environment={"abc": "932", "def": "True"},
             input_files=["foofile", "bardir/barfile"],
         ),
