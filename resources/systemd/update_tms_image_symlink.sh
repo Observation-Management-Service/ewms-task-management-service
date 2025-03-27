@@ -40,19 +40,31 @@ readonly tms_image_tag="$1"
 ################################################################################
 # constants
 
-readonly cvmfs_base="/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service"
-
-readonly full_image_path="$cvmfs_base:$tms_image_tag"
-if [[ ! -d "$full_image_path" ]]; then
-    echo "Error: Image not found on CVMFS: $full_image_path"
-    exit 2
-fi
-
 readonly envfile="./envfile"
 if [[ ! -f $envfile ]]; then
     echo "Error: './envfile' is missing. Not updating symlink."
-    exit 3
+    exit 2
 fi
+
+readonly cvmfs_base="/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service"
+readonly full_image_path="$cvmfs_base:$tms_image_tag"
+#
+readonly sleep_interval=15  # seconds between retries
+readonly max_wait_minutes=30  # total wait time in minutes
+readonly max_attempts=$((max_wait_minutes * 60 / sleep_interval))
+#
+attempt=1
+while [[ ! -d "$full_image_path" ]]; do
+    echo "Attempt $attempt/$max_attempts: Image not found on CVMFS: $full_image_path"
+    if (( attempt >= max_attempts )); then
+        echo "Error: Timed out after $max_wait_minutes minutes waiting for image on CVMFS: $full_image_path"
+        exit 3
+    fi
+    echo "-> will retry in $sleep_interval seconds..."
+    sleep "$sleep_interval"
+    ((attempt++))
+done
+
 
 ################################################################################
 # update!
