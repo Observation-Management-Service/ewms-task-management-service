@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.59 (2025-03-27)
+
+### Other
+
+* Use `pilot_config.image_source` ([#35](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/35)) ([`31a9490`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/31a9490282633342b7c05873a19959f4acbc7d99))
+
 ## v0.1.58 (2025-02-26)
 
 ### Other
