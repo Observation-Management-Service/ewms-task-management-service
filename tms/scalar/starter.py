@@ -86,6 +86,7 @@ def assemble_pilot_fully_qualified_image(image_source: str, tag: str) -> str:
     Ex: /cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot:v1.2.3
     """
     pilot_image_sources = {
+        "auto": ENV.CVMFS_PILOT_PATH,
         "cvmfs": ENV.CVMFS_PILOT_PATH,
         # FUTURE DEV: more sources?
     }
