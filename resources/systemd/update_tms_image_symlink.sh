@@ -31,7 +31,7 @@ if [[ "$PWD" != "/home/ewms/tms" && "$PWD" != "/home/ewms/tms-dev" ]]; then
 fi
 
 # validate args
-if [[ -z "$1" ]]; then
+if [[ -z "${1-}" ]]; then
     echo "Error: Missing argument. Usage: $0 TMS_IMAGE_TAG"
     exit 1
 fi
