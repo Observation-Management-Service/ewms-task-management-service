@@ -80,6 +80,18 @@ def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
     return envfile
 
 
+def assemble_pilot_fully_qualified_image(image_source: str, tag: str) -> str:
+    """Get the fully qualified image name/location for the pilot.
+
+    Ex: /cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-pilot:v1.2.3
+    """
+    pilot_image_sources = {
+        "cvmfs": ENV.CVMFS_PILOT_PATH,
+        # FUTURE DEV: more sources?
+    }
+    return f"{pilot_image_sources[image_source.lower()]}:{tag}"
+
+
 def make_condor_job_description(
     taskforce_uuid: str,
     pilot_config: dict,
@@ -130,7 +142,10 @@ def make_condor_job_description(
     submit_dict = {
         "universe": "container",
         "+should_transfer_container": "no",
-        "container_image": f"{ENV.CVMFS_PILOT_PATH}:{pilot_config['tag']}",  # not quoted -- otherwise condor assumes relative path
+        "container_image": assemble_pilot_fully_qualified_image(  # not quoted -- otherwise condor assumes relative path
+            pilot_config["image_source"],
+            pilot_config["tag"],
+        ),
         #
         # "arguments": "",  # NOTE: args were removed in https://github.com/Observation-Management-Service/ewms-workflow-management-service/pull/38  # pilot_arguments.replace('"', r"\""),  # escape embedded quotes
         # "environment": "",  # NOTE: use envfile instead
