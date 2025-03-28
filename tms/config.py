@@ -30,6 +30,9 @@ _EXCLUDED_SITES = [
         "San Diego Supercomputer Center",  # 2024-11-08
         "SDSC-PRP",  # 2024-11-08
         "Kansas State University",  # 2025-02-26
+        # others
+        "AMNH",  # 2025-03-13  # "fuse-overlayfs: cannot mount: No such file or directory"
+        "NotreDame",  # 2025-03-13  # "Child exited with exit status 255"
     ]
 ]
 DEFAULT_CONDOR_REQUIREMENTS = " && ".join(_BASE_REQUIREMENTS + _EXCLUDED_SITES)
