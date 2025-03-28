@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.62 (2025-03-28)
+
+### Other
+
+* Exclude Sites: "AMNH" and "NotreDame" (plus a new helper script) - 2 ([`b8d237c`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/b8d237cf7fb419ace7484440e68360ccbb4158c0))
+* Exclude Sites: "AMNH" and "NotreDame" (plus a new helper script) ([`437a8bf`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/437a8bfb743d18632fd87c7d6d553e552d2a5a5e))
+
 ## v0.1.61 (2025-03-27)
 
 ### Other
