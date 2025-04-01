@@ -25,8 +25,8 @@ set -euo pipefail
 # guardrails
 
 # are we in the correct dir?
-if [[ "$PWD" != "/home/ewms/tms" && "$PWD" != "/home/ewms/tms-dev" ]]; then
-    echo "Error: Expected to be in 'tms' or 'tms-dev', but currently in: $PWD"
+if [[ "$PWD" != "/home/ewms/tms-prod" && "$PWD" != "/home/ewms/tms-dev" ]]; then
+    echo "Error: Expected to be in 'tms-prod' or 'tms-dev', but currently in: $PWD"
     exit 1
 fi
 
