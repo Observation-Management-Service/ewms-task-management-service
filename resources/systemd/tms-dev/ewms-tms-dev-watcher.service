@@ -1,5 +1,5 @@
 [Unit]
-Description=ewms-tms-dev-dev Watcher
+Description=ewms-tms-dev Watcher
 After=network.target
 
 [Service]

@@ -1,5 +1,5 @@
 [Unit]
-Description=EWMS Task Management Service
+Description=EWMS Task Management Service (prod)
 Wants=basic.target
 After=basic.target network.target condor.service
 
@@ -8,10 +8,10 @@ WantedBy=multi-user.target
 
 [Service]
 # Load environment variables from a file
-EnvironmentFile=/home/ewms/tms-dev/envfile
+EnvironmentFile=/home/ewms/tms-prod/envfile
 
 # Use the TMS_BASE_DIR environment variable
-WorkingDirectory=/scratch/ewms/tms-dev/
+WorkingDirectory=/scratch/ewms/tms-prod/
 
 # Pre-check environment variables before starting
 ExecStartPre=/bin/bash -c '\
@@ -27,18 +27,18 @@ ExecStartPre=/bin/bash -c '\
     done'
 
 ExecStart=/usr/bin/apptainer run \
-    --mount type=bind,source=/scratch/ewms/tms-dev/,dst=/scratch/ewms/tms-dev/ \
+    --mount type=bind,source=/scratch/ewms/tms-prod/,dst=/scratch/ewms/tms-prod/ \
     --mount type=bind,source=/etc/condor/,dst=/etc/condor/,ro \
     --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
     --env LOG_LEVEL=INFO \
     --env LOG_LEVEL_REST_TOOLS=INFO \
-    /home/ewms/tms-dev/apptainer_container_symlink
+    /home/ewms/tms-prod/apptainer_container_symlink
 
 # Ensure the service restarts if it crashes
 Restart=always
 RestartSec=5
 
 # Set logging behavior
-SyslogIdentifier=ewms-tms-dev
-StandardOutput=append:/scratch/ewms/tms-dev/logs/tms.log
-StandardError=append:/scratch/ewms/tms-dev/logs/tms.log
+SyslogIdentifier=ewms-tms-prod
+StandardOutput=append:/scratch/ewms/tms-prod/logs/tms.log
+StandardError=append:/scratch/ewms/tms-prod/logs/tms.log
