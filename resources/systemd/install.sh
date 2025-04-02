@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # install systmed unit files to user systemd
 
