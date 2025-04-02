@@ -21,8 +21,10 @@ for ENV in tms-dev tms-prod; do
     for UNIT in `ls $ENV`; do
         systemctl --user enable  $UNIT
 
-        if [[ $(systemctl --user show $UNIT --property=UnitFileState | grep -q  '=enabled') != 0 ]]; then
-            echo "failed to enable $UNIT"
+        if systemctl --user show $UNIT --property=UnitFileState | grep -q  '=enabled'; then
+            echo "$UNIT: failed to enable"
+        else
+            echo "$UNIT: enabled"
         fi
     done
 done
