@@ -164,3 +164,4 @@ cython_debug/
 !dependencies*.log
 
 tms-*env
+envfile

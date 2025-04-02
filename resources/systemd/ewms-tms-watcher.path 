@@ -1,6 +1,0 @@
-[Path]
-PathModified=/home/ewms/tms/apptainer_container_symlink
-PathModified=/home/ewms/tms/dev-env
-
-[Install]
-WantedBy=multi-user.target

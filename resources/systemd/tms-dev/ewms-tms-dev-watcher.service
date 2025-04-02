@@ -1,0 +1,10 @@
+[Unit]
+Description=ewms-tms-dev Watcher
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl --user restart ewms-tms-dev.service
+
+[Install]
+WantedBy=multi-user.target

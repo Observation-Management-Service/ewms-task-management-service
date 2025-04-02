@@ -15,7 +15,7 @@ cryptography==44.0.2
 Deprecated==1.2.18
 googleapis-common-protos==1.56.1
 grpcio==1.71.0
-htcondor==23.10.21
+htcondor==23.10.22
 humanfriendly==10.0
 idna==3.10
 importlib_metadata==8.6.1
@@ -31,7 +31,7 @@ opentelemetry-semantic-conventions==0.52b1
 protobuf==5.29.4
 pycparser==2.22
 PyJWT==2.10.1
-qrcode==8.0
+qrcode==8.1
 requests==2.32.3
 requests-futures==1.0.2
 six==1.17.0
@@ -53,9 +53,9 @@ cryptography==44.0.2
 pipdeptree==2.26.0
 ├── packaging [required: >=24.1, installed: 24.2]
 └── pip [required: >=24.2, installed: 25.0.1]
-setuptools==75.8.0
+setuptools==78.1.0
 tms
-├── htcondor [required: <24.0.0, installed: 23.10.21]
+├── htcondor [required: <24.0.0, installed: 23.10.22]
 ├── wipac-dev-tools [required: Any, installed: 1.15.6]
 │   ├── typing_extensions [required: Any, installed: 4.13.0]
 │   └── requests [required: Any, installed: 2.32.3]
@@ -66,7 +66,7 @@ tms
 └── wipac-rest-tools [required: Any, installed: 1.8.6]
     ├── cachetools [required: Any, installed: 5.5.2]
     ├── PyJWT [required: !=2.6.0, installed: 2.10.1]
-    ├── qrcode [required: Any, installed: 8.0]
+    ├── qrcode [required: Any, installed: 8.1]
     ├── requests [required: Any, installed: 2.32.3]
     │   ├── charset-normalizer [required: >=2,<4, installed: 3.4.1]
     │   ├── idna [required: >=2.5,<4, installed: 3.10]
