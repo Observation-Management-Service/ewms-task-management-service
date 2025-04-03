@@ -4,21 +4,13 @@ set -euo pipefail
 # --------------------------------------------------------------------------------------
 # Pull 'resources/' from a GitHub branch into '/home/ewms/resources'
 #
-# Usage: ./repull_resources.sh [--branch=BRANCH]
+# Usage: ./repull_resources.sh [BRANCH]
 # --------------------------------------------------------------------------------------
 
-BRANCH="main"
-
-# parse optional --branch=... arg
-for arg in "$@"; do
-    case "$arg" in
-        --branch=*) BRANCH="${arg#*=}" ;;
-        *) echo "Unknown option: $arg" >&2; exit 1 ;;
-    esac
-done
+BRANCH="${1:-main}"  # use first arg if provided, otherwise default to "main"
 
 URL="https://github.com/Observation-Management-Service/ewms-task-management-service/archive/refs/heads/${BRANCH}.tar.gz"
-SOURCE_PATH="ewms-task-management-service-main/resources"
+SOURCE_PATH="ewms-task-management-service-${BRANCH}/resources"
 DEST="/home/ewms/resources"
 
 ########################################################################################
