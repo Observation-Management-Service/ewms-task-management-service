@@ -8,7 +8,7 @@ WantedBy=multi-user.target
 
 [Service]
 # Load environment variables from a file
-EnvironmentFile=/home/ewms/tms-prod/envfile
+EnvironmentFile=/home/ewms/resources/systemd/tms-prod/envfile
 
 # Use the TMS_BASE_DIR environment variable
 WorkingDirectory=/scratch/ewms/tms-prod/
@@ -32,7 +32,7 @@ ExecStart=/usr/bin/apptainer run \
     --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
     --env LOG_LEVEL=INFO \
     --env LOG_LEVEL_REST_TOOLS=INFO \
-    /home/ewms/tms-prod/apptainer_container_symlink
+    /home/ewms/resources/systemd/tms-prod/apptainer_container_symlink
 
 # Ensure the service restarts if it crashes
 Restart=always
