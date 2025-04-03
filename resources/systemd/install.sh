@@ -11,7 +11,7 @@ if [[ -z "${1:-}" ]]; then
     echo "Usage: $0 <unit-subdir>" >&2
     exit 1
 else
-    UNIT_SUBDIR=$1
+    UNIT_SUBDIR="$1"
 fi
 
 SYSTEMD_INSTALL_DIR="$HOME/.config/systemd/user"
@@ -35,15 +35,26 @@ systemctl --user daemon-reload  # reload systemd to recognize new/updated unit f
 
 
 ########################################################################################
-# enable unit files
+# enable & start unit files
 
 for UNIT_PATH in "$UNIT_SUBDIR"/*; do
     UNIT=$(basename "$UNIT_PATH")
+
     systemctl --user enable "$UNIT"
 
     if systemctl --user show "$UNIT" --property=UnitFileState | grep -q '=enabled'; then
         echo "$UNIT: enabled"
     else
         echo "$UNIT: failed to enable"
+        exit 3
+    fi
+
+    systemctl --user start "$UNIT"
+
+    if systemctl --user is-active --quiet "$UNIT"; then
+        echo "$UNIT: running"
+    else
+        echo "$UNIT: failed to start"
+        exit 4
     fi
 done
