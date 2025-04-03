@@ -38,7 +38,10 @@ done
 
 set -x
 mkdir -p "$SYSTEMD_INSTALL_DIR"
-cp -ux "$UNIT_SUBDIR"/* "$SYSTEMD_INSTALL_DIR"  # don't overwrite existing ones or symlinks
+
+# cp: don't overwrite existing ones or symlinks
+cp -ux "$UNIT_SUBDIR"/*.service "$UNIT_SUBDIR"/*.path "$SYSTEMD_INSTALL_DIR"
+
 systemctl --user daemon-reload  # reload systemd to recognize new/updated unit files
 set +x
 
