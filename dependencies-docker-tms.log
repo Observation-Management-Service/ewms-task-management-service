@@ -37,7 +37,7 @@ requests-futures==1.0.2
 six==1.17.0
 thrift==0.21.0
 tornado==6.4.2
-typing_extensions==4.13.0
+typing_extensions==4.13.1
 urllib3==2.3.0
 wipac-dev-tools==1.15.6
 wipac-rest-tools==1.8.6
@@ -57,7 +57,7 @@ setuptools==78.1.0
 tms
 ├── htcondor [required: <24.0.0, installed: 23.10.22]
 ├── wipac-dev-tools [required: Any, installed: 1.15.6]
-│   ├── typing_extensions [required: Any, installed: 4.13.0]
+│   ├── typing_extensions [required: Any, installed: 4.13.1]
 │   └── requests [required: Any, installed: 2.32.3]
 │       ├── charset-normalizer [required: >=2,<4, installed: 3.4.1]
 │       ├── idna [required: >=2.5,<4, installed: 3.10]
@@ -81,7 +81,7 @@ tms
     ├── tornado [required: Any, installed: 6.4.2]
     ├── urllib3 [required: >=2.0.4, installed: 2.3.0]
     └── wipac-dev-tools [required: Any, installed: 1.15.6]
-        ├── typing_extensions [required: Any, installed: 4.13.0]
+        ├── typing_extensions [required: Any, installed: 4.13.1]
         └── requests [required: Any, installed: 2.32.3]
             ├── charset-normalizer [required: >=2,<4, installed: 3.4.1]
             ├── idna [required: >=2.5,<4, installed: 3.10]
@@ -120,7 +120,7 @@ wipac-telemetry==0.3.1
 │   │       │       │   └── wrapt [required: >=1.10,<2, installed: 1.17.2]
 │   │       │       └── importlib_metadata [required: >=6.0,<8.7.0, installed: 8.6.1]
 │   │       │           └── zipp [required: >=3.20, installed: 3.21.0]
-│   │       └── typing_extensions [required: >=3.7.4, installed: 4.13.0]
+│   │       └── typing_extensions [required: >=3.7.4, installed: 4.13.1]
 │   └── opentelemetry-exporter-jaeger-thrift [required: ==1.21.0, installed: 1.21.0]
 │       ├── opentelemetry-api [required: ~=1.3, installed: 1.31.1]
 │       │   ├── Deprecated [required: >=1.2.6, installed: 1.2.18]
@@ -141,7 +141,7 @@ wipac-telemetry==0.3.1
 │       │   │       │   └── wrapt [required: >=1.10,<2, installed: 1.17.2]
 │       │   │       └── importlib_metadata [required: >=6.0,<8.7.0, installed: 8.6.1]
 │       │   │           └── zipp [required: >=3.20, installed: 3.21.0]
-│       │   └── typing_extensions [required: >=3.7.4, installed: 4.13.0]
+│       │   └── typing_extensions [required: >=3.7.4, installed: 4.13.1]
 │       └── thrift [required: >=0.10.0, installed: 0.21.0]
 │           └── six [required: >=1.7.2, installed: 1.17.0]
 ├── opentelemetry-exporter-otlp-proto-http [required: Any, installed: 1.31.1]
@@ -173,7 +173,7 @@ wipac-telemetry==0.3.1
 │   │   │       │   └── wrapt [required: >=1.10,<2, installed: 1.17.2]
 │   │   │       └── importlib_metadata [required: >=6.0,<8.7.0, installed: 8.6.1]
 │   │   │           └── zipp [required: >=3.20, installed: 3.21.0]
-│   │   └── typing_extensions [required: >=3.7.4, installed: 4.13.0]
+│   │   └── typing_extensions [required: >=3.7.4, installed: 4.13.1]
 │   └── requests [required: ~=2.7, installed: 2.32.3]
 │       ├── charset-normalizer [required: >=2,<4, installed: 3.4.1]
 │       ├── idna [required: >=2.5,<4, installed: 3.10]
@@ -193,11 +193,11 @@ wipac-telemetry==0.3.1
 │   │       │   └── wrapt [required: >=1.10,<2, installed: 1.17.2]
 │   │       └── importlib_metadata [required: >=6.0,<8.7.0, installed: 8.6.1]
 │   │           └── zipp [required: >=3.20, installed: 3.21.0]
-│   └── typing_extensions [required: >=3.7.4, installed: 4.13.0]
+│   └── typing_extensions [required: >=3.7.4, installed: 4.13.1]
 ├── protobuf [required: Any, installed: 5.29.4]
-├── typing_extensions [required: Any, installed: 4.13.0]
+├── typing_extensions [required: Any, installed: 4.13.1]
 └── wipac-dev-tools [required: Any, installed: 1.15.6]
-    ├── typing_extensions [required: Any, installed: 4.13.0]
+    ├── typing_extensions [required: Any, installed: 4.13.1]
     └── requests [required: Any, installed: 2.32.3]
         ├── charset-normalizer [required: >=2,<4, installed: 3.4.1]
         ├── idna [required: >=2.5,<4, installed: 3.10]
