@@ -1,9 +1,27 @@
 #!/bin/bash
 set -euo pipefail
 
-URL="https://github.com/Observation-Management-Service/ewms-task-management-service/archive/refs/heads/main.tar.gz"
+# --------------------------------------------------------------------------------------
+# Pull 'resources/' from a GitHub branch into '/home/ewms/resources'
+#
+# Usage: ./repull_resources.sh [--branch=BRANCH]
+# --------------------------------------------------------------------------------------
+
+BRANCH="main"
+
+# parse optional --branch=... arg
+for arg in "$@"; do
+    case "$arg" in
+        --branch=*) BRANCH="${arg#*=}" ;;
+        *) echo "Unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
+
+URL="https://github.com/Observation-Management-Service/ewms-task-management-service/archive/refs/heads/${BRANCH}.tar.gz"
 SOURCE_PATH="ewms-task-management-service-main/resources"
 DEST="/home/ewms/resources"
+
+########################################################################################
 
 mkdir -p "$DEST"
 
