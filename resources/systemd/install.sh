@@ -36,9 +36,11 @@ done
 ########################################################################################
 # prep
 
+set -x
 mkdir -p "$SYSTEMD_INSTALL_DIR"
 cp -ux "$UNIT_SUBDIR"/* "$SYSTEMD_INSTALL_DIR"  # don't overwrite existing ones or symlinks
 systemctl --user daemon-reload  # reload systemd to recognize new/updated unit files
+set +x
 
 ########################################################################################
 # enable & (re)start unit files
