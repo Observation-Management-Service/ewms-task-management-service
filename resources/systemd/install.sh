@@ -32,7 +32,7 @@ cp -ux "$UNIT_SUBDIR"/* "$SYSTEMD_INSTALL_DIR"  # don't overwrite existing ones 
 systemctl --user daemon-reload  # reload systemd to recognize new/updated unit files
 
 ########################################################################################
-# enable & start unit files
+# enable & (re)start unit files
 
 for UNIT_PATH in "$UNIT_SUBDIR"/*; do
     UNIT=$(basename "$UNIT_PATH")
@@ -43,12 +43,10 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
         continue
     fi
 
-    # enable...
-
+    # enable
     set -x
     systemctl --user enable "$UNIT"
     set +x
-
     if systemctl --user show "$UNIT" --property=UnitFileState | grep -q '=enabled'; then
         echo "$UNIT: enabled"
     else
@@ -56,16 +54,24 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
         exit 3
     fi
 
-    # start...
-
-    set -x
-    systemctl --user start "$UNIT"  # okay if already running
-    set +x
-
+    # restart if running, otherwise start
     if systemctl --user is-active --quiet "$UNIT"; then
-        echo "$UNIT: running"
+        echo "$UNIT: restarting"
+        set -x
+        systemctl --user restart "$UNIT"
+        set +x
+        echo "$UNIT: restarted"
     else
-        echo "$UNIT: failed to start"
-        exit 4
+        # start new unit
+        echo "$UNIT: starting"
+        set -x
+        systemctl --user start "$UNIT"
+        set +x
+        if systemctl --user is-active --quiet "$UNIT"; then
+            echo "$UNIT: started"
+        else
+            echo "$UNIT: failed to start"
+            exit 4
+        fi
     fi
 done
