@@ -93,6 +93,10 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
         fi
     fi
 done
+echo "All unit files re/started!"
 
+########################################################################################
 # dump status of all units
+
+echo
 systemctl --user status ewms* || true
