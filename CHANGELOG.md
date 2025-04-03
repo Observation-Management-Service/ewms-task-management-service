@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.0 (2025-04-03)
+
+### Breaking
+
+* Co-authored-by: github-actions <github-actions@github.com> ([`68dcf78`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/68dcf78f21406198006e2a16af757ab4e0122e91))
+
 ## v0.1.64 (2025-04-03)
 
 ### Other
