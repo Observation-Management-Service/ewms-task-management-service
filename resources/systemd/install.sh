@@ -11,7 +11,7 @@ if [[ -z "${1:-}" ]]; then
     echo "Usage: $0 <unit-subdir>" >&2
     exit 1
 else
-    UNIT_SUBDIR="$1"
+    UNIT_SUBDIR="${1%/}"  # remove trailing slash, if present
 fi
 
 SYSTEMD_INSTALL_DIR="$HOME/.config/systemd/user"
