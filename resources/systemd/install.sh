@@ -99,4 +99,5 @@ echo "All unit files re/started!"
 # dump status of all units
 
 echo
+set -x
 systemctl --user status ewms* || true
