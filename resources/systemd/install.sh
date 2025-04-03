@@ -25,13 +25,15 @@ if [[ ! -d "$UNIT_SUBDIR" ]]; then
 fi
 
 # required support files
-REQUIRED_FILES=( envfile apptainer_container_symlink )
-for FILE in "${REQUIRED_FILES[@]}"; do
-    if [[ ! -f "$UNIT_SUBDIR/$FILE" && ! -e "$UNIT_SUBDIR/$FILE" ]]; then
-        echo "ERROR: missing required file: $UNIT_SUBDIR/$FILE" >&2
-        exit 2
-    fi
-done
+if [[ ! -f "$UNIT_SUBDIR/envfile" ]]; then
+    echo "Missing file: envfile" >&2
+    exit 2
+fi
+if [[ ! -L "$UNIT_SUBDIR/apptainer_container_symlink" ]]; then
+    echo "Missing symlink: apptainer_container_symlink" >&2
+    exit 2
+fi
+
 
 ########################################################################################
 # prep
@@ -70,6 +72,7 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
 
     # restart if running, otherwise start
     if systemctl --user is-active --quiet "$UNIT"; then
+        # ^^^ always false for 'oneshot' units, that's ok
         echo "$UNIT: restarting"
         set -x
         systemctl --user restart "$UNIT"
@@ -81,7 +84,8 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
         set -x
         systemctl --user start "$UNIT"
         set +x
-        if systemctl --user is-active --quiet "$UNIT"; then
+
+        if [[ "$(systemctl --user show "$UNIT" --property=Result --value)" == "success" ]]; then
             echo "$UNIT: started"
         else
             echo "$UNIT: failed to start"
