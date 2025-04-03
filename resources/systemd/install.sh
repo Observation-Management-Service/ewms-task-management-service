@@ -93,3 +93,6 @@ for UNIT_PATH in "$UNIT_SUBDIR"/*; do
         fi
     fi
 done
+
+# dump status of all units
+systemctl --user status ewms* || true
