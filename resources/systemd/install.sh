@@ -27,7 +27,7 @@ fi
 # required support files
 REQUIRED_FILES=( envfile apptainer_container_symlink )
 for FILE in "${REQUIRED_FILES[@]}"; do
-    if [[ ! -f "$UNIT_SUBDIR/$FILE" ]]; then
+    if [[ ! -f "$UNIT_SUBDIR/$FILE" && ! -e "$UNIT_SUBDIR/$FILE" ]]; then
         echo "ERROR: missing required file: $UNIT_SUBDIR/$FILE" >&2
         exit 2
     fi
