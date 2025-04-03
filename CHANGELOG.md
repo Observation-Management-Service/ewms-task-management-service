@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.1.64 (2025-04-03)
+
+### Other
+
+* Update Production Scripts ([#38](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/38)) ([`3dc2cbc`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/3dc2cbc74b949394fe5701bcaa1570e91faf22d9))
+
 ## v0.1.63 (2025-04-02)
 
 ### Other
