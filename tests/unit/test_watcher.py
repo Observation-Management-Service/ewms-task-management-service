@@ -14,12 +14,13 @@ import pytest
 from tms import config, utils  # noqa: F401  # import in order to set up env vars
 from tms.watcher import watcher
 
-LOGGER = logging.getLogger(__name__)
+htcondor.enable_debug()
 
+LOGGER = logging.getLogger(__name__)
 
 LIVE_UPDATE_SLEEP = 2
 
-htcondor.enable_debug()
+_WMS_PREFIX = "v1"
 
 
 class JobEventLogFileWrapper:
@@ -98,18 +99,18 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     def mock_all_requests(*args, **kwargs):
         # fmt: off
-        if args[:2] == ("POST", "/v0/query/taskforces") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
+        if args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
             # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
             return {"taskforces": []}
         # fmt: on
-        elif args[:2] == ("POST", "/v0/query/taskforces"):
+        elif args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces"):
             return {
                 "taskforces": [
                     {"taskforce_uuid": "abc123", "cluster_id": 104501503},
                     {"taskforce_uuid": "def456", "cluster_id": 104500588},
                 ]
             }
-        elif args[:2] == ("POST", "/v0/tms/statuses/taskforces"):
+        elif args[:2] == ("POST", f"/{_WMS_PREFIX}/tms/statuses/taskforces"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
@@ -126,13 +127,13 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     post_calls = [
         c
         for c in rc.request.call_args_list
-        if c.args[:2] == ("POST", "/v0/tms/statuses/taskforces")
+        if c.args[:2] == ("POST", f"/{_WMS_PREFIX}/tms/statuses/taskforces")
     ]
     assert len(post_calls) == n_updates
     assert post_calls == [
         call(
             "POST",
-            "/v0/tms/statuses/taskforces",
+            f"/{_WMS_PREFIX}/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -147,7 +148,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/v0/tms/statuses/taskforces",
+            f"/{_WMS_PREFIX}/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -162,7 +163,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/v0/tms/statuses/taskforces",
+            f"/{_WMS_PREFIX}/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -176,7 +177,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/v0/tms/statuses/taskforces",
+            f"/{_WMS_PREFIX}/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {
@@ -191,7 +192,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
         call(
             "POST",
-            "/v0/tms/statuses/taskforces",
+            f"/{_WMS_PREFIX}/tms/statuses/taskforces",
             {
                 # "top_task_errors_by_taskforce": {},
                 "compound_statuses_by_taskforce": {

@@ -12,7 +12,7 @@ from wipac_dev_tools.timing_tools import IntervalTimer
 from . import starter, stopper
 from .. import utils
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
+from ..config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class EWMSCaller:
         """
         resp = await ewms_rc.request(
             "GET",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-starter/taskforces",
+            f"/{WMS_URL_V_PREFIX}/tms/pending-starter/taskforces",
             {"collector": get_collector(), "schedd": get_schedd()},
         )
         if not resp:
@@ -108,7 +108,7 @@ class EWMSCaller:
         """
         resp = await ewms_rc.request(
             "GET",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/pending-stopper/taskforces",
+            f"/{WMS_URL_V_PREFIX}/tms/pending-stopper/taskforces",
             {"collector": get_collector(), "schedd": get_schedd()},
         )
         if not resp:
@@ -126,7 +126,7 @@ class EWMSCaller:
         """Send confirmation to EWMS that taskforce was started."""
         await ewms_rc.request(
             "POST",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}",
+            f"/{WMS_URL_V_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}",
             body,
         )
         LOGGER.info("CONFIRMED TASKFORCE START -- sent taskforce info to EWMS")
@@ -140,7 +140,7 @@ class EWMSCaller:
         """Send notification to EWMS that taskforce failed to start."""
         await ewms_rc.request(
             "POST",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}/failed",
+            f"/{WMS_URL_V_PREFIX}/tms/condor-submit/taskforces/{taskforce_uuid}/failed",
             {"error": error},
         )
         LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO START -- {error}")
@@ -153,7 +153,7 @@ class EWMSCaller:
         """Send confirmation to EWMS that taskforce was stopped."""
         await ewms_rc.request(
             "POST",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}",
+            f"/{WMS_URL_V_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}",
         )
         LOGGER.info("CONFIRMED TASKFORCE STOPPED")
 
@@ -166,7 +166,7 @@ class EWMSCaller:
         """Send notification to EWMS that taskforce failed to stop."""
         await ewms_rc.request(
             "POST",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}/failed",
+            f"/{WMS_URL_V_PREFIX}/tms/condor-rm/taskforces/{taskforce_uuid}/failed",
         )
         LOGGER.info(f"NOTIFIED EWMS THAT TASKFORCE FAILED TO STOP -- {error}")
 

@@ -11,7 +11,7 @@ from rest_tools.client import RestClient
 
 from .. import condor_tools, types
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV, WMS_ROUTE_VERSION_PREFIX
+from ..config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ async def query_for_more_taskforces(
     LOGGER.debug("Querying for more taskforces from EWMS...")
     res = await ewms_rc.request(
         "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/query/taskforces",
+        f"/{WMS_URL_V_PREFIX}/query/taskforces",
         {
             "query": {
                 "collector": get_collector(),
@@ -121,7 +121,7 @@ async def send_condor_complete(
     """Tell EWMS that this taskforce is condor-complete."""
     await ewms_rc.request(
         "POST",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/tms/condor-complete/taskforces/{taskforce_uuid}",
+        f"/{WMS_URL_V_PREFIX}/tms/condor-complete/taskforces/{taskforce_uuid}",
         {
             "condor_complete_ts": timestamp,
         },
@@ -143,7 +143,7 @@ async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
         """Return whether there are no non-completed taskforces using JEL."""
         resp = await ewms_rc.request(
             "POST",
-            f"/{WMS_ROUTE_VERSION_PREFIX}/query/taskforces",
+            f"/{WMS_URL_V_PREFIX}/query/taskforces",
             {
                 "query": {
                     "job_event_log_fpath": str(jel_fpath),

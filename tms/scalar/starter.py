@@ -10,7 +10,7 @@ import humanfriendly
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
-from ..config import DEFAULT_CONDOR_REQUIREMENTS, ENV, WMS_ROUTE_VERSION_PREFIX
+from ..config import DEFAULT_CONDOR_REQUIREMENTS, ENV, WMS_URL_V_PREFIX
 from ..utils import LogFileLogic
 
 LOGGER = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ async def is_taskforce_still_pending_starter(
     """Return whether the taskforce is still pending-starter."""
     ret = await ewms_rc.request(
         "GET",
-        f"/{WMS_ROUTE_VERSION_PREFIX}/taskforces/{taskforce_uuid}",
+        f"/{WMS_URL_V_PREFIX}/taskforces/{taskforce_uuid}",
     )
     return ret["phase"] == "pending-starter"  # type: ignore[no-any-return]
 

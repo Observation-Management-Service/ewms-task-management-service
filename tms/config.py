@@ -9,7 +9,7 @@ from wipac_dev_tools import from_environment_as_dataclass, logging_tools
 
 WATCHER_N_TOP_TASK_ERRORS = 10
 
-WMS_ROUTE_VERSION_PREFIX = "v0"
+WMS_URL_V_PREFIX = "v1"
 
 
 _BASE_REQUIREMENTS = [

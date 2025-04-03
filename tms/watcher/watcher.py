@@ -21,7 +21,7 @@ from .utils import (
     send_condor_complete,
 )
 from .. import condor_tools, types
-from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_ROUTE_VERSION_PREFIX
+from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_URL_V_PREFIX
 from ..utils import AppendOnlyList, TaskforceMonitor
 
 sdict = dict[str, Any]
@@ -407,7 +407,7 @@ class JobEventLogWatcher:
             )
             await self.ewms_rc.request(
                 "POST",
-                f"/{WMS_ROUTE_VERSION_PREFIX}/tms/statuses/taskforces",
+                f"/{WMS_URL_V_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
             LOGGER.debug("updates sent.")
