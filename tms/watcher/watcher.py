@@ -309,6 +309,15 @@ class JobEventLogWatcher:
             )
             self.tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
+    async def _delete_jel_if_needed(self) -> None:
+        """Raises JobEventLogDeleted if deleted."""
+        if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
+            self.jel_fpath.unlink()  # delete file
+            LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
+            raise JobEventLogDeleted()
+        else:
+            return
+
     async def _look_at_job_event_log(
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
@@ -358,18 +367,12 @@ class JobEventLogWatcher:
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
-                self.jel_fpath.unlink()  # delete file
-                LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
-                raise JobEventLogDeleted()
-            else:
-                return
+            return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
         else:
             LOGGER.debug("Done reading events for now")
             LOGGER.debug(
                 pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
             )
-
             # aggregate cluster_infos, then update ewms
             patch_body = self._aggregate_cluster_infos(cluster_infos)
             await self._update_ewms(patch_body, no_updates_logging_timer)
