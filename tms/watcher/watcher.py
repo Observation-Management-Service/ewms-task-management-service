@@ -292,14 +292,10 @@ class JobEventLogWatcher:
             except JobEventLogDeleted:
                 return
 
-    async def _look_at_job_event_log(
+    async def _add_new_cluster_infos(
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
-        jel: htcondor.JobEventLog,
     ) -> None:
-        """The main logic for parsing a job event log and sending updates to EWMS."""
-        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
-
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the JEL)
@@ -313,14 +309,36 @@ class JobEventLogWatcher:
             )
             self.tmonitors.append(cluster_infos[cluster_id].tmonitor)
 
+    async def _look_at_job_event_log(
+        self,
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+        jel: htcondor.JobEventLog,
+    ) -> None:
+        """The main logic for parsing a job event log and sending updates to EWMS."""
+        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
+
+        await self._add_new_cluster_infos(cluster_infos)
+
         # get events -- exit when no more events
         got_new_events = False
         LOGGER.debug(f"Reading events from {self.jel_fpath}...")
-        for job_event in jel.events(stop_after=0):
-            # ^^^ 'stop_after=0' -> only get events currently available
+        events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
+        while True:
+            # loop logic
+            try:
+                job_event = next(events_iter)
+            except StopIteration:
+                break
+            except htcondor.HTCondorIOError as e:
+                LOGGER.warning(
+                    f"HTCondorIOError while reading JEL: {e}, skipping corrupt event."
+                )
+                continue
+
             await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
-            # update
+
+            # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
@@ -340,21 +358,33 @@ class JobEventLogWatcher:
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
-                self.jel_fpath.unlink()  # delete file
-                LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
-                raise JobEventLogDeleted()
-            else:
-                return
+            return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
         else:
-            LOGGER.debug("Done reading events for now")
-            LOGGER.debug(
-                pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+            return await self._done_reading_events_for_now(
+                cluster_infos, no_updates_logging_timer
             )
 
-            # aggregate cluster_infos, then update ewms
-            patch_body = self._aggregate_cluster_infos(cluster_infos)
-            await self._update_ewms(patch_body, no_updates_logging_timer)
+    async def _delete_jel_if_needed(self) -> None:
+        """Raises JobEventLogDeleted if deleted."""
+        if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
+            self.jel_fpath.unlink()  # delete file
+            LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
+            raise JobEventLogDeleted()
+        else:
+            return
+
+    async def _done_reading_events_for_now(
+        self,
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+        no_updates_logging_timer: IntervalTimer,
+    ) -> None:
+        LOGGER.debug("Done reading events for now")
+        LOGGER.debug(
+            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+        )
+        # aggregate cluster_infos, then update ewms
+        patch_body = self._aggregate_cluster_infos(cluster_infos)
+        await self._update_ewms(patch_body, no_updates_logging_timer)
 
     @staticmethod
     def _aggregate_cluster_infos(
