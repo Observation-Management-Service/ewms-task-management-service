@@ -292,14 +292,10 @@ class JobEventLogWatcher:
             except JobEventLogDeleted:
                 return
 
-    async def _look_at_job_event_log(
+    async def _add_new_cluster_infos(
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
-        jel: htcondor.JobEventLog,
     ) -> None:
-        """The main logic for parsing a job event log and sending updates to EWMS."""
-        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
-
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the JEL)
@@ -312,6 +308,16 @@ class JobEventLogWatcher:
                 TaskforceMonitor(taskforce_uuid, cluster_id)
             )
             self.tmonitors.append(cluster_infos[cluster_id].tmonitor)
+
+    async def _look_at_job_event_log(
+        self,
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+        jel: htcondor.JobEventLog,
+    ) -> None:
+        """The main logic for parsing a job event log and sending updates to EWMS."""
+        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
+
+        await self._add_new_cluster_infos(cluster_infos)
 
         # get events -- exit when no more events
         got_new_events = False
