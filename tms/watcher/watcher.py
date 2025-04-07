@@ -316,11 +316,23 @@ class JobEventLogWatcher:
         # get events -- exit when no more events
         got_new_events = False
         LOGGER.debug(f"Reading events from {self.jel_fpath}...")
-        for job_event in jel.events(stop_after=0):
-            # ^^^ 'stop_after=0' -> only get events currently available
+        events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
+        while True:
+            # loop logic
+            try:
+                job_event = next(events_iter)
+            except StopIteration:
+                break
+            except htcondor.HTCondorIOError as e:
+                LOGGER.warning(
+                    f"HTCondorIOError while reading JEL: {e}, skipping corrupt event."
+                )
+                continue
+
             await asyncio.sleep(0)  # since htcondor is not async
             got_new_events = True
-            # update
+
+            # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
