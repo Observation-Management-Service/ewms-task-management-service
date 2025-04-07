@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.1 (2025-04-07)
+
+### Other
+
+* HTCondor Event Corruption Failover ([#39](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/39)) ([`740afb1`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/740afb122af4a05d1dcb86512844e5f2f03419dd))
+
 ## v1.0.0 (2025-04-03)
 
 ### Breaking
