@@ -33,6 +33,7 @@ _EXCLUDED_SITES = [
         # others
         "AMNH",  # 2025-03-13  # "fuse-overlayfs: cannot mount: No such file or directory"
         "NotreDame",  # 2025-03-13  # "Child exited with exit status 255"
+        "Rhodes-HPC",  # 2025-04-08  # "container creation failed: mount hook function failure"
     ]
 ]
 DEFAULT_CONDOR_REQUIREMENTS = " && ".join(_BASE_REQUIREMENTS + _EXCLUDED_SITES)
