@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.2 (2025-04-08)
+
+### Other
+
+* Exclude Site: `Rhodes-HPC` (and update `find_bad_sites.sh`) ([#40](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/40)) ([`be9f15e`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/be9f15e4bd057a6b404414b70e0a33bcb57a6c97))
+
 ## v1.0.1 (2025-04-07)
 
 ### Other
