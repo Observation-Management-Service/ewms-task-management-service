@@ -57,7 +57,7 @@ read -rp "Which site would you like to check? " SITE
 # see if this site always fails with this error (this cluster)
 
 echo
-echo "[Step 3] Comparing matched vs total for site '$SITE' in cluster dir..."
+echo "[Step 3] Comparing matched vs total for site '$SITE' in '$CLUSTER_DIR'"
 
 match_count=$(echo "$MATCHED_LINES" | grep -c "GLIDEIN_Site=$SITE")
 total_count=$(grep -r --include='*.out' "GLIDEIN_Site=$SITE" "$CLUSTER_DIR" | wc -l)
@@ -71,7 +71,7 @@ echo "  Total   jobs at $SITE: $total_count"
 echo
 
 if [[ "$match_count" -ne "$total_count" ]]; then
-  echo "[Info] Not all jobs from $SITE matched with '$ERROR_PATTERN'. Not continuing to global scan."
+  echo "[Info] Not all jobs from '$SITE' matched with '$ERROR_PATTERN'. Not continuing to TMS-wide scan."
   echo "[Done] $SITE is NOT a bad site."
   exit 0
 else
@@ -82,7 +82,7 @@ fi
 # see if this site always fails with this error (all clusters)
 
 echo
-echo "[Step 4] Checking all jobs in $TMS_JOBS_DIR for $SITE with '$ERROR_PATTERN'..."
+echo "[Step 4] Checking all jobs in '$TMS_JOBS_DIR' for '$SITE' with '$ERROR_PATTERN'..."
 
 all_match_count=$(grep -rl --include='*.err' "$ERROR_PATTERN" "$TMS_JOBS_DIR" | \
   awk -F '.err' '{print $1".out"}' | \
@@ -100,7 +100,7 @@ echo
 
 if [[ "$all_match_count" -eq "$all_total_count" ]]; then
   echo "[Info] All jobs matched with '$ERROR_PATTERN'"
-  echo "[Done] $SITE is a bad site!"
+  echo "[Done] '$SITE' is a bad site!"
 else
-  echo "[Done] $SITE is NOT a bad site."
+  echo "[Done] '$SITE' is NOT a bad site."
 fi
