@@ -17,12 +17,13 @@ fi
 if [[ -d "$1" && "$(basename "$1")" == "jobs" ]]; then
     TMS_JOBS_DIR="$1"
     # find exactly one matching cluster dir
-    readarray -t matches <<< "$(find "$TMS_JOBS_DIR/ewms-taskforce-TF-$2" -maxdepth 1 -type d -name 'cluster-*')"
+    readarray -t matches <<< "$(find "$TMS_JOBS_DIR/ewms-taskforce-$2" -maxdepth 1 -type d -name 'cluster-*')"
     if [[ ${#matches[@]} -ne 1 ]]; then
         echo "ERROR: Expected exactly one cluster dir, found ${#matches[@]}"
         exit 2
     fi
     CLUSTER_DIR="${matches[0]}"
+    echo "using cluster directory: $CLUSTER_DIR"
 else
     echo "ERROR: $1 is not a '.../jobs/' directory"
     exit 2
