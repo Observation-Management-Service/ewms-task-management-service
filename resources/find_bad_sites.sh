@@ -2,34 +2,75 @@
 set -euo pipefail
 
 ########################################################################################
-# Usage: ./find_bad_sites.sh /.../jobs/ TASKFORCE_UUID "error pattern"
+# Usage: ./find_bad_sites.sh /.../jobs/ TASKFORCE_UUID|WORKFLOW_ID "error pattern"
 #   Example:
-#     ./find_bad_sites.sh /scratch/ewms/tms-foo/jobs TF-abc123 "Segmentation fault"
+#     ./find_bad_sites.sh /scratch/ewms/tms-foo/jobs TF-abc123-f56 "Segmentation fault"
+#     ./find_bad_sites.sh /scratch/ewms/tms-foo/jobs WF-abc123 "Segmentation fault"
 ########################################################################################
 
-
+# Validate input arguments
 if [[ -z "${1-}" || -z "${2-}" || -z "${3-}" ]]; then
-  echo "Usage: $0 TMS_JOBS_DIR TASKFORCE_UUID 'error pattern'"
-  exit 1
+    echo "Usage: $0 TMS_JOBS_DIR TASKFORCE_UUID|WORKFLOW_ID 'error pattern'"
+    exit 1
 fi
 
-# validate & build paths
-if [[ -d "$1" && "$(basename "$1")" == "jobs" ]]; then
-    TMS_JOBS_DIR="$1"
-    # find exactly one matching cluster dir
-    readarray -t matches <<< "$(find "$TMS_JOBS_DIR/ewms-taskforce-$2" -maxdepth 1 -type d -name 'cluster-*')"
-    if [[ ${#matches[@]} -ne 1 ]]; then
-        echo "ERROR: Expected exactly one cluster dir, found ${#matches[@]}"
-        exit 2
-    fi
-    CLUSTER_DIR="${matches[0]}"
-    echo "using cluster directory: $CLUSTER_DIR"
-else
-    echo "ERROR: $1 is not a '.../jobs/' directory"
+JOBS_DIR="$1"
+TF_OR_WF="$2"
+ERROR_PATTERN="$3"
+
+# Ensure the given directory ends with /jobs
+if [[ ! -d "$JOBS_DIR" || "$(basename "$JOBS_DIR")" != "jobs" ]]; then
+    echo "ERROR: $JOBS_DIR is not a '.../jobs/' directory"
     exit 2
 fi
 
-ERROR_PATTERN="$3"
+########################################################################################
+# find cluster dir
+
+# Resolve taskforce from either TF-UUID or WF-ID
+if [[ "$TF_OR_WF" =~ ^TF- ]]; then
+    # If a taskforce UUID is directly provided
+    TASKFORCE_UUID="$TF_OR_WF"
+elif [[ "$TF_OR_WF" =~ ^WF- ]]; then
+    # If a workflow ID is provided, find all matching taskforces (replace WF- with TF-)
+    WORKFLOW_ID="$TF_OR_WF"
+    WF_SUFFIX="${TF_OR_WF#WF-}"
+    readarray -t TF_MATCHES <<< "$(find "$JOBS_DIR" -maxdepth 1 -type d -name "ewms-taskforce-TF-${WF_SUFFIX}-*" | sort)"
+
+    # If no taskforces found, exit
+    if [[ ${#TF_MATCHES[@]} -eq 0 ]]; then
+        echo "ERROR: No taskforces found for workflow ID $WORKFLOW_ID"
+        exit 3
+
+    # If one taskforce found, use it
+    elif [[ ${#TF_MATCHES[@]} -eq 1 ]]; then
+        TASKFORCE_UUID=$(basename "${TF_MATCHES[0]}" | sed 's/^ewms-taskforce-//')
+
+    # If multiple taskforces found, prompt the user
+    else
+        echo "[Prompt] Multiple taskforces found for workflow ID $WORKFLOW_ID:"
+        select choice in "${TF_MATCHES[@]}"; do
+            [[ -n "$choice" ]] && break
+        done
+        TASKFORCE_UUID=$(basename "$choice" | sed 's/^ewms-taskforce-//')
+    fi
+else
+    # Invalid ID format
+    echo "ERROR: Must start with TF- or WF-"
+    exit 1
+fi
+
+# Find the cluster directory under the selected taskforce
+readarray -t matches <<< "$(find "$JOBS_DIR/ewms-taskforce-$TASKFORCE_UUID" -maxdepth 1 -type d -name 'cluster-*')"
+
+# Must find exactly one cluster directory
+if [[ ${#matches[@]} -ne 1 ]]; then
+    echo "ERROR: Expected exactly one cluster dir, found ${#matches[@]}"
+    exit 2
+fi
+
+CLUSTER_DIR="${matches[0]}"
+echo "using cluster directory: $CLUSTER_DIR"
 
 
 ########################################################################################
