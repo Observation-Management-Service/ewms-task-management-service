@@ -24,17 +24,21 @@ _BASE_REQUIREMENTS = [
 ]
 _EXCLUDED_SITES = [
     f'GLIDEIN_Site =!= "{site}"'  # '=!=' -> 'not equal or undefined'
-    for site in [
-        # exclude sites lacking apptainer support:
-        # ex: FATAL   [U=532362,P=1725534]Master()                      container creation failed: mount hook function failure: mount proc->/proc error: while mounting proc: can't mount proc filesystem to /proc: operation not permitted
-        "San Diego Supercomputer Center",  # 2024-11-08
-        "SDSC-PRP",  # 2024-11-08
-        "Kansas State University",  # 2025-02-26
-        # others
-        "AMNH",  # 2025-03-13  # "fuse-overlayfs: cannot mount: No such file or directory"
-        "NotreDame",  # 2025-03-13  # "Child exited with exit status 255"
-        "Rhodes-HPC",  # 2025-04-08  # "container creation failed: mount hook function failure"
-    ]
+    for site in sorted(
+        [
+            # exclude sites lacking apptainer support:
+            # -> mount hook failed
+            # "container creation failed: mount hook function failure"
+            "San Diego Supercomputer Center",  # 2024-11-08
+            "SDSC-PRP",  # 2024-11-08
+            "Kansas State University",  # 2025-02-26
+            "Rhodes-HPC",  # 2025-04-08
+            # -> others
+            "AMNH",  # 2025-03-13  # "fuse-overlayfs: cannot mount: No such file or directory"
+            "NotreDame",  # 2025-03-13  # "Child exited with exit status 255"
+            "SU-ITS",  # 2025-04-11  # "Failed to create user namespace: user namespace disabled"
+        ]
+    )
 ]
 DEFAULT_CONDOR_REQUIREMENTS = " && ".join(_BASE_REQUIREMENTS + _EXCLUDED_SITES)
 

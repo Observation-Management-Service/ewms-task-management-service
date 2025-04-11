@@ -55,12 +55,13 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
             '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9") && '
-            'GLIDEIN_Site =!= "San Diego Supercomputer Center" && '
-            'GLIDEIN_Site =!= "SDSC-PRP" && '
-            'GLIDEIN_Site =!= "Kansas State University" && '
             'GLIDEIN_Site =!= "AMNH" && '
+            'GLIDEIN_Site =!= "Kansas State University" && '
             'GLIDEIN_Site =!= "NotreDame" && '
             'GLIDEIN_Site =!= "Rhodes-HPC" && '
+            'GLIDEIN_Site =!= "SDSC-PRP" && '
+            'GLIDEIN_Site =!= "SU-ITS" && '
+            'GLIDEIN_Site =!= "San Diego Supercomputer Center" && '
             "(foo)"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
