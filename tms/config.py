@@ -21,6 +21,7 @@ _BASE_REQUIREMENTS = [
     #
     # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
     '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9")',
+    "SingularityUserNamespaces =?= true",
 ]
 _EXCLUDED_SITES = [
     f'GLIDEIN_Site =!= "{site}"'  # '=!=' -> 'not equal or undefined'
