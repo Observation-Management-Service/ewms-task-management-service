@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.3 (2025-04-11)
+
+### Other
+
+* Require `SingularityUserNamespaces` & Exclude Site: "SU-ITS" ([#41](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/41)) ([`dfb9416`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/dfb94166669c1d297e859944bf46f669cb3788eb))
+
 ## v1.0.2 (2025-04-08)
 
 ### Other
