@@ -14,13 +14,13 @@ if [[ -z "${1-}" || -z "${2-}" || -z "${3-}" ]]; then
     exit 1
 fi
 
-JOBS_DIR="$1"
+TMS_JOBS_DIR="$1"
 TF_OR_WF="$2"
 ERROR_PATTERN="$3"
 
 # Ensure the given directory ends with /jobs
-if [[ ! -d "$JOBS_DIR" || "$(basename "$JOBS_DIR")" != "jobs" ]]; then
-    echo "ERROR: $JOBS_DIR is not a '.../jobs/' directory"
+if [[ ! -d "$TMS_JOBS_DIR" || "$(basename "$TMS_JOBS_DIR")" != "jobs" ]]; then
+    echo "ERROR: $TMS_JOBS_DIR is not a '.../jobs/' directory"
     exit 2
 fi
 
@@ -37,7 +37,7 @@ elif [[ "$TF_OR_WF" =~ ^WF- ]]; then
     # If a workflow ID is provided, find all matching taskforces (replace WF- with TF-)
     WORKFLOW_ID="$TF_OR_WF"
     WF_SUFFIX="${TF_OR_WF#WF-}"
-    readarray -t TF_MATCHES <<< "$(find "$JOBS_DIR" -maxdepth 1 -type d -name "ewms-taskforce-TF-${WF_SUFFIX}-*" | sort)"
+    readarray -t TF_MATCHES <<< "$(find "$TMS_JOBS_DIR" -maxdepth 1 -type d -name "ewms-taskforce-TF-${WF_SUFFIX}-*" | sort)"
 
     # If no taskforces found, exit
     if [[ ${#TF_MATCHES[@]} -eq 0 ]]; then
@@ -65,7 +65,7 @@ fi
 echo "using taskforce: $TASKFORCE_UUID"
 
 # Find the cluster directory under the selected taskforce
-readarray -t matches <<< "$(find "$JOBS_DIR/ewms-taskforce-$TASKFORCE_UUID" -maxdepth 1 -type d -name 'cluster-*')"
+readarray -t matches <<< "$(find "$TMS_JOBS_DIR/ewms-taskforce-$TASKFORCE_UUID" -maxdepth 1 -type d -name 'cluster-*')"
 
 # Must find exactly one cluster directory
 if [[ ${#matches[@]} -ne 1 ]]; then
