@@ -27,6 +27,8 @@ fi
 ########################################################################################
 # find cluster dir
 
+echo
+
 # Resolve taskforce from either TF-UUID or WF-ID
 if [[ "$TF_OR_WF" =~ ^TF- ]]; then
     # If a taskforce UUID is directly provided
@@ -60,6 +62,8 @@ else
     exit 1
 fi
 
+echo "using taskforce: $TASKFORCE_UUID"
+
 # Find the cluster directory under the selected taskforce
 readarray -t matches <<< "$(find "$JOBS_DIR/ewms-taskforce-$TASKFORCE_UUID" -maxdepth 1 -type d -name 'cluster-*')"
 
@@ -70,6 +74,7 @@ if [[ ${#matches[@]} -ne 1 ]]; then
 fi
 
 CLUSTER_DIR="${matches[0]}"
+echo
 echo "using cluster directory: $CLUSTER_DIR"
 
 
