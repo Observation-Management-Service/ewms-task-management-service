@@ -74,13 +74,13 @@ if [[ ${#matches[@]} -ne 1 ]]; then
 fi
 
 CLUSTER_DIR="${matches[0]}"
-echo
 echo "using cluster directory: $CLUSTER_DIR"
 
 
 ########################################################################################
 # find all sites in cluster
 
+echo
 echo "[Step 1] Finding .err files with '$ERROR_PATTERN' in cluster dir: $CLUSTER_DIR"
 
 echo && set -x
