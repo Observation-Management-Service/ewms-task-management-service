@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.4 (2025-04-14)
+
+### Other
+
+* Add More Logging ([`6d2317e`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/6d2317ef259b64303bd5087eaa54a96f05dd5fa0))
+
 ## v1.0.3 (2025-04-11)
 
 ### Other
