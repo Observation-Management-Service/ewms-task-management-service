@@ -196,6 +196,7 @@ async def scalar_loop(
 
     timer = IntervalTimer(ENV.TMS_OUTER_LOOP_WAIT, f"{LOGGER.name}.timer")
 
+    LOGGER.info("Started starter-stopper alternator loop.")
     while True:
         # START(S)
         LOGGER.debug("Activating starter...")
