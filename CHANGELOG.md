@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.5 (2025-04-16)
+
+### Other
+
+* Exclude Site: `Wichita State University` (& update `find_bad_sites.sh`) ([`38735cf`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/38735cf52eb90db8a31c22299b3148d010c9fb01))
+
 ## v1.0.4 (2025-04-14)
 
 ### Other
