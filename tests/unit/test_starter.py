@@ -63,6 +63,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             'GLIDEIN_Site =!= "SDSC-PRP" && '
             'GLIDEIN_Site =!= "SU-ITS" && '
             'GLIDEIN_Site =!= "San Diego Supercomputer Center" && '
+            'OSG_SITE_NAME =!= "Wichita State University" && '
             "(foo)"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted

@@ -23,7 +23,7 @@ _BASE_REQUIREMENTS = [
     '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9")',
     "SingularityUserNamespaces =?= true",  # should prevent failures w/ "Failed to create user namespace: user namespace disabled"
 ]
-_EXCLUDED_SITES = [
+_EXCLUDED_GLIDEIN_SITES = [
     f'GLIDEIN_Site =!= "{site}"'  # '=!=' -> 'not equal or undefined'
     for site in sorted(
         [
@@ -41,7 +41,17 @@ _EXCLUDED_SITES = [
         ]
     )
 ]
-DEFAULT_CONDOR_REQUIREMENTS = " && ".join(_BASE_REQUIREMENTS + _EXCLUDED_SITES)
+_EXCLUDED_OSG_SITES = [
+    f'OSG_SITE_NAME =!= "{site}"'  # '=!=' -> 'not equal or undefined'
+    for site in sorted(
+        [
+            "Wichita State University",  # 2025-04-16  # AMQPConnectionError
+        ]
+    )
+]
+DEFAULT_CONDOR_REQUIREMENTS = " && ".join(
+    _BASE_REQUIREMENTS + _EXCLUDED_GLIDEIN_SITES + _EXCLUDED_OSG_SITES
+)
 
 
 @dc.dataclass(frozen=True)

@@ -8,6 +8,9 @@ set -euo pipefail
 #     ./find_bad_sites.sh /scratch/ewms/tms-foo/jobs WF-abc123 "Segmentation fault"
 ########################################################################################
 
+# Site-identifying attributes to scan for
+SITE_KEYS_PATTERN='GLIDEIN_Site=|OSG_SITE_NAME='
+
 # Validate input arguments
 if [[ -z "${1-}" || -z "${2-}" || -z "${3-}" ]]; then
     echo "Usage: $0 TMS_JOBS_DIR TASKFORCE_UUID|WORKFLOW_ID 'error pattern'"
@@ -76,7 +79,6 @@ fi
 CLUSTER_DIR="${matches[0]}"
 echo "using cluster directory: $CLUSTER_DIR"
 
-
 ########################################################################################
 # find all sites in cluster
 
@@ -86,7 +88,7 @@ echo "[Step 1] Finding .err files with '$ERROR_PATTERN' in cluster dir: $CLUSTER
 echo && set -x
 MATCHED_LINES=$(grep -rl --include='*.err' "$ERROR_PATTERN" "$CLUSTER_DIR" | \
   awk -F '.err' '{print $1".out"}' | \
-  xargs -r grep 'GLIDEIN_Site=')
+  xargs -r grep -E "$SITE_KEYS_PATTERN" || true)
 set +x
 
 ########################################################################################
@@ -94,22 +96,30 @@ set +x
 
 echo
 echo "[Step 2] Sites seen with '$ERROR_PATTERN':"
-echo "$MATCHED_LINES" | cut -d: -f2-
+echo "${MATCHED_LINES}" | cut -d: -f2- | sort
 
 echo
-read -rp "Which site would you like to check? " SITE
+while true; do
+    read -rp "Enter full site key match (must match ${SITE_KEYS_PATTERN}...): " FULL_SITE_MATCH
+    if [[ "$FULL_SITE_MATCH" =~ ^(${SITE_KEYS_PATTERN}).+ ]]; then
+        break
+    fi
+    echo "Invalid input. Must start with one of: ${SITE_KEYS_PATTERN}"
+done
+
+echo "selected: $FULL_SITE_MATCH"
 
 ########################################################################################
 # see if this site always fails with this error (this cluster)
 
 echo
-echo "[Step 3] Comparing matched vs total for site '$SITE' in '$CLUSTER_DIR'"
+echo "[Step 3] Comparing matched vs total for site '$FULL_SITE_MATCH' in '$CLUSTER_DIR'"
 
-match_count=$(echo "$MATCHED_LINES" | grep -c "GLIDEIN_Site=$SITE")
-total_count=$(grep -r --include='*.out' "GLIDEIN_Site=$SITE" "$CLUSTER_DIR" | wc -l)
+match_count=$(echo "$MATCHED_LINES" | grep -c "$FULL_SITE_MATCH")
+total_count=$(grep -r --include='*.out' "$FULL_SITE_MATCH" "$CLUSTER_DIR" | wc -l)
 
-echo "  Matched jobs at $SITE: $match_count"
-echo "  Total   jobs at $SITE: $total_count"
+echo "  Matched jobs at $FULL_SITE_MATCH: $match_count"
+echo "  Total   jobs at $FULL_SITE_MATCH: $total_count"
 
 ########################################################################################
 # report findings
@@ -117,24 +127,24 @@ echo "  Total   jobs at $SITE: $total_count"
 echo
 
 if [[ "$match_count" -ne "$total_count" ]]; then
-  echo "[Info] Not all jobs from '$SITE' matched with '$ERROR_PATTERN'. Not continuing to TMS-wide scan."
-  echo "[Done] $SITE is NOT a bad site."
+  echo "[Info] Not all jobs from '$FULL_SITE_MATCH' matched with '$ERROR_PATTERN'. Not continuing to TMS-wide scan."
+  echo "[Done] $FULL_SITE_MATCH is NOT a bad site."
   exit 0
 else
-  echo "[Info] $SITE is **potentially** a bad site."
+  echo "[Info] $FULL_SITE_MATCH is **potentially** a bad site."
 fi
 
 ########################################################################################
 # see if this site always fails with this error (all clusters)
 
 echo
-echo "[Step 4] Checking all jobs in '$TMS_JOBS_DIR' for '$SITE' with '$ERROR_PATTERN'..."
+echo "[Step 4] Checking all jobs in '$TMS_JOBS_DIR' for '$FULL_SITE_MATCH' with '$ERROR_PATTERN'..."
 
 all_match_count=$(grep -rl --include='*.err' "$ERROR_PATTERN" "$TMS_JOBS_DIR" | \
   awk -F '.err' '{print $1".out"}' | \
-  xargs -r grep "GLIDEIN_Site=$SITE" | wc -l)
+  xargs -r grep "$FULL_SITE_MATCH" | wc -l)
 
-all_total_count=$(grep -r --include='*.out' "GLIDEIN_Site=$SITE" "$TMS_JOBS_DIR" | wc -l)
+all_total_count=$(grep -r --include='*.out' "$FULL_SITE_MATCH" "$TMS_JOBS_DIR" | wc -l)
 
 echo "  Total matched across all clusters: $all_match_count"
 echo "  Total jobs    across all clusters: $all_total_count"
@@ -146,7 +156,7 @@ echo
 
 if [[ "$all_match_count" -eq "$all_total_count" ]]; then
   echo "[Info] All jobs matched with '$ERROR_PATTERN'"
-  echo "[Done] '$SITE' is a bad site!"
+  echo "[Done] '$FULL_SITE_MATCH' is a bad site!"
 else
-  echo "[Done] '$SITE' is NOT a bad site."
+  echo "[Done] '$FULL_SITE_MATCH' is NOT a bad site."
 fi
