@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.6 (2025-04-23)
+
+### Other
+
+* Bump README to trigge semantic release for testing ([`b46f4b0`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/b46f4b066d67aae9bcf6194b62c70ad19e32bfd7))
+
 ## v1.0.5 (2025-04-16)
 
 ### Other
