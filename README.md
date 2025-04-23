@@ -72,3 +72,5 @@ _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workfl
 The **cluster** is the realization of a **taskforce** within an HTCondor pool. The two are mapped 1:1 and are nearly synonymous at a high level.
 
 However, the term "cluster" is used exclusively within the context of an HTCondor pool, the job event log, and debugging. Unlike the taskforce, the cluster is not relevant in the broader EWMS context.
+
+Bump semver release test 1
