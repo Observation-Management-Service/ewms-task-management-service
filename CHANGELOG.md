@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.7 (2025-05-12)
+
+### Other
+
+* Taskforce Status: Increase Logging ([`501f317`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/501f31707398de004230bcb2a7c6616f8e84f05f))
+
 ## v1.0.6 (2025-04-23)
 
 ### Other
