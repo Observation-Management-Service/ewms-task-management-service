@@ -432,7 +432,7 @@ class JobEventLogWatcher:
         if patch_body := {k: v for k, v in patch_body.items() if v}:
             LOGGER.info(
                 f"SENDING UPDATES TO EWMS ("
-                f"statuses={list(patch_body.get(_ALL_COMP_STAT_KEY,{}).keys())}, "
+                f"statuses={patch_body.get(_ALL_COMP_STAT_KEY,{})}, "
                 f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
             await self.ewms_rc.request(
@@ -440,7 +440,7 @@ class JobEventLogWatcher:
                 f"/{WMS_URL_V_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
-            LOGGER.debug("updates sent.")
+            LOGGER.info("updates sent.")
             no_updates_logging_timer.fastforward()  # so next time, "no updates" can be logged
         else:
             if no_updates_logging_timer.has_interval_elapsed():
