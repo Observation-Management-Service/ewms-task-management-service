@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.9 (2025-05-12)
+
+### Other
+
+* Taskforce Status: Smarter Logging ([`912564b`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/912564bd7266b6f030533f793c94771ad14df552))
+
 ## v1.0.8 (2025-05-12)
 
 ### Other
