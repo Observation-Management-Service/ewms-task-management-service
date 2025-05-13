@@ -336,9 +336,11 @@ class JobEventLogWatcher:
                     f"HTCondorIOError while reading JEL: {e}, skipping corrupt event."
                 )
                 continue
-            else:  # all good
-                got_new_events = True
+
+            # first time?
+            if not got_new_events:  # aka the first time
                 LOGGER.info(f"got events from jel ({self.jel_fpath})")
+            got_new_events = True
 
             # update logic
             try:
@@ -358,8 +360,12 @@ class JobEventLogWatcher:
             except NoUpdateException:
                 pass  # nothing important happened, too common to log
 
-        # endgame check
+        # logging
         LOGGER.debug(f"done reading events from {self.jel_fpath}.")
+        if not got_new_events and no_updates_logging_timer.has_interval_elapsed():
+            LOGGER.info("jel didn't contain any new events.")
+
+        # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
             return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
         else:
