@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.10 (2025-05-13)
+
+### Other
+
+* Taskforce Status: Smarter Logging - flake8 ([`95255c8`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/95255c809f04589effaf5134bef3948c061cc456))
+* Taskforce Status: Smarter Logging - 2 ([`ea51460`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/ea5146083995d312e683d94e5fe834b52253d072))
+
 ## v1.0.9 (2025-05-12)
 
 ### Other
