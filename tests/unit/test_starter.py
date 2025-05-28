@@ -55,7 +55,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             "HAS_CVMFS_icecube_opensciencegrid_org && "
             # "has_avx && has_avx2 && "
             '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9") && '
-            "SingularityUserNamespaces =?= true && "
+            "HasUserNamespaces =?= true && "
             'GLIDEIN_Site =!= "AMNH" && '
             'GLIDEIN_Site =!= "Kansas State University" && '
             'GLIDEIN_Site =!= "NotreDame" && '
