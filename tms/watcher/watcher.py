@@ -371,6 +371,15 @@ class JobEventLogWatcher:
             LOGGER.info("jel didn't contain any new events.")
 
         # endgame check
+        return await self._jel_endgame_check(got_new_events, cluster_infos, log_verbose)
+
+    async def _jel_endgame_check(
+        self,
+        got_new_events: bool,
+        cluster_infos: dict[types.ClusterId, ClusterInfo],
+        log_verbose: bool,
+    ) -> None:
+        """Wrap-up the JEL-parsing logic."""
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
             return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
         else:
