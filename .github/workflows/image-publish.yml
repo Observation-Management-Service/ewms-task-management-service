@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout Project
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v5
@@ -66,6 +68,8 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@v5
@@ -83,16 +87,17 @@ jobs:
 
       - name: Request Build(s)
         if: github.event_name != 'delete'
-        uses: WIPACrepo/build-singularity-cvmfs-action@v1.2
+        uses: WIPACrepo/build-singularity-cvmfs-action@v1.4
         with:
           github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # so job can git push
           docker_tags: ${{ steps.docker_meta.outputs.tags }}
           dest_dir: ${{ env.CVMFS_DEST_SUBDIR }}
-          include_docker_repo: false
+          include_docker_repo: false  # TODO: should be true but broken b/c https://github.com/WIPACrepo/build-singularity-cvmfs-action/issues/7
 
       - name: Request Removal(s)
         if: github.event_name == 'delete'
-        uses: WIPACrepo/build-singularity-cvmfs-action@v1.2
+        uses: WIPACrepo/build-singularity-cvmfs-action@v1.4
         with:
           github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # so job can git push
-          remove_regex_path: '${{ env.CVMFS_DEST_SUBDIR }}/${{ github.event.ref }}.*'
+          delete_image_tags: 'observation-management-service/ewms-task-management-service:${{ github.ref_name }}-[SHA]'
+          dest_dir: ${{ env.CVMFS_DEST_SUBDIR }}

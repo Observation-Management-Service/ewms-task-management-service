@@ -48,6 +48,14 @@ TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT="_EWMS_PILOT_APPTAINER_BUILD_WORKDIR=/srv/var
 TMS_WATCHER_INTERVAL="15"
 ```
 
+## How to Update in Production
+
+Use the helper script, [update_tms_image_symlink.sh](resources/systemd/update_tms_image_symlink.sh), to roll out a new TMS version on an HTCondor Access Point (AP) using systemd:
+
+```bash
+ewms@sub-2 ~/resources/systemd/tms-dev $ ../update_tms_image_symlink.sh v1.2.3
+```
+
 ## EWMS Glossary Applied to the TMS
 
 ### Workflow
