@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.11 (2025-05-29)
+
+### Other
+
+* Use `HasUserNamespaces =?= true` ([#43](https://github.com/Observation-Management-Service/ewms-task-management-service/issues/43)) ([`aec0924`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/aec0924fa35131a259cb5062a88907bdea9fca5c))
+
 ## v1.0.10 (2025-05-13)
 
 ### Other
