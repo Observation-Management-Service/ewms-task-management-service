@@ -281,6 +281,7 @@ class JobEventLogWatcher:
 
         cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
         timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
+        verbose_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
         jel = htcondor.JobEventLog(str(self.jel_fpath))
 
         while True:
@@ -288,7 +289,11 @@ class JobEventLogWatcher:
             await timer.wait_until_interval()
             # parse & update
             try:
-                await self._look_at_job_event_log(cluster_infos, jel)
+                await self._look_at_job_event_log(
+                    cluster_infos,
+                    jel,
+                    verbose_logging_timer.has_interval_elapsed(),
+                )
             except JobEventLogDeleted:
                 return
 
@@ -313,10 +318,9 @@ class JobEventLogWatcher:
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
         jel: htcondor.JobEventLog,
+        log_verbose: bool,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
-        no_updates_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
-
         await self._add_new_cluster_infos(cluster_infos)
 
         # get events -- exit when no more events
@@ -361,17 +365,16 @@ class JobEventLogWatcher:
                 pass  # nothing important happened, too common to log
 
         # logging
-        LOGGER.debug(f"done reading events from {self.jel_fpath}.")
-        if not got_new_events and no_updates_logging_timer.has_interval_elapsed():
+        if log_verbose:
+            LOGGER.info(f"done reading all events from {self.jel_fpath}.")
+        if not got_new_events and log_verbose:
             LOGGER.info("jel didn't contain any new events.")
 
         # endgame check
         if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
             return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
         else:
-            return await self._done_reading_events_for_now(
-                cluster_infos, no_updates_logging_timer
-            )
+            return await self._done_reading_events_for_now(cluster_infos, log_verbose)
 
     async def _delete_jel_if_needed(self) -> None:
         """Raises JobEventLogDeleted if deleted."""
@@ -385,7 +388,7 @@ class JobEventLogWatcher:
     async def _done_reading_events_for_now(
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
-        no_updates_logging_timer: IntervalTimer,
+        log_verbose: bool,
     ) -> None:
         LOGGER.debug("Done reading events for now")
         LOGGER.debug(
@@ -393,7 +396,7 @@ class JobEventLogWatcher:
         )
         # aggregate cluster_infos, then update ewms
         patch_body = self._aggregate_cluster_infos(cluster_infos)
-        await self._update_ewms(patch_body, no_updates_logging_timer)
+        await self._update_ewms(patch_body, log_verbose)
 
     @staticmethod
     def _aggregate_cluster_infos(
@@ -433,7 +436,7 @@ class JobEventLogWatcher:
     async def _update_ewms(
         self,
         patch_body: sdict,
-        no_updates_logging_timer: IntervalTimer,
+        log_verbose: bool,
     ) -> None:
         # send -- one big update that way it can't intermittently fail
         # remove any "empty" keys
@@ -450,7 +453,6 @@ class JobEventLogWatcher:
                 patch_body,
             )
             LOGGER.info("updates sent.")
-            no_updates_logging_timer.fastforward()  # so next time, "no updates" can be logged
         else:
-            if no_updates_logging_timer.has_interval_elapsed():
+            if log_verbose:
                 LOGGER.info("no updates needed for ewms.")
