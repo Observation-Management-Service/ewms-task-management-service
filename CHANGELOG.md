@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v1.0.12 (2025-07-09)
+
+### Other
+
+* Remove `OSG_OS_VERSION` Condor Requirement ([`10ea037`](https://github.com/Observation-Management-Service/ewms-task-management-service/commit/10ea0376128cb9c98e0a4e488fcd9de6887fbc10))
+
 ## v1.0.11 (2025-05-29)
 
 ### Other
