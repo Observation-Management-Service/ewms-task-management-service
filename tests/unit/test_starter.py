@@ -53,9 +53,9 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         "Requirements": (
             "ifthenelse(!isUndefined(HAS_SINGULARITY), HAS_SINGULARITY, HasSingularity) && "
             "HAS_CVMFS_icecube_opensciencegrid_org && "
-            # "has_avx && has_avx2 && "
-            '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9") && '
+            #
             "HasUserNamespaces =?= true && "
+            #
             'GLIDEIN_Site =!= "AMNH" && '
             'GLIDEIN_Site =!= "Kansas State University" && '
             'GLIDEIN_Site =!= "NotreDame" && '
@@ -64,6 +64,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             'GLIDEIN_Site =!= "SU-ITS" && '
             'GLIDEIN_Site =!= "San Diego Supercomputer Center" && '
             'OSG_SITE_NAME =!= "Wichita State University" && '
+            #
             "(foo)"
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted

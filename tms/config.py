@@ -19,8 +19,7 @@ _BASE_REQUIREMENTS = [
     # cvmfs support -- note: sub-2 meets this req by default
     "HAS_CVMFS_icecube_opensciencegrid_org",
     #
-    # support apptainer-in-apptainer https://github.com/apptainer/apptainer/issues/2167]
-    '(OSG_OS_VERSION =?= "8" || OSG_OS_VERSION =?= "9")',
+    # apptainer-in-apptainer support
     "HasUserNamespaces =?= true",  # should prevent failures w/ "Failed to create user namespace: user namespace disabled"
 ]
 _EXCLUDED_GLIDEIN_SITES = [
