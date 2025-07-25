@@ -8,6 +8,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import ClientCredentialsAuth
 
 from .config import ENV, config_logging
+from .file_manager import file_manager
 from .scalar.scalar import scalar_loop
 from .utils import AppendOnlyList, LogFileLogic, TaskforceMonitor
 from .watcher import watcher
@@ -78,6 +79,7 @@ async def main() -> None:
     async with asyncio.TaskGroup() as tg:
         tg.create_task(scalar_loop(tmonitors))
         tg.create_task(watcher_loop(tmonitors))
+        tg.create_task(file_manager.run())
 
     LOGGER.info("Done")
 
