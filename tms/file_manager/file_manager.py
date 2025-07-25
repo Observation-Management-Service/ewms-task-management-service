@@ -39,7 +39,7 @@ class FilepathAction:
 
     def _tar(self, fpath: Path) -> None:
         assert self.dest is not None
-        mode = "w:gz" if self.dest.endswith(".gz") else "w"
+        mode = "w:gz" if self.dest.suffix == ".gz" else "w"
         with tarfile.open(self.dest, mode) as tar:
             tar.add(fpath, arcname=os.path.basename(fpath))
         os.remove(fpath)
