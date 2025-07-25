@@ -74,7 +74,7 @@ class FilepathAction:
         }
 
         try:
-            actions[self.action](fpath)
+            return actions[self.action](fpath)
         except KeyError:
             raise ValueError(f"Unknown action: {self.action}")
 
