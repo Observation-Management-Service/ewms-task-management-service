@@ -106,17 +106,9 @@ ACTION_MAP: dict[str, FilepathAction] = {
 
 async def run() -> None:
     """Run the file manager loop."""
-    first = True
+    await asyncio.sleep(60)
 
     while True:
-
-        if first:
-            # when the TMS starts up, do an action so we see things are happening
-            await asyncio.sleep(60)
-            first = False
-        else:
-            # otherwise, sleep normally
-            await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
 
         LOGGER.info("inspecting filepaths...")
 
@@ -126,3 +118,5 @@ async def run() -> None:
                 LOGGER.info(f"looking at {fpath=}")
                 file_action.act(Path(fpath))
                 await asyncio.sleep(0)  # let the TMS do other scheduled things
+
+        await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
