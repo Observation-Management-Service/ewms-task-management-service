@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from ..config import ENV
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -65,14 +67,19 @@ class FilepathAction:
             raise FileNotFoundError(fpath)
 
         if not self.is_old_enough(fpath):
+            LOGGER.info(
+                f"no action -- filepath not older than {self.age_threshold} seconds {fpath=}"
+            )
             return
 
+        LOGGER.info(f"performing action '{self.action}'...")
         actions = {
             "rm": self._rm,
             "mv": self._mv,
             "tar": self._tar,
         }
 
+        # get & call function
         try:
             return actions[self.action](fpath)
         except KeyError:
@@ -99,10 +106,23 @@ ACTION_MAP: dict[str, FilepathAction] = {
 
 async def run() -> None:
     """Run the file manager loop."""
+    first = True
 
     while True:
-        await asyncio.sleep(60)
+
+        if first:
+            # when the TMS starts up, do an action so we see things are happening
+            await asyncio.sleep(60)
+            first = False
+        else:
+            # otherwise, sleep normally
+            await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
+
+        LOGGER.info("inspecting filepaths...")
 
         for fpath_pattern, file_action in ACTION_MAP.items():
+            LOGGER.info(f"searching filepath pattern: {fpath_pattern}")
             for fpath in glob.glob(fpath_pattern):
+                LOGGER.info(f"looking at {fpath=}")
                 file_action.act(Path(fpath))
+                await asyncio.sleep(0)  # let the TMS do other scheduled things

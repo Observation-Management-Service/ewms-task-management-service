@@ -73,6 +73,7 @@ class EnvConfig:
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3
+    TMS_FILE_MANAGER_INTERVAL: int = 60 * 60 * 1  # 1 hour
     TMS_MAX_LOGGING_INTERVAL: int = (  # something will be logged at least this often
         5 * 60
     )
