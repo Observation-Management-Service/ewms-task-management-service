@@ -28,21 +28,31 @@ class FilepathAction:
             raise RuntimeError(f"destination already exists: {self.dest}")
 
     def _rm(self, fpath: Path) -> None:
+        """rm the file."""
         os.remove(fpath)
         LOGGER.info(f"done: rm {fpath}")
 
     def _mv(self, fpath: Path) -> None:
-        assert self.dest is not None
+        """mv the file."""
+        if not self.dest:
+            raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
+
         os.makedirs(self.dest, exist_ok=True)
         shutil.move(fpath, self.dest)
+
         LOGGER.info(f"done: mv {fpath} → {self.dest}")
 
     def _tar(self, fpath: Path) -> None:
-        assert self.dest is not None
+        """tar the file."""
+        if not self.dest:
+            raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
+
         mode = "w:gz" if self.dest.suffix == ".gz" else "w"
         with tarfile.open(self.dest, mode) as tar:
             tar.add(fpath, arcname=os.path.basename(fpath))
+
         os.remove(fpath)
+
         LOGGER.info(f"done: tar {fpath} → {self.dest} + rm {fpath}")
 
     def is_old_enough(self, fpath: Path) -> bool:
