@@ -246,6 +246,7 @@ jobs:
           cache-to: type=gha,mode=min
           file: Dockerfile
           tags: ${{ env.DOCKER_IMAGE_NAME }}:local
+          load: true           # make the image available to `docker run` on this runner
       - name: test
         run: |
           set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
