@@ -6,7 +6,8 @@ RUN useradd -m -U app
 RUN mkdir /app
 WORKDIR /app
 RUN chown -R app /app
-RUN chown -R app /src
+RUN --mount=type=bind,source=.,target=/src,rw \
+    chown -R app:app /src
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
