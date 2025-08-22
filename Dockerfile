@@ -24,6 +24,7 @@ RUN --mount=type=cache,target=/tmp/pip-cache \
 RUN pip install virtualenv
 RUN python -m virtualenv /app/tms_venv
 ENV VIRTUAL_ENV=/app/tms_venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN --mount=type=bind,source=.,target=/src,rw \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
