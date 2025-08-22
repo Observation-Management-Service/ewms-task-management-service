@@ -11,8 +11,6 @@ RUN chown -R app /app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-USER app
-
 
 # Mount the entire build context (including '.git/') just for this step
 # NOTE:
@@ -25,6 +23,7 @@ RUN pip install virtualenv
 RUN python -m virtualenv /app/tms_venv
 ENV VIRTUAL_ENV=/app/tms_venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+USER app
 RUN --mount=type=bind,source=.,target=/src,rw \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
