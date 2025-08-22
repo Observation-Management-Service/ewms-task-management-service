@@ -22,17 +22,16 @@ USER app
 RUN --mount=type=cache,target=/tmp/pip-cache \
     pip install --upgrade "pip>=25" "setuptools>=80" "wheel>=0.45"
 RUN pip install virtualenv
-RUN python -m virtualenv /app/entrypoint_venv
-USER root
+RUN python -m virtualenv /app/tms_venv
+ENV VIRTUAL_ENV=/app/tms_venv
 RUN --mount=type=bind,source=.,target=/src,rw \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
-      . /app/entrypoint_venv/bin/activate && \
+      . /app/tms_venv/bin/activate && \
       apt-get update && apt-get install -y --no-install-recommends git && \
       pip install --upgrade pip && \
       pip install --no-cache-dir /src \
     '
-USER app
 
 
 # go
