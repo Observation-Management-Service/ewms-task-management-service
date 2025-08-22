@@ -5,9 +5,9 @@ dependencies = [
     "htcondor<24.0.0",
     "wipac-dev-tools",
     "wipac-rest-tools[telemetry]",
-] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+]
 
-[project.optional-dependencies] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+[project.optional-dependencies]
 tests = [
     "pytest",
     "pytest-asyncio",
