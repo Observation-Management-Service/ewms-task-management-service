@@ -6,6 +6,7 @@ RUN useradd -m -U app
 RUN mkdir /app
 WORKDIR /app
 RUN chown -R app /app
+RUN chown -R app /src
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
