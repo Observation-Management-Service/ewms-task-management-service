@@ -6,11 +6,12 @@ RUN useradd -m -U app
 RUN mkdir /app
 WORKDIR /app
 RUN chown -R app /app
-USER app
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+USER app
 
 
 # Mount the entire build context (including '.git/') just for this step
