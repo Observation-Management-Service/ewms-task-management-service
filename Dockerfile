@@ -6,13 +6,12 @@ RUN useradd -m -U app
 RUN mkdir /app
 WORKDIR /app
 RUN chown -R app /app
-RUN --mount=type=bind,source=.,target=/src,rw \
-    chown -R app:app /src
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+USER app
 
 # Mount the entire build context (including '.git/') just for this step
 # NOTE:
@@ -25,13 +24,13 @@ RUN pip install virtualenv
 RUN python -m virtualenv /app/tms_venv
 ENV VIRTUAL_ENV=/app/tms_venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-USER app
-RUN --mount=type=bind,source=.,target=/src,rw \
+RUN --mount=type=bind,source=.,target=/src,ro \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
       . /app/tms_venv/bin/activate && \
       pip install --upgrade pip && \
-      pip install --no-cache-dir /src \
+      mkdir -p /tmp/pkg && cp -a /src/. /tmp/pkg/ && \
+      pip install --no-cache-dir --use-pep517 /tmp/pkg \
     '
 
 
