@@ -6,12 +6,11 @@ RUN useradd -m -U app
 RUN mkdir /app
 WORKDIR /app
 RUN chown -R app /app
+USER app
 
 # entrypoint magic
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-USER app
 
 
 # Mount the entire build context (including '.git/') just for this step
@@ -23,6 +22,7 @@ RUN --mount=type=cache,target=/tmp/pip-cache \
     pip install --upgrade "pip>=25" "setuptools>=80" "wheel>=0.45"
 RUN pip install virtualenv
 RUN python -m virtualenv /app/entrypoint_venv
+USER root
 RUN --mount=type=bind,source=.,target=/src,rw \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
@@ -31,6 +31,7 @@ RUN --mount=type=bind,source=.,target=/src,rw \
       pip install --upgrade pip && \
       pip install --no-cache-dir /src \
     '
+USER app
 
 
 # go
