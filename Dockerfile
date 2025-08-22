@@ -21,13 +21,13 @@ USER app
 RUN --mount=type=cache,target=/tmp/pip-cache \
     pip install --upgrade "pip>=25" "setuptools>=80" "wheel>=0.45"
 RUN pip install virtualenv
-RUN python -m virtualenv /app/tms_venv
-ENV VIRTUAL_ENV=/app/tms_venv
+RUN python -m virtualenv /app/venv
+ENV VIRTUAL_ENV=/app/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN --mount=type=bind,source=.,target=/src,ro \
     --mount=type=cache,target=/tmp/pip-cache \
     bash -euxo pipefail -c '\
-      . /app/tms_venv/bin/activate && \
+      . /app/venv/bin/activate && \
       pip install --upgrade pip && \
       mkdir -p /tmp/pkg && cp -a /src/. /tmp/pkg/ && \
       pip install --no-cache-dir --use-pep517 /tmp/pkg \

@@ -1,5 +1,6 @@
 #!/bin/bash
+set -euo pipefail
 echo "tms entrypoint: activating venv"
-source /app/tms_venv/bin/activate
+source /app/venv/bin/activate
 echo "tms entrypoint: executing command: $@"
 exec "$@"
