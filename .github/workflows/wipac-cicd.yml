@@ -231,7 +231,7 @@ jobs:
           set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           pytest -vvv tests/unit/
 
-  integration-test:
+  integration-test-ish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -272,7 +272,7 @@ jobs:
       test-build-docker,
       test-build-apptainer,
       unit-test,
-      integration-test,
+      integration-test-ish,
     ]
     runs-on: ubuntu-latest
     concurrency: release
