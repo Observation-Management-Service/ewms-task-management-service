@@ -254,7 +254,7 @@ jobs:
           
           timeout 240 docker run --rm \
               ${{ env.DOCKER_IMAGE_NAME }}:local \
-              bash -c 'set -x && pip freeze && ls /app && ls /app/venv/lib/python3.11/site-packages/*'
+              bash -c 'set -x && whereis python && pip freeze && ls /app && ls /app/venv/lib/python3.11/site-packages/*'
 
   #############################################################################
   # GIT TAG & GITHUB RELEASE
