@@ -11,6 +11,10 @@ RUN chown -R app /app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+COPY pyproject.toml /app/pyproject.toml
+COPY tms /app/tms
+
+RUN chown -R app:app /app
 
 USER app
 
@@ -24,11 +28,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 #  - mounting '.git/' allows the Python project to build with 'setuptools-scm'
 #  - no 'COPY .' because we don't want to copy extra files (especially '.git/')
 #  - using '/tmp/pip-cache' allows pip to cache
-#COPY pyproject.toml /app/pyproject.toml
-#COPY tms /app/tms
 RUN --mount=type=bind,source=.git,target=.git,ro \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml,ro \
-    --mount=type=bind,source=tms,target=tms,ro \
     pip install --no-cache .
 
 
