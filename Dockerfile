@@ -29,7 +29,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN --mount=type=bind,source=.git,target=.git,ro \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml,ro \
     --mount=type=bind,source=tms,target=tms,ro \
-    pip install --no-clean .
+    pip install --no-cache .
 
 
 # go
