@@ -50,7 +50,7 @@ class FilepathAction:
             raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
 
         mode = "w:gz" if self.dest.suffix == ".gz" else "w"
-        with tarfile.open(self.dest, mode) as tar:
+        with tarfile.open(str(self.dest), mode) as tar:
             tar.add(fpath, arcname=os.path.basename(fpath))
 
         os.remove(fpath)
