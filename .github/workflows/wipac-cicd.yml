@@ -253,10 +253,8 @@ jobs:
           set -ex
           
           timeout 240 docker run --rm \
-              $(env | grep '^EWMS_' | awk '$0="--env "$0') \
-              $(env | grep '^JOB_EVENT_LOG_' | awk '$0="--env "$0') \
               ${{ env.DOCKER_IMAGE_NAME }}:local \
-
+              pip freeze
 
   #############################################################################
   # GIT TAG & GITHUB RELEASE
