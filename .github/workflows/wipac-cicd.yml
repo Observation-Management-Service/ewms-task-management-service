@@ -254,7 +254,7 @@ jobs:
           
           timeout 240 docker run --rm \
               ${{ env.DOCKER_IMAGE_NAME }}:local \
-              pip freeze
+              bash -c 'pip freeze && ls /tmp/pkg'
 
   #############################################################################
   # GIT TAG & GITHUB RELEASE
