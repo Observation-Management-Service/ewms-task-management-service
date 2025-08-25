@@ -51,6 +51,7 @@ def test_020_tar_creates_tar_gz_and_removes_source(tmp_path, caplog):
     # Use .tar.gz branch
     src = tmp_path / "file.log"
     _touch(src, "payload")
+
     tar_path = tmp_path / "archives" / "data.tar.gz"
     act = fm.FilepathAction("tar", age_threshold=0, dest=tar_path)
 
