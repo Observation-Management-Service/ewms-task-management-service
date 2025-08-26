@@ -28,10 +28,6 @@ class FpathAction:
 
     precheck: Callable[[Path], Awaitable[bool]] | None = None
 
-    def __post_init__(self):
-        if self.dest and self.dest.exists():
-            raise RuntimeError(f"destination already exists: {self.dest}")
-
     def _rm(self, fpath: Path) -> None:
         """rm the file."""
         os.remove(fpath)
@@ -41,6 +37,8 @@ class FpathAction:
         """mv the file."""
         if not self.dest:
             raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
+        if self.dest.exists():
+            raise RuntimeError(f"destination already exists: {self.dest}")
 
         os.makedirs(self.dest, exist_ok=True)
         shutil.move(fpath, self.dest)
@@ -51,8 +49,6 @@ class FpathAction:
         """Tar+gzip the directory and remove the source afterwards."""
         if not self.dest:
             raise RuntimeError(f"destination not given for '{self.action}' on {src=}")
-        if not self.dest.is_dir():
-            raise NotADirectoryError(f"{self.dest=}")
         if not src.is_dir():
             raise NotADirectoryError(f"{src=}")
 
