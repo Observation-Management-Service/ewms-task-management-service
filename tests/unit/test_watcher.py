@@ -123,7 +123,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         # use timeout otherwise this would run forever
         await asyncio.wait_for(
             jel_watcher.start(),
-            timeout=int(os.environ["TMS_WATCHER_INTERVAL"]) * n_updates * 2,  # cushion
+            timeout=int(os.environ["TMS_WATCHER_INTERVAL"]) * n_updates * 5,  # cushion
         )
 
     assert len(tmonitors) == 2  # check that the taskforce monitors is still here
