@@ -9,7 +9,7 @@ import htcondor  # type: ignore[import-untyped]
 from .config import ENV, config_logging
 from .file_manager import file_manager
 from .scalar.scalar import scalar_loop
-from .utils import AppendOnlyList, LogFileLogic, TaskforceMonitor, connect_to_ewms
+from .utils import AppendOnlyList, JELFileLogic, TaskforceMonitor, connect_to_ewms
 from .watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                 f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
-                if not LogFileLogic.is_log_file(jel_fpath):
+                if not JELFileLogic.is_valid(jel_fpath):
                     continue
 
                 # check/append

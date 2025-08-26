@@ -29,7 +29,7 @@ def _make_old(p: Path, seconds_old: int) -> None:
 def test_000_rm_removes_file_and_logs(tmp_path, caplog):
     f = tmp_path / "a.txt"
     _touch(f)
-    act = fm.FilepathAction("rm", age_threshold=0)
+    act = fm.FpathAction("rm", age_threshold=0)
     assert f.exists()
     act._rm(f)
     assert not f.exists()
@@ -40,7 +40,7 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     src = tmp_path / "src" / "a.txt"
     dest_dir = tmp_path / "dest"
     _touch(src)
-    act = fm.FilepathAction("mv", age_threshold=0, dest=dest_dir)
+    act = fm.FpathAction("mv", age_threshold=0, dest=dest_dir)
     act._mv(src)
     assert not src.exists()
     assert (dest_dir / "a.txt").exists()
@@ -53,7 +53,7 @@ def test_020_tar_creates_tar_gz_and_removes_source(tmp_path, caplog):
     _touch(src, "payload")
 
     tar_path = tmp_path / "archives" / "data.tar.gz"
-    act = fm.FilepathAction("tar", age_threshold=0, dest=tar_path)
+    act = fm.FpathAction("tar", age_threshold=0, dest=tar_path)
 
     act._tar_gz(src)
 
@@ -75,14 +75,14 @@ def test_030_post_init_raises_if_dest_exists(tmp_path):
     existing = tmp_path / "already_here"
     existing.mkdir(parents=True)
     with pytest.raises(RuntimeError, match="destination already exists"):
-        fm.FilepathAction("mv", age_threshold=0, dest=existing)
+        fm.FpathAction("mv", age_threshold=0, dest=existing)
 
 
 def test_1000_is_old_enough_true_and_false(tmp_path):
     f = tmp_path / "x.bin"
     _touch(f)
 
-    act = fm.FilepathAction("rm", age_threshold=10)
+    act = fm.FpathAction("rm", age_threshold=10)
 
     # Not old enough initially
     assert not act.is_old_enough(f)
@@ -96,7 +96,7 @@ def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
     f = tmp_path / "file.txt"
     _touch(f)
     # Age threshold 1 day; file is brand new
-    act = fm.FilepathAction("rm", age_threshold=24 * 3600)
+    act = fm.FpathAction("rm", age_threshold=24 * 3600)
 
     act.act(f)
 
@@ -113,6 +113,6 @@ def test_1200_act_unknown_action_raises_valueerror(tmp_path):
     _touch(f)
 
     # Create an instance with an invalid action token
-    bad = fm.FilepathAction("nope", age_threshold=0)
+    bad = fm.FpathAction("nope", age_threshold=0)
     with pytest.raises(ValueError, match="Unknown action"):
         bad.act(f)

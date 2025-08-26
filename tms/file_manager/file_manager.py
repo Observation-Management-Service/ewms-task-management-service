@@ -12,13 +12,13 @@ from pathlib import Path
 from typing import Awaitable, Callable, Literal
 
 from ..config import ENV
-from ..utils import is_jel_no_longer_used
+from ..utils import JELFileLogic, TaskforceDirLogic
 
 LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class FilepathAction:
+class FpathAction:
     """What action to take on the filepath."""
 
     action: Literal["rm", "mv", "tar_gz"]
@@ -101,20 +101,26 @@ class FilepathAction:
             raise ValueError(f"Unknown action: {self.action}")
 
 
-ACTION_MAP: dict[str, FilepathAction] = {
-    str(ENV.JOB_EVENT_LOG_DIR / "tms-*.log"): FilepathAction(  # ex: # tms-2025-8-26.log
+ACTION_MAP: dict[str, FpathAction] = {
+    #
+    # ex: 2025-8-26.tms.log
+    str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"): FpathAction(
         "rm",
         age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
-        precheck=is_jel_no_longer_used,
+        precheck=JELFileLogic.is_no_longer_used,
     ),
-    str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*"): FilepathAction(
+    #
+    # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
+    str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*"): FpathAction(
         "tar_gz",
-        age_threshold=ENV.JOB_OUTPUTS_DIRS_EXPIRY,
+        age_threshold=ENV.TASKFORCE_DIRS_EXPIRY,
         dest=ENV.JOB_EVENT_LOG_DIR,
     ),
-    str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*.tar.gz"): FilepathAction(
+    #
+    # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72.tar.gz
+    str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*.tar.gz"): FpathAction(
         "rm",
-        age_threshold=ENV.JOB_OUTPUTS_DIRS_TAR_EXPIRY,
+        age_threshold=ENV.TASKFORCE_DIRS_TAR_EXPIRY,
     ),
 }
 

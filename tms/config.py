@@ -71,8 +71,8 @@ class EnvConfig:
 
     JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24  # 24 hours
 
-    JOB_OUTPUTS_DIRS_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
-    JOB_OUTPUTS_DIRS_TAR_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
+    TASKFORCE_DIRS_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
+    TASKFORCE_DIRS_TAR_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3

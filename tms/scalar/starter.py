@@ -10,17 +10,14 @@ import humanfriendly
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
-from ..config import DEFAULT_CONDOR_REQUIREMENTS, ENV, WMS_URL_V_PREFIX
-from ..utils import LogFileLogic
+from ..config import (
+    DEFAULT_CONDOR_REQUIREMENTS,
+    ENV,
+    WMS_URL_V_PREFIX,
+)
+from ..utils import JELFileLogic, TaskforceDirLogic
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_ap_taskforce_dir(taskforce_uuid: str) -> Path:
-    """Assemble and mkdir the taskforce's directory on the AP."""
-    path = ENV.JOB_EVENT_LOG_DIR / f"ewms-taskforce-{taskforce_uuid}"
-    path.mkdir(exist_ok=True)
-    return path
 
 
 class HaltedByDryRun(Exception):
@@ -45,7 +42,9 @@ async def is_taskforce_still_pending_starter(
 
 def write_envfile(taskforce_uuid: str, env_vars: dict) -> Path:
     """Construct the envfile to be transferred."""
-    envfile = Path(get_ap_taskforce_dir(taskforce_uuid)) / "ewms_htcondor_envfile.sh"
+    envfile = (
+        Path(TaskforceDirLogic.create(taskforce_uuid)) / "ewms_htcondor_envfile.sh"
+    )
 
     def to_envval(val: Any) -> str:
         """Convert an arbitrary value to a string to be used as an environment variable."""
@@ -155,7 +154,7 @@ def make_condor_job_description(
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
         # cluster logs -- shared w/ other clusters
-        "log": str(LogFileLogic.make_log_file_name()),
+        "log": str(JELFileLogic.create_path()),
         #
         "transfer_input_files": ",".join(pilot_config["input_files"]),
         "transfer_output_files": "",  # TODO: add ewms-pilot debug directory
@@ -192,7 +191,9 @@ def make_condor_job_description(
 
     if worker_config["do_transfer_worker_stdouterr"]:
         # this is the location where the files will go when/if *returned here*
-        output_subdir = get_ap_taskforce_dir(taskforce_uuid) / "cluster-$(ClusterId)"
+        output_subdir = (
+            TaskforceDirLogic.create(taskforce_uuid) / "cluster-$(ClusterId)"
+        )
         submit_dict.update(
             {
                 "output": str(output_subdir / "$(ProcId).out"),

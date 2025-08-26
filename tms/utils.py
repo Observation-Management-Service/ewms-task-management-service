@@ -25,21 +25,69 @@ def connect_to_ewms() -> RestClient:
     )
 
 
-class LogFileLogic:
-    """Logic for setting up and detecting log files."""
+class JELFileLogic:
+    """Logic for setting up and detecting job event log files."""
+
+    parent = ENV.JOB_EVENT_LOG_DIR
+    suffix = ".tms.jel"
 
     @staticmethod
-    def make_log_file_name() -> Path:
-        """Generate a log file name."""
-        ENV.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
-        return ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"  # tms-2024-1-27.log
+    def create_path() -> Path:
+        """Generate a log file name and mkdir parents."""
+        JELFileLogic.parent.mkdir(parents=True, exist_ok=True)
+        # ex: .../tms-2024-1-27.log
+        return JELFileLogic.parent / f"{date.today()}{JELFileLogic.suffix}"
 
     @staticmethod
-    def is_log_file(fpath: Path) -> bool:
+    def is_valid(fpath: Path) -> bool:
         """Return whether the log file exists and has a valid log filename."""
         return bool(
-            fpath.is_file() and fpath.name.startswith("tms-") and fpath.suffix == ".log"
+            fpath.parent == JELFileLogic.parent
+            and fpath.is_file()
+            and fpath.suffix == JELFileLogic.suffix
         )
+
+    @staticmethod
+    async def is_no_longer_used(fpath: Path) -> bool:
+        """Return whether there are no non-completed taskforces using JEL."""
+        ewms_rc = connect_to_ewms()
+
+        resp = await ewms_rc.request(
+            "POST",
+            f"/{WMS_URL_V_PREFIX}/query/taskforces",
+            {
+                "query": {
+                    "job_event_log_fpath": str(fpath),
+                    "collector": get_collector(),
+                    "schedd": get_schedd(),
+                    "condor_complete_ts": {"$ne": None},
+                },
+                "projection": ["taskforce_uuid"],
+            },
+        )
+        if is_used := bool(resp["taskforces"]):
+            LOGGER.info(
+                "There are still non-completed taskforces using JEL -- DON'T DELETE"
+            )
+        else:
+            LOGGER.warning(
+                "There are no non-completed taskforces using JEL -- CAN DELETE"
+            )
+        return not is_used
+
+
+class TaskforceDirLogic:
+    """Logic for setting up a taskforce dir."""
+
+    parent = ENV.JOB_EVENT_LOG_DIR
+    prefix = "ewms-taskforce-"
+
+    @staticmethod
+    def create(taskforce_uuid: str) -> Path:
+        """Assemble and mkdir the taskforce's directory on the AP."""
+        path = TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}{taskforce_uuid}"
+        path.mkdir(exist_ok=True)
+        return path
 
 
 class TaskforceMonitor:
@@ -67,29 +115,3 @@ class AppendOnlyList(list[T]):
 
     def clear(self, *args):
         raise NotImplementedError()
-
-
-async def is_jel_no_longer_used(jel_fpath: Path) -> bool:
-    """Return whether there are no non-completed taskforces using JEL."""
-    ewms_rc = connect_to_ewms()
-
-    resp = await ewms_rc.request(
-        "POST",
-        f"/{WMS_URL_V_PREFIX}/query/taskforces",
-        {
-            "query": {
-                "job_event_log_fpath": str(jel_fpath),
-                "collector": get_collector(),
-                "schedd": get_schedd(),
-                "condor_complete_ts": {"$ne": None},
-            },
-            "projection": ["taskforce_uuid"],
-        },
-    )
-    if is_used := bool(resp["taskforces"]):
-        LOGGER.info(
-            "There are still non-completed taskforces using JEL -- DON'T DELETE"
-        )
-    else:
-        LOGGER.warning("There are no non-completed taskforces using JEL -- CAN DELETE")
-    return not is_used
