@@ -72,6 +72,57 @@ def test_020_tar_gz_creates_archive_and_removes_source(tmp_path, caplog):
     assert any("done: tar.gz" in rec.message for rec in caplog.records)
 
 
+def test_021_mv_raises_if_no_dest(tmp_path):
+    f = tmp_path / "file.txt"
+    _touch(f)
+    act = fm.FpathAction("mv", age_threshold=0)  # no dest
+    with pytest.raises(RuntimeError, match="destination not given"):
+        act._mv(f)
+
+
+def test_022_tar_gz_raises_if_no_dest(tmp_path):
+    src_dir = tmp_path / "srcdir"
+    (src_dir / "file.txt").parent.mkdir(parents=True)
+    _touch(src_dir / "file.txt")
+
+    act = fm.FpathAction("tar_gz", age_threshold=0)  # no dest
+    with pytest.raises(RuntimeError, match="destination not given"):
+        act._tar_gz(src_dir)
+
+
+def test_023_tar_gz_raises_if_src_not_dir(tmp_path):
+    f = tmp_path / "file.txt"
+    _touch(f)
+    dest = tmp_path / "out"
+    dest.mkdir()
+    act = fm.FpathAction("tar_gz", age_threshold=0, dest=dest)
+    with pytest.raises(NotADirectoryError):
+        act._tar_gz(f)
+
+
+async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
+    f = tmp_path / "f.txt"
+    _touch(f)
+
+    async def bad_precheck(_):
+        return False
+
+    act = fm.FpathAction("rm", age_threshold=0, precheck=bad_precheck)
+
+    await act.act(f)
+
+    # File remains, log mentions precheck
+    assert f.exists()
+    assert any("precheck failed" in rec.message for rec in caplog.records)
+
+
+async def test_025_act_raises_if_missing(tmp_path):
+    f = tmp_path / "does_not_exist"
+    act = fm.FpathAction("rm", age_threshold=0)
+    with pytest.raises(FileNotFoundError):
+        await act.act(f)
+
+
 def test_030_post_init_raises_if_dest_exists(tmp_path):
     # If a dest path already exists, __post_init__ should raise
     existing = tmp_path / "already_here"
