@@ -11,7 +11,6 @@ from rest_tools.client import RestClient
 from .. import condor_tools, types
 from ..condor_tools import get_collector, get_schedd
 from ..config import WMS_URL_V_PREFIX
-from ..utils import connect_to_ewms
 
 LOGGER = logging.getLogger(__name__)
 
