@@ -47,27 +47,29 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     assert any("done: mv" in rec.message for rec in caplog.records)
 
 
-def test_020_tar_creates_tar_gz_and_removes_source(tmp_path, caplog):
-    # Use .tar.gz branch
-    src = tmp_path / "file.log"
-    _touch(src, "payload")
+def test_020_tar_gz_creates_archive_and_removes_source(tmp_path, caplog):
+    # Source is a directory; archive should land in dest directory
+    src_dir = tmp_path / "srcdir"
+    file_inside = src_dir / "file.log"
+    _touch(file_inside, "payload")
 
-    tar_path = tmp_path / "archives" / "data.tar.gz"
-    act = fm.FpathAction("tar", age_threshold=0, dest=tar_path)
+    dest_dir = tmp_path / "archives"
+    act = fm.FpathAction("tar_gz", age_threshold=0, dest=dest_dir)
 
-    act._tar_gz(src)
+    act._tar_gz(src_dir)
 
     # source removed
-    assert not src.exists()
-    # tar created and contains our file
+    assert not src_dir.exists()
+    # tar created and contains our file under the preserved top-level directory
+    tar_path = dest_dir / "srcdir.tar.gz"
     assert tar_path.exists()
     with tarfile.open(tar_path, "r:gz") as tf:
         names = tf.getnames()
-        assert "file.log" in names
-        member = tf.getmember("file.log")
+        assert "srcdir/file.log" in names
+        member = tf.getmember("srcdir/file.log")
         fobj = tf.extractfile(member)
         assert fobj is not None and fobj.read().decode() == "payload"
-    assert any("done: tar" in rec.message for rec in caplog.records)
+    assert any("done: tar.gz" in rec.message for rec in caplog.records)
 
 
 def test_030_post_init_raises_if_dest_exists(tmp_path):
