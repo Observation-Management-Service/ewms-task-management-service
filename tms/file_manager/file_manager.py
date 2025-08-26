@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 class FilepathAction:
     """What action to take on the filepath."""
 
-    action: Literal["rm", "mv", "tar"]
+    action: Literal["rm", "mv", "tar_gz"]
     age_threshold: int  # Only act if file is older than this
 
     dest: Path | None = None  # not all actions need destinations
@@ -44,20 +44,24 @@ class FilepathAction:
 
         LOGGER.info(f"done: mv {fpath} → {self.dest}")
 
-    def _tar(self, fpath: Path) -> None:
-        """tar the file."""
+    def _tar_gz(self, src: Path) -> None:
+        """Tar+gzip the directory and remove the source afterwards."""
         if not self.dest:
-            raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
+            raise RuntimeError(f"destination not given for '{self.action}' on {src=}")
+        if not self.dest.is_dir():
+            raise NotADirectoryError(f"{self.dest=}")
+        if not src.is_dir():
+            raise NotADirectoryError(f"{src=}")
 
-        self.dest.parent.mkdir(parents=True, exist_ok=True)
+        self.dest.mkdir(parents=True, exist_ok=True)
+        tar_dest = self.dest / f"{src.name}.tar.gz"
 
-        mode: Literal["w", "w:gz"] = "w:gz" if self.dest.suffix == ".gz" else "w"
-        with tarfile.open(self.dest, mode=mode) as tar:
-            tar.add(fpath, arcname=fpath.name)
+        with tarfile.open(tar_dest, "w:gz") as tar:
+            tar.add(src, arcname=src.name)  # preserve top-level directory
 
-        os.remove(fpath)
+        shutil.rmtree(src)  # remove the directory safely
 
-        LOGGER.info(f"done: tar {fpath} → {self.dest} + rm {fpath}")
+        LOGGER.info(f"done: tar.gz {src} → {tar_dest} + rm {src}")
 
     def is_old_enough(self, fpath: Path) -> bool:
         """Is the filepath older than the age_threshold"""
@@ -78,7 +82,7 @@ class FilepathAction:
         actions = {
             "rm": self._rm,
             "mv": self._mv,
-            "tar": self._tar,
+            "tar_gz": self._tar_gz,
         }
 
         # get & call function
@@ -89,12 +93,12 @@ class FilepathAction:
 
 
 ACTION_MAP: dict[str, FilepathAction] = {
-    "/tmp/data/*.log": FilepathAction(
+    str(ENV.JOB_EVENT_LOG_DIR / "tms-*.log"): FilepathAction(  # ex: # tms-2025-8-26.log
         "rm",
         age_threshold=600,
     ),
-    "/tmp/data/to-move/*": FilepathAction(
-        "mv",
+    str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*"): FilepathAction(
+        "tar_gz",
         age_threshold=600,
         dest=Path("/tmp/moved"),
     ),

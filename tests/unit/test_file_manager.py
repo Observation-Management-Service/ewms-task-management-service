@@ -55,7 +55,7 @@ def test_020_tar_creates_tar_gz_and_removes_source(tmp_path, caplog):
     tar_path = tmp_path / "archives" / "data.tar.gz"
     act = fm.FilepathAction("tar", age_threshold=0, dest=tar_path)
 
-    act._tar(src)
+    act._tar_gz(src)
 
     # source removed
     assert not src.exists()
