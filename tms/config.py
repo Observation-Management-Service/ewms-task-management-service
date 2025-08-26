@@ -69,7 +69,10 @@ class EnvConfig:
     # ex: "foo=1 bar=barbar baz=1"
     TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT: Dict[str, str] = dc.field(default_factory=dict)
 
-    JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24
+    JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24  # 24 hours
+
+    JOB_OUTPUTS_DIRS_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
+    JOB_OUTPUTS_DIRS_TAR_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
 
     TMS_OUTER_LOOP_WAIT: int = 60
     TMS_WATCHER_INTERVAL: int = 60 * 3

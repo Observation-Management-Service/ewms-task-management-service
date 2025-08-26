@@ -109,13 +109,12 @@ ACTION_MAP: dict[str, FilepathAction] = {
     ),
     str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*"): FilepathAction(
         "tar_gz",
-        age_threshold=600,
-        dest=Path("/tmp/moved"),
+        age_threshold=ENV.JOB_OUTPUTS_DIRS_EXPIRY,
+        dest=ENV.JOB_EVENT_LOG_DIR,
     ),
-    "/tmp/data/to-archive/*": FilepathAction(
-        "tar",
-        age_threshold=1800,
-        dest=Path("/tmp/archives/data.tar.gz"),
+    str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*.tar.gz"): FilepathAction(
+        "rm",
+        age_threshold=ENV.JOB_OUTPUTS_DIRS_TAR_EXPIRY,
     ),
 }
 
