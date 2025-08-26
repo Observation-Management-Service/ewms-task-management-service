@@ -5,10 +5,24 @@ from datetime import date
 from pathlib import Path
 from typing import TypeVar
 
+from rest_tools.client import ClientCredentialsAuth, RestClient
+
 from . import types
-from .config import ENV
+from .condor_tools import get_collector, get_schedd
+from .config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
+
+
+def connect_to_ewms() -> RestClient:
+    """Connect to EWMS API."""
+    LOGGER.info("Connecting to EWMS...")
+    return ClientCredentialsAuth(
+        ENV.EWMS_ADDRESS,
+        ENV.EWMS_TOKEN_URL,
+        ENV.EWMS_CLIENT_ID,
+        ENV.EWMS_CLIENT_SECRET,
+    )
 
 
 class LogFileLogic:
@@ -53,3 +67,29 @@ class AppendOnlyList(list[T]):
 
     def clear(self, *args):
         raise NotImplementedError()
+
+
+async def is_jel_no_longer_used(jel_fpath: Path) -> bool:
+    """Return whether there are no non-completed taskforces using JEL."""
+    ewms_rc = connect_to_ewms()
+
+    resp = await ewms_rc.request(
+        "POST",
+        f"/{WMS_URL_V_PREFIX}/query/taskforces",
+        {
+            "query": {
+                "job_event_log_fpath": str(jel_fpath),
+                "collector": get_collector(),
+                "schedd": get_schedd(),
+                "condor_complete_ts": {"$ne": None},
+            },
+            "projection": ["taskforce_uuid"],
+        },
+    )
+    if is_used := bool(resp["taskforces"]):
+        LOGGER.info(
+            "There are still non-completed taskforces using JEL -- DON'T DELETE"
+        )
+    else:
+        LOGGER.warning("There are no non-completed taskforces using JEL -- CAN DELETE")
+    return not is_used

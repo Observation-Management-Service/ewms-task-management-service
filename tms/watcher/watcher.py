@@ -15,7 +15,6 @@ from wipac_dev_tools.timing_tools import IntervalTimer
 from .utils import (
     JobInfoKey,
     JobInfoVal,
-    is_jel_okay_to_delete,
     job_info_val_to_string,
     query_for_more_taskforces,
     send_condor_complete,
@@ -269,7 +268,7 @@ class JobEventLogWatcher:
         self.ewms_rc = ewms_rc
         self.tmonitors = tmonitors
 
-    async def watch_job_event_log(self) -> None:
+    async def start(self) -> None:
         """Watch over one JEL file, containing multiple taskforces.
 
         NOTE:
@@ -328,6 +327,11 @@ class JobEventLogWatcher:
         LOGGER.debug(f"reading events from {self.jel_fpath}...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
+
+            # first: check if deleted (by file_manager module or other)
+            if not self.jel_fpath.exists():
+                raise JobEventLogDeleted()
+
             # loop logic
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
@@ -341,7 +345,7 @@ class JobEventLogWatcher:
                 )
                 continue
 
-            # first time?
+            # initial logging?
             if not got_new_events:  # aka the first time
                 LOGGER.info(f"got events from jel ({self.jel_fpath})")
             got_new_events = True
@@ -371,28 +375,7 @@ class JobEventLogWatcher:
             LOGGER.info("jel didn't contain any new events.")
 
         # endgame check
-        return await self._jel_endgame_check(got_new_events, cluster_infos, log_verbose)
-
-    async def _jel_endgame_check(
-        self,
-        got_new_events: bool,
-        cluster_infos: dict[types.ClusterId, ClusterInfo],
-        log_verbose: bool,
-    ) -> None:
-        """Wrap-up the JEL-parsing logic."""
-        if (not got_new_events) and all(c.seen_in_jel for c in cluster_infos.values()):
-            return await self._delete_jel_if_needed()  # ~> JobEventLogDeleted
-        else:
-            return await self._done_reading_events_for_now(cluster_infos, log_verbose)
-
-    async def _delete_jel_if_needed(self) -> None:
-        """Raises JobEventLogDeleted if deleted."""
-        if await is_jel_okay_to_delete(self.ewms_rc, self.jel_fpath):
-            self.jel_fpath.unlink()  # delete file
-            LOGGER.warning(f"Deleted JEL file {self.jel_fpath}")
-            raise JobEventLogDeleted()
-        else:
-            return
+        return await self._done_reading_events_for_now(cluster_infos, log_verbose)
 
     async def _done_reading_events_for_now(
         self,

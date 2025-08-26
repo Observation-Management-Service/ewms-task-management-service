@@ -119,7 +119,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=mock_all_requests)
     jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc, tmonitors)
-    await jel_watcher.watch_job_event_log()
+    await jel_watcher.start()
 
     assert len(tmonitors) == 2  # check that the taskforce monitors is still here
 

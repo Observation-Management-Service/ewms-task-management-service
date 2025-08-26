@@ -9,9 +9,10 @@ import tarfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Awaitable, Callable, Literal
 
 from ..config import ENV
+from ..utils import is_jel_no_longer_used
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ class FilepathAction:
     age_threshold: int  # Only act if file is older than this
 
     dest: Path | None = None  # not all actions need destinations
+
+    precheck: Callable[[Path], Awaitable[bool]] | None = None
 
     def __post_init__(self):
         if self.dest and self.dest.exists():
@@ -67,10 +70,16 @@ class FilepathAction:
         """Is the filepath older than the age_threshold"""
         return (time.time() - os.path.getmtime(fpath)) >= self.age_threshold
 
-    def act(self, fpath: Path) -> None:
+    async def act(self, fpath: Path) -> None:
         """Perform action on filepath, if the file is old enough."""
         if not fpath.exists():
             raise FileNotFoundError(fpath)
+
+        if self.precheck and not await self.precheck(fpath):
+            LOGGER.warning(
+                f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
+            )
+            return
 
         if not self.is_old_enough(fpath):
             LOGGER.info(
@@ -95,7 +104,8 @@ class FilepathAction:
 ACTION_MAP: dict[str, FilepathAction] = {
     str(ENV.JOB_EVENT_LOG_DIR / "tms-*.log"): FilepathAction(  # ex: # tms-2025-8-26.log
         "rm",
-        age_threshold=600,
+        age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
+        precheck=is_jel_no_longer_used,
     ),
     str(ENV.JOB_EVENT_LOG_DIR / "ewms-taskforce-*"): FilepathAction(
         "tar_gz",
@@ -122,7 +132,7 @@ async def run() -> None:
             LOGGER.info(f"searching filepath pattern: {fpath_pattern}")
             for fpath in glob.glob(fpath_pattern):
                 LOGGER.info(f"looking at {fpath=}")
-                file_action.act(Path(fpath))
+                await file_action.act(Path(fpath))
                 await asyncio.sleep(0)  # let the TMS do other scheduled things
 
         await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
