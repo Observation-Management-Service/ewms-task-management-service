@@ -145,13 +145,13 @@ def test_1000_is_old_enough_true_and_false(tmp_path):
     assert act.is_old_enough(f)
 
 
-def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
+async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
     f = tmp_path / "file.txt"
     _touch(f)
     # Age threshold 1 day; file is brand new
     act = fm.FpathAction("rm", age_threshold=24 * 3600)
 
-    act.act(f)
+    await act.act(f)
 
     # File remains
     assert f.exists()
@@ -161,11 +161,11 @@ def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
     )
 
 
-def test_1200_act_unknown_action_raises_valueerror(tmp_path):
+async def test_1200_act_unknown_action_raises_valueerror(tmp_path):
     f = tmp_path / "file.txt"
     _touch(f)
 
     # Create an instance with an invalid action token
     bad = fm.FpathAction("nope", age_threshold=0)
     with pytest.raises(ValueError, match="Unknown action"):
-        bad.act(f)
+        await bad.act(f)
