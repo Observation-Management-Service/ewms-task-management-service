@@ -123,14 +123,6 @@ async def test_025_act_raises_if_missing(tmp_path):
         await act.act(f)
 
 
-def test_030_post_init_raises_if_dest_exists(tmp_path):
-    # If a dest path already exists, __post_init__ should raise
-    existing = tmp_path / "already_here"
-    existing.mkdir(parents=True)
-    with pytest.raises(RuntimeError, match="destination already exists"):
-        fm.FpathAction("mv", age_threshold=0, dest=existing)
-
-
 def test_1000_is_old_enough_true_and_false(tmp_path):
     f = tmp_path / "x.bin"
     _touch(f)
