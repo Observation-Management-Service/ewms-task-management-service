@@ -255,7 +255,7 @@ jobs:
           timeout 240 docker run --rm \
               $(env | grep '^EWMS_' | awk '$0="--env "$0') \
               $(env | grep '^JOB_EVENT_LOG_' | awk '$0="--env "$0') \
-              --env JOB_EVENT_LOG_DIR="/jel/$JOB_EVENT_LOG_DIR"
+              --env JOB_EVENT_LOG_DIR="/jel/$JOB_EVENT_LOG_DIR" \
               --mount type=bind,source="$(realpath $JOB_EVENT_LOG_DIR)",target="/jel/$JOB_EVENT_LOG_DIR" \
               ${{ env.DOCKER_IMAGE_NAME }}:local
 
