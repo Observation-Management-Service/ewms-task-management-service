@@ -92,9 +92,9 @@ class EnvConfig:
     DRYRUN: bool = False
     CI_TEST: bool = False
 
-    LOG_LEVEL: str = "INFO"
-    LOG_LEVEL_THIRD_PARTY: str = "WARNING"
-    LOG_LEVEL_REST_TOOLS: str = "INFO"
+    LOG_LEVEL: logging_tools.LoggerLevel = "INFO"
+    LOG_LEVEL_THIRD_PARTY: logging_tools.LoggerLevel = "WARNING"
+    LOG_LEVEL_REST_TOOLS: logging_tools.LoggerLevel = "INFO"
 
 
 ENV = from_environment_as_dataclass(EnvConfig)
@@ -115,11 +115,13 @@ def config_logging() -> None:
     )
     logging.getLogger().addHandler(hand)
     logging_tools.set_level(
-        ENV.LOG_LEVEL,  # type: ignore[arg-type]
+        ENV.LOG_LEVEL,
         first_party_loggers=__name__.split(".", maxsplit=1)[0],
-        third_party_level=ENV.LOG_LEVEL_THIRD_PARTY,  # type: ignore[arg-type]
+        third_party_level=ENV.LOG_LEVEL_THIRD_PARTY,
         future_third_parties=[],
         specialty_loggers={
-            "rest_tools": ENV.LOG_LEVEL_REST_TOOLS,  # type: ignore
+            "rest_tools": ENV.LOG_LEVEL_REST_TOOLS,
         },
+        formatter=logging_tools.WIPACDevToolsFormatter(include_line_location=False),
+        utc=True,
     )
