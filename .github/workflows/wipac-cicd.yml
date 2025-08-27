@@ -252,9 +252,7 @@ jobs:
           set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           set -ex
           
-          timeout 240 docker run --rm \
-              ${{ env.DOCKER_IMAGE_NAME }}:local \
-              bash -c 'set -x && whereis python && pip freeze && ls /app && more /app/tms.egg-info/* | cat && ls /app/venv/lib/python3.11/site-packages/*'
+          timeout 240 docker run --rm ${{ env.DOCKER_IMAGE_NAME }}:local
 
   #############################################################################
   # GIT TAG & GITHUB RELEASE
