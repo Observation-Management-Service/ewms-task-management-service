@@ -258,7 +258,7 @@ jobs:
               --env JOB_EVENT_LOG_DIR="/jel/$JOB_EVENT_LOG_DIR" \
               --mount type=bind,source="$(realpath $JOB_EVENT_LOG_DIR)",target="/jel/$JOB_EVENT_LOG_DIR" \
               ${{ env.DOCKER_IMAGE_NAME }}:local \
-              | tee docker.out
+              | tee docker.out || true
           
           # check that we get the start up errors that we expect 
           grep -Fq "htcondor.HTCondorLocateError: Unable to locate local daemon" docker.out || (echo "Not found" && exit 1) 
