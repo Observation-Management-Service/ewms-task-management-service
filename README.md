@@ -53,7 +53,7 @@ TMS_WATCHER_INTERVAL="15"
 Use the helper script, [update_tms_image_symlink.sh](resources/systemd/update_tms_image_symlink.sh), to roll out a new TMS version on an HTCondor Access Point (AP) using systemd:
 
 ```bash
-ewms@sub-2 ~/resources/systemd/tms-dev $ ../update_tms_image_symlink.sh v1.2.3
+ewms@sub-2 ~/resources/systemd/tms-dev $ ./update_tms_image_symlink.sh v1.2.3
 ```
 
 ## EWMS Glossary Applied to the TMS
