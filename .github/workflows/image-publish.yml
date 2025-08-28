@@ -22,7 +22,7 @@ jobs:
       image_namespace: observation-management-service
       image_name: ewms-task-management-service
       mode: ${{ github.event_name == 'delete' && 'CVMFS_REMOVE' || 'CVMFS_BUILD' }}
-      cvmfs_dest_dir: ewms
+      cvmfs_dest_dir: ewms/observation-management-service  # in heinsight, this is verbose but we've got to live with it
       # only used if mode is CVMFS_REMOVE:
       cvmfs_remove_tags: '${{ github.ref_name }}-[SHA]'
     secrets:
