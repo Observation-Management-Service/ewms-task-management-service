@@ -116,7 +116,7 @@ class FpathAction:
 
 ACTION_MAP: dict[str, FpathAction] = {
     #
-    # ex: 2025-8-26.tms.log
+    # ex: 2025-8-26.tms.jel
     str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"): FpathAction(
         "rm",
         age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
