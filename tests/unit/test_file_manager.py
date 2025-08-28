@@ -137,6 +137,67 @@ def test_1000_is_old_enough_true_and_false(tmp_path):
     assert act.is_old_enough(f)
 
 
+def test_1010_is_old_enough_dir_uses_latest_child_mtime(tmp_path):
+    """Dir should be 'young' if any child is young; 'old' only when all children are old."""
+    d = tmp_path / "dir"
+    (d / "sub").mkdir(parents=True)
+    old_f = d / "old.txt"
+    young_f = d / "sub" / "young.txt"
+    _touch(old_f)
+    _touch(young_f)
+
+    act = fm.FpathAction("rm", age_threshold=10)
+
+    # Make the directory itself appear old, and one child old...
+    _make_old(d, seconds_old=60)
+    _make_old(old_f, seconds_old=60)
+
+    # ...but a different child is still fresh → NOT old enough
+    assert not act.is_old_enough(d)
+
+    # Now make the young child old too → NOW old enough
+    _make_old(young_f, seconds_old=60)
+    assert act.is_old_enough(d)
+
+
+def test_1020_is_old_enough_empty_dir_uses_itself(tmp_path):
+    """Empty directory should fall back to its own mtime."""
+    d = tmp_path / "emptydir"
+    d.mkdir()
+
+    act = fm.FpathAction("rm", age_threshold=10)
+
+    # Fresh → not old enough
+    assert not act.is_old_enough(d)
+
+    # Make the directory itself old → old enough
+    _make_old(d, seconds_old=60)
+    assert act.is_old_enough(d)
+
+
+def test_1030_is_old_enough_recurses_into_nested_subdirs(tmp_path):
+    """Newest mtime from deep within nested subdirs should control age."""
+    top = tmp_path / "top"
+    deep = top / "a" / "b" / "c"
+    deep.mkdir(parents=True)
+    deep_file = deep / "x.log"
+    _touch(deep_file)
+
+    act = fm.FpathAction("rm", age_threshold=10)
+
+    # Top dir and parents can be old...
+    _make_old(top, seconds_old=60)
+    _make_old(top / "a", seconds_old=60)
+    _make_old(top / "a" / "b", seconds_old=60)
+
+    # ...but a deep child is fresh → NOT old enough
+    assert not act.is_old_enough(top)
+
+    # Once the deep child is old, the whole dir becomes old enough
+    _make_old(deep_file, seconds_old=60)
+    assert act.is_old_enough(top)
+
+
 async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
     f = tmp_path / "file.txt"
     _touch(f)

@@ -63,8 +63,18 @@ class FpathAction:
         LOGGER.info(f"done: tar.gz {src} → {tar_dest} + rm {src}")
 
     def is_old_enough(self, fpath: Path) -> bool:
-        """Is the filepath older than the age_threshold"""
-        return (time.time() - os.path.getmtime(fpath)) >= self.age_threshold
+        """Is the file/dir older than the age_threshold?"""
+        if fpath.is_dir():
+            # latest modification time of dir contents (recursive)
+            mtime = max(
+                [p.stat().st_mtime for p in fpath.rglob("*")],
+                default=fpath.stat().st_mtime,
+            )
+        else:
+            # plain file (or symlink)
+            mtime = fpath.stat().st_mtime
+
+        return (time.time() - mtime) >= self.age_threshold
 
     async def act(self, fpath: Path) -> None:
         """Perform action on filepath, if the file is old enough."""
