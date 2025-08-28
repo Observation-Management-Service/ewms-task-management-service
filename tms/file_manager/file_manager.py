@@ -64,17 +64,24 @@ class FpathAction:
 
     def is_old_enough(self, fpath: Path) -> bool:
         """Is the file/dir older than the age_threshold?"""
-        if fpath.is_dir():
-            # latest modification time of dir contents (recursive)
-            mtime = max(
-                [p.stat().st_mtime for p in fpath.rglob("*")],
-                default=fpath.stat().st_mtime,
-            )
-        else:
-            # plain file (or symlink)
-            mtime = fpath.stat().st_mtime
+        threshold_time = time.time() - self.age_threshold
 
-        return (time.time() - mtime) >= self.age_threshold
+        if fpath.is_dir():
+
+            # Walk through files; if any are newer than threshold -> not old enough
+            for p in fpath.rglob("*"):
+                # short circuit logic (don't traverse more than needed)
+                if p.is_file() and p.stat().st_mtime > threshold_time:
+                    return False
+            # Notes:
+            #   - If the dir had no files *OR* had only old files files, check dir's mtime.
+            #   - A dir's mtime updates when its entries change (create/rm/mv files or subdirs),
+            #       *NOT* when the contents of its descendants change.
+            return fpath.stat().st_mtime <= threshold_time
+
+        # Plain file (or symlink to a file)
+        else:
+            return fpath.stat().st_mtime <= threshold_time
 
     async def act(self, fpath: Path) -> None:
         """Perform action on filepath, if the file is old enough."""
