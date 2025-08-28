@@ -198,6 +198,26 @@ def test_1030_is_old_enough_recurses_into_nested_subdirs(tmp_path):
     assert act.is_old_enough(top)
 
 
+def test_1045_dir_mtime_can_delay_even_when_files_old(tmp_path):
+    d = tmp_path / "d"
+    d.mkdir()
+    f = d / "a.txt"
+    _touch(f)
+    act = fm.FpathAction("rm", age_threshold=10)
+
+    # Make the file old enough
+    _make_old(f, seconds_old=60)
+    # Bump directory mtime to "now" (simulate rename/add/remove)
+    os.utime(d, None)
+
+    # Dir should be considered young because its own mtime is recent
+    assert not act.is_old_enough(d)
+
+    # Make dir old as well
+    _make_old(d, seconds_old=60)
+    assert act.is_old_enough(d)
+
+
 async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypatch):
     f = tmp_path / "file.txt"
     _touch(f)
