@@ -51,18 +51,43 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     assert any("done: mv" in rec.message for rec in caplog.records)
 
 
-def test_011_mv_renames_when_dest_missing_and_creates_parents(tmp_path, caplog):
+def test_011_mv_renames_when_dest_missing_parent_exists(tmp_path, caplog):
     src = tmp_path / "src" / "a.txt"
     _touch(src)
 
-    # dest does not exist -> treated as rename; parent ('newdir') also doesn't exist,
-    # but our implementation creates it.
-    final = tmp_path / "newdir" / "renamed.txt"
+    # dest does not exist -> treated as rename; parent DOES exist
+    parent = tmp_path / "newdir"
+    parent.mkdir()
+    final = parent / "renamed.txt"
 
     fm.action_mv(src, dest=final)
 
     assert not src.exists()
     assert final.exists()
+    assert any("done: mv" in rec.message for rec in caplog.records)
+
+
+def test_012_mv_rename_errors_if_parent_missing(tmp_path):
+    src = tmp_path / "src" / "a.txt"
+    _touch(src)
+
+    # parent of dest missing -> bash mv errors; so do we
+    final = tmp_path / "newdir" / "renamed.txt"
+
+    with pytest.raises(FileNotFoundError):
+        fm.action_mv(src, dest=final)
+
+
+def test_013_mv_overwrites_existing_file_like_bash(tmp_path, caplog):
+    src = tmp_path / "a.txt"
+    dst = tmp_path / "b.txt"
+    _touch(src, "new")
+    _touch(dst, "old")
+
+    fm.action_mv(src, dest=dst)
+
+    assert not src.exists()
+    assert dst.read_text() == "new"
     assert any("done: mv" in rec.message for rec in caplog.records)
 
 
