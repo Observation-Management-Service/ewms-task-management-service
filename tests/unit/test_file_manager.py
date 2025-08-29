@@ -29,9 +29,10 @@ def _make_old(p: Path, seconds_old: int) -> None:
 def test_000_rm_removes_file_and_logs(tmp_path, caplog):
     f = tmp_path / "a.txt"
     _touch(f)
-    act = fm.FpathAction("rm", age_threshold=0)
     assert f.exists()
-    act._rm(f)
+
+    fm.action_rm(f)
+
     assert not f.exists()
     assert any("done: rm" in rec.message for rec in caplog.records)
 
@@ -40,8 +41,9 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     src = tmp_path / "src" / "a.txt"
     dest_dir = tmp_path / "dest"
     _touch(src)
-    act = fm.FpathAction("mv", age_threshold=0, dest=dest_dir)
-    act._mv(src)
+
+    fm.action_mv(src, dest=dest_dir)
+
     assert not src.exists()
     assert (dest_dir / "a.txt").exists()
     assert any("done: mv" in rec.message for rec in caplog.records)
@@ -54,9 +56,7 @@ def test_020_tar_gz_creates_archive_and_removes_source(tmp_path, caplog):
     _touch(file_inside, "payload")
 
     dest_dir = tmp_path / "archives"
-    act = fm.FpathAction("tar_gz", age_threshold=0, dest=dest_dir)
-
-    act._tar_gz(src_dir)
+    fm.action_tar_gz(src_dir, dest=dest_dir)
 
     # source removed
     assert not src_dir.exists()
@@ -75,9 +75,9 @@ def test_020_tar_gz_creates_archive_and_removes_source(tmp_path, caplog):
 def test_021_mv_raises_if_no_dest(tmp_path):
     f = tmp_path / "file.txt"
     _touch(f)
-    act = fm.FpathAction("mv", age_threshold=0)  # no dest
+    # Pass dest=None so we exercise our RuntimeError (not a Python TypeError)
     with pytest.raises(RuntimeError, match="destination not given"):
-        act._mv(f)
+        fm.action_mv(f, dest=None)  # type: ignore[arg-type]
 
 
 def test_022_tar_gz_raises_if_no_dest(tmp_path):
@@ -85,9 +85,8 @@ def test_022_tar_gz_raises_if_no_dest(tmp_path):
     (src_dir / "file.txt").parent.mkdir(parents=True)
     _touch(src_dir / "file.txt")
 
-    act = fm.FpathAction("tar_gz", age_threshold=0)  # no dest
     with pytest.raises(RuntimeError, match="destination not given"):
-        act._tar_gz(src_dir)
+        fm.action_tar_gz(src_dir, dest=None)  # type: ignore[arg-type]
 
 
 def test_023_tar_gz_raises_if_src_not_dir(tmp_path):
@@ -95,9 +94,9 @@ def test_023_tar_gz_raises_if_src_not_dir(tmp_path):
     _touch(f)
     dest = tmp_path / "out"
     dest.mkdir()
-    act = fm.FpathAction("tar_gz", age_threshold=0, dest=dest)
+
     with pytest.raises(NotADirectoryError):
-        act._tar_gz(f)
+        fm.action_tar_gz(f, dest=dest)
 
 
 async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
@@ -107,7 +106,9 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
     async def bad_precheck(_):
         return False
 
-    act = fm.FpathAction("rm", age_threshold=0, precheck=bad_precheck)
+    act = fm.FileManager(
+        fpattern="*", action=fm.action_rm, age_threshold=0, precheck=bad_precheck
+    )
 
     await act.act(f)
 
@@ -118,7 +119,7 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
 
 async def test_025_act_raises_if_missing(tmp_path):
     f = tmp_path / "does_not_exist"
-    act = fm.FpathAction("rm", age_threshold=0)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=0)
     with pytest.raises(FileNotFoundError):
         await act.act(f)
 
@@ -127,7 +128,7 @@ def test_1000_is_old_enough_true_and_false(tmp_path):
     f = tmp_path / "x.bin"
     _touch(f)
 
-    act = fm.FpathAction("rm", age_threshold=10)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=10)
 
     # Not old enough initially
     assert not act.is_old_enough(f)
@@ -146,7 +147,7 @@ def test_1010_is_old_enough_dir_uses_latest_child_mtime(tmp_path):
     _touch(old_f)
     _touch(young_f)
 
-    act = fm.FpathAction("rm", age_threshold=10)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=10)
 
     # Make the directory itself appear old, and one child old...
     _make_old(d, seconds_old=60)
@@ -165,7 +166,7 @@ def test_1020_is_old_enough_empty_dir_uses_itself(tmp_path):
     d = tmp_path / "emptydir"
     d.mkdir()
 
-    act = fm.FpathAction("rm", age_threshold=10)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=10)
 
     # Fresh → not old enough
     assert not act.is_old_enough(d)
@@ -183,7 +184,7 @@ def test_1030_is_old_enough_recurses_into_nested_subdirs(tmp_path):
     deep_file = deep / "x.log"
     _touch(deep_file)
 
-    act = fm.FpathAction("rm", age_threshold=10)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=10)
 
     # Top dir and parents can be old...
     _make_old(top, seconds_old=60)
@@ -203,7 +204,7 @@ def test_1045_dir_mtime_can_delay_even_when_files_old(tmp_path):
     d.mkdir()
     f = d / "a.txt"
     _touch(f)
-    act = fm.FpathAction("rm", age_threshold=10)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=10)
 
     # Make the file old enough
     _make_old(f, seconds_old=60)
@@ -222,7 +223,7 @@ async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypa
     f = tmp_path / "file.txt"
     _touch(f)
     # Age threshold 1 day; file is brand new
-    act = fm.FpathAction("rm", age_threshold=24 * 3600)
+    act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=24 * 3600)
 
     await act.act(f)
 
@@ -234,11 +235,18 @@ async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypa
     )
 
 
-async def test_1200_act_unknown_action_raises_valueerror(tmp_path):
-    f = tmp_path / "file.txt"
+async def test_1200_action_exception_is_logged_not_raised(tmp_path, caplog):
+    f = tmp_path / "boom.txt"
     _touch(f)
 
-    # Create an instance with an invalid action token
-    bad = fm.FpathAction("nope", age_threshold=0)
-    with pytest.raises(ValueError, match="Unknown action"):
-        await bad.act(f)
+    def bad_action(_):
+        raise ValueError("boom")
+
+    mgr = fm.FileManager(fpattern="*", action=bad_action, age_threshold=0)
+
+    # Should not raise; should log an exception
+    await mgr.act(f)
+
+    assert any("action failed" in rec.message for rec in caplog.records)
+    # File remains because action failed
+    assert f.exists()
