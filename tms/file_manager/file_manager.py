@@ -132,14 +132,10 @@ class FileManager:
             raise FileNotFoundError(fpath)
 
         if self.precheck is not None:
-            try:
-                if not await self.precheck(fpath):
-                    LOGGER.warning(
-                        f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
-                    )
-                    return
-            except Exception:
-                LOGGER.exception(f"precheck raised for {fpath}")
+            if not await self.precheck(fpath):
+                LOGGER.warning(
+                    f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
+                )
                 return
 
         if not self.is_old_enough(fpath):
@@ -149,10 +145,7 @@ class FileManager:
             return
 
         LOGGER.info(f"performing action {self.action} on {fpath}")
-        try:
-            self.action(fpath)
-        except Exception:
-            LOGGER.exception(f"action failed for {fpath}")
+        self.action(fpath)
 
 
 # -----------------------------------------------------------------------------
@@ -201,9 +194,15 @@ async def run() -> None:
 
         for fm in MAIN_LIST:
             LOGGER.info(f"searching filepath pattern: {fm.fpattern}")
+
             for fpath in glob.glob(fm.fpattern):
                 LOGGER.info(f"looking at {fpath=}")
-                await fm.act(Path(fpath))
-                await asyncio.sleep(0)  # let the TMS do other scheduled things
+                try:
+                    await fm.act(Path(fpath))
+                except Exception:
+                    LOGGER.exception(f"action failed for {fpath=}")
+                    continue
+                else:
+                    await asyncio.sleep(0)  # let the TMS do other scheduled things
 
         await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)

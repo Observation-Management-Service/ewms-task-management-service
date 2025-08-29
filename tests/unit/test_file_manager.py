@@ -277,7 +277,7 @@ async def test_1100_act_no_action_when_not_old_enough(tmp_path, caplog, monkeypa
     )
 
 
-async def test_1200_action_exception_is_logged_not_raised(tmp_path, caplog):
+async def test_1200_action_exception_raised(tmp_path, caplog):
     f = tmp_path / "boom.txt"
     _touch(f)
 
@@ -286,9 +286,8 @@ async def test_1200_action_exception_is_logged_not_raised(tmp_path, caplog):
 
     mgr = fm.FileManager(fpattern="*", action=bad_action, age_threshold=0)
 
-    # Should not raise; should log an exception
-    await mgr.act(f)
+    with pytest.raises(ValueError, match="boom"):
+        await mgr.act(f)
 
-    assert any("action failed" in rec.message for rec in caplog.records)
     # File remains because action failed
     assert f.exists()
