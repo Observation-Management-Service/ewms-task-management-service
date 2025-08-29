@@ -87,7 +87,7 @@ class FileManager:
     def __init__(
         self,
         fpattern: str,
-        action: Callable[[Path], Awaitable[None] | None],
+        action: Callable[[Path], None],
         age_threshold: int,
         precheck: Callable[[Path], Awaitable[bool]] | None = None,
     ):
@@ -151,9 +151,7 @@ class FileManager:
 
         LOGGER.info(f"performing action {self.action} on {fpath}")
         try:
-            result = self.action(fpath)
-            if asyncio.iscoroutine(result):
-                await result
+            self.action(fpath)
         except Exception:
             LOGGER.exception(f"action failed for {fpath}")
 
