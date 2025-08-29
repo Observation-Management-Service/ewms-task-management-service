@@ -49,6 +49,21 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     assert any("done: mv" in rec.message for rec in caplog.records)
 
 
+def test_011_mv_renames_when_dest_missing_and_creates_parents(tmp_path, caplog):
+    src = tmp_path / "src" / "a.txt"
+    _touch(src)
+
+    # dest does not exist -> treated as rename; parent ('newdir') also doesn't exist,
+    # but our implementation creates it.
+    final = tmp_path / "newdir" / "renamed.txt"
+
+    fm.action_mv(src, dest=final)
+
+    assert not src.exists()
+    assert final.exists()
+    assert any("done: mv" in rec.message for rec in caplog.records)
+
+
 def test_020_tar_gz_creates_archive_and_removes_source(tmp_path, caplog):
     # Source is a directory; archive should land in dest directory
     src_dir = tmp_path / "srcdir"

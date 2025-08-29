@@ -41,10 +41,13 @@ def action_mv(fpath: Path, *, dest: Path) -> None:
     if not dest:
         raise RuntimeError(f"destination not given for 'mv' on {fpath=}")
 
-    if dest.exists() and dest.is_dir():
-        final = dest / fpath.name
+    if dest.exists():
+        if dest.is_dir():
+            final = dest / fpath.name
+        else:
+            raise RuntimeError(f"destination already exists: {dest}")
     else:
-        final = dest
+        final = dest  # aka, rename
 
     if final.exists():
         raise RuntimeError(f"destination already exists: {final}")
