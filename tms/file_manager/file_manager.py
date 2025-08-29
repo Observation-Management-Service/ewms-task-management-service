@@ -7,9 +7,8 @@ import os
 import shutil
 import tarfile
 import time
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable, Literal
+from typing import Awaitable, Callable
 
 from ..config import ENV
 from ..utils import JELFileLogic, TaskforceDirLogic
@@ -17,50 +16,67 @@ from ..utils import JELFileLogic, TaskforceDirLogic
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
 class FpathAction:
-    """What action to take on the filepath."""
 
-    action: Literal["rm", "mv", "tar_gz"]
-    age_threshold: int  # Only act if file is older than this
+    def __init__(self, fpath: Path):
+        self.fpath = fpath
 
-    dest: Path | None = None  # not all actions need destinations
 
-    precheck: Callable[[Path], Awaitable[bool]] | None = None
+class FpathRM(FpathAction):
 
-    def _rm(self, fpath: Path) -> None:
+    def go(self) -> None:
         """rm the file."""
-        os.remove(fpath)
-        LOGGER.info(f"done: rm {fpath}")
+        os.remove(self.fpath)
+        LOGGER.info(f"done: rm {self.fpath}")
 
-    def _mv(self, fpath: Path) -> None:
+
+class FpathMV(FpathAction):
+
+    def go(self, dest: Path) -> None:
         """mv the file."""
-        if not self.dest:
-            raise RuntimeError(f"destination not given for '{self.action}' on {fpath=}")
-        if self.dest.exists():
-            raise RuntimeError(f"destination already exists: {self.dest}")
+        if not dest:
+            raise RuntimeError(f"destination not given for 'mv' on {self.fpath=}")
+        if dest.exists():
+            raise RuntimeError(f"destination already exists: {dest}")
 
-        os.makedirs(self.dest, exist_ok=True)
-        shutil.move(fpath, self.dest)
+        os.makedirs(dest, exist_ok=True)
+        shutil.move(self.fpath, dest)
 
-        LOGGER.info(f"done: mv {fpath} → {self.dest}")
+        LOGGER.info(f"done: mv {self.fpath} → {dest}")
 
-    def _tar_gz(self, src: Path) -> None:
+
+class FpathTAR_GZ(FpathAction):
+
+    def go(self, dest: Path) -> None:
         """Tar+gzip the directory and remove the source afterwards."""
-        if not self.dest:
-            raise RuntimeError(f"destination not given for '{self.action}' on {src=}")
-        if not src.is_dir():
-            raise NotADirectoryError(f"{src=}")
+        if not dest:
+            raise RuntimeError(f"destination not given for 'tar_gz' on {self.fpath=}")
+        if not self.fpath.is_dir():
+            raise NotADirectoryError(f"{self.fpath=}")
 
-        self.dest.mkdir(parents=True, exist_ok=True)
-        tar_dest = self.dest / f"{src.name}.tar.gz"
+        dest.mkdir(parents=True, exist_ok=True)
+        tar_dest = dest / f"{self.fpath.name}.tar.gz"
 
         with tarfile.open(tar_dest, "w:gz") as tar:
-            tar.add(src, arcname=src.name)  # preserve top-level directory
+            tar.add(self.fpath, arcname=self.fpath.name)  # preserve top-level directory
 
-        shutil.rmtree(src)  # remove the directory safely
+        shutil.rmtree(self.fpath)  # remove the directory safely
 
-        LOGGER.info(f"done: tar.gz {src} → {tar_dest} + rm {src}")
+        LOGGER.info(f"done: tar.gz {self.fpath} → {tar_dest} + rm {self.fpath}")
+
+
+class FileManager:
+    """What action to take on the filepath."""
+
+    def __init__(
+        self,
+        fpattern: str,
+        age_threshold: int,
+        precheck: Callable[[Path], Awaitable[bool]],
+    ):
+        self.fpattern = fpattern
+        self.age_threshold = age_threshold  # Only act if file is older than this
+        self.precheck = precheck
 
     def is_old_enough(self, fpath: Path) -> bool:
         """Is the file/dir older than the age_threshold?"""
@@ -114,25 +130,28 @@ class FpathAction:
             raise ValueError(f"Unknown action: {self.action}")
 
 
-ACTION_MAP: dict[str, FpathAction] = {
+MAIN_LIST: list[FpathAction] = {
     #
     # ex: 2025-8-26.tms.jel
-    str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"): FpathAction(
-        "rm",
+    FileManager(
+        str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"),
+        FpathRM,
         age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
         precheck=JELFileLogic.is_no_longer_used,
     ),
     #
     # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
-    str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*"): FpathAction(
-        "tar_gz",
+    FileManager(
+        str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*"),
+        FpathAction.tar_gz,
         age_threshold=ENV.TASKFORCE_DIRS_EXPIRY,
         dest=ENV.JOB_EVENT_LOG_DIR,
     ),
     #
     # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72.tar.gz
-    str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*.tar.gz"): FpathAction(
-        "rm",
+    FileManager(
+        str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*.tar.gz"),
+        FpathAction.rm,
         age_threshold=ENV.TASKFORCE_DIRS_TAR_EXPIRY,
     ),
 }
@@ -146,7 +165,7 @@ async def run() -> None:
 
         LOGGER.info("inspecting filepaths...")
 
-        for fpath_pattern, file_action in ACTION_MAP.items():
+        for fpath_pattern, file_action in MAIN_LIST.items():
             LOGGER.info(f"searching filepath pattern: {fpath_pattern}")
             for fpath in glob.glob(fpath_pattern):
                 LOGGER.info(f"looking at {fpath=}")
