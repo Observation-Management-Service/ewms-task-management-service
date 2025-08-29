@@ -37,7 +37,7 @@ def action_rm(fpath: Path) -> None:
 
 
 def action_mv(fpath: Path, *, dest: Path) -> None:
-    """mv the file/dir."""
+    """mv the file/dir (bash semantics)."""
     if not dest:
         raise RuntimeError(f"destination not given for 'mv' on {fpath=}")
 
@@ -45,14 +45,10 @@ def action_mv(fpath: Path, *, dest: Path) -> None:
         if dest.is_dir():
             final = dest / fpath.name
         else:
-            raise RuntimeError(f"destination already exists: {dest}")
+            final = dest  # overwrite permitted (bash-like)
     else:
-        final = dest  # aka, rename
-
-    if final.exists():
-        raise RuntimeError(f"destination already exists: {final}")
-
-    final.parent.mkdir(parents=True, exist_ok=True)
+        # missing dest → treat as rename; do NOT create parent dirs
+        final = dest
 
     shutil.move(str(fpath), str(final))
     LOGGER.info(f"done: mv {fpath} → {final}")

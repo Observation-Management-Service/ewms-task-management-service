@@ -42,6 +42,8 @@ def test_010_mv_moves_file_and_makes_dest(tmp_path, caplog):
     dest_dir = tmp_path / "dest"
     _touch(src)
 
+    dest_dir.mkdir()  # bash requires the directory to already exist
+
     fm.action_mv(src, dest=dest_dir)
 
     assert not src.exists()
