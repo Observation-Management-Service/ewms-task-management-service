@@ -1,0 +1,1 @@
+../update_tms_image_symlink.sh

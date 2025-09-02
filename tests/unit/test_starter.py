@@ -69,7 +69,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         ),
         "+FileSystemDomain": '"blah"',  # must be quoted
         #
-        "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"),
+        "log": str(config.ENV.JOB_EVENT_LOG_DIR / f"{date.today()}.tms.jel"),
         #
         "transfer_input_files": ",".join(["foofile", "bardir/barfile", str(envfile)]),
         "transfer_output_files": "",
@@ -145,7 +145,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
         n_workers=schedd_obj.submit.return_value.num_procs.return_value,
         submit_dict=submit_dict,
         job_event_log_fpath=str(
-            config.ENV.JOB_EVENT_LOG_DIR / f"tms-{date.today()}.log"
+            config.ENV.JOB_EVENT_LOG_DIR / f"{date.today()}.tms.jel"
         ),
     )
     # assert envfile

@@ -2,7 +2,6 @@
 
 import enum
 import logging
-import time
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -11,7 +10,7 @@ from rest_tools.client import RestClient
 
 from .. import condor_tools, types
 from ..condor_tools import get_collector, get_schedd
-from ..config import ENV, WMS_URL_V_PREFIX
+from ..config import WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -126,42 +125,3 @@ async def send_condor_complete(
             "condor_complete_ts": timestamp,
         },
     )
-
-
-async def is_jel_okay_to_delete(ewms_rc: RestClient, jel_fpath: Path) -> bool:
-    """Check all conditions for determining if it is time to delete the JEL."""
-
-    def is_jel_past_modification_expiry() -> bool:
-        """Return whether the time since last mod is longer than the expiry."""
-        diff = time.time() - jel_fpath.stat().st_mtime
-        yes = diff >= ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY
-        if yes:
-            LOGGER.warning(f"JEL file {jel_fpath} has not been updated in {diff}s")
-        return yes
-
-    async def is_jel_no_longer_used() -> bool:
-        """Return whether there are no non-completed taskforces using JEL."""
-        resp = await ewms_rc.request(
-            "POST",
-            f"/{WMS_URL_V_PREFIX}/query/taskforces",
-            {
-                "query": {
-                    "job_event_log_fpath": str(jel_fpath),
-                    "collector": get_collector(),
-                    "schedd": get_schedd(),
-                    "condor_complete_ts": {"$ne": None},
-                },
-                "projection": ["taskforce_uuid"],
-            },
-        )
-        if is_used := bool(resp["taskforces"]):
-            LOGGER.info(
-                "There are still non-completed taskforces using JEL -- DON'T DELETE"
-            )
-        else:
-            LOGGER.warning(
-                "There are no non-completed taskforces using JEL -- CAN DELETE"
-            )
-        return not is_used
-
-    return is_jel_past_modification_expiry() and await is_jel_no_longer_used()

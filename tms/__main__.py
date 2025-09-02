@@ -5,11 +5,11 @@ import logging
 from pathlib import Path
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import ClientCredentialsAuth
 
 from .config import ENV, config_logging
+from .file_manager import file_manager
 from .scalar.scalar import scalar_loop
-from .utils import AppendOnlyList, LogFileLogic, TaskforceMonitor
+from .utils import AppendOnlyList, JELFileLogic, TaskforceMonitor, connect_to_ewms
 from .watcher import watcher
 
 LOGGER = logging.getLogger(__name__)
@@ -22,13 +22,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
     in_progress: list[Path] = []
 
     # make connections -- do now so we don't have any surprises downstream
-    LOGGER.info("Connecting to EWMS...")
-    ewms_rc = ClientCredentialsAuth(
-        ENV.EWMS_ADDRESS,
-        ENV.EWMS_TOKEN_URL,
-        ENV.EWMS_CLIENT_ID,
-        ENV.EWMS_CLIENT_SECRET,
-    )
+    ewms_rc = connect_to_ewms()
 
     # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
     # on task fail, cancel others then raise original exception(s)
@@ -38,7 +32,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                 f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
-                if not LogFileLogic.is_log_file(jel_fpath):
+                if not JELFileLogic.is_valid(jel_fpath):
                     continue
 
                 # check/append
@@ -54,7 +48,7 @@ async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
                     ewms_rc,
                     tmonitors,
                 )
-                tg.create_task(jel_watcher.watch_job_event_log())
+                tg.create_task(jel_watcher.start())
 
             await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
 
@@ -78,6 +72,7 @@ async def main() -> None:
     async with asyncio.TaskGroup() as tg:
         tg.create_task(scalar_loop(tmonitors))
         tg.create_task(watcher_loop(tmonitors))
+        tg.create_task(file_manager.run())
 
     LOGGER.info("Done")
 
