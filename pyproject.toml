@@ -6,7 +6,7 @@
 
 [project]
 dependencies = [
-    'htcondor<24.0.0',
+    'htcondor<25.0.0',
     'wipac-dev-tools',
     'wipac-rest-tools[telemetry]',
 ]
