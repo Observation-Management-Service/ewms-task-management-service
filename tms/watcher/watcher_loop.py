@@ -4,8 +4,6 @@ import asyncio
 import logging
 from pathlib import Path
 
-import htcondor  # type: ignore[import-untyped]
-from htcondor import classad  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from . import watcher
