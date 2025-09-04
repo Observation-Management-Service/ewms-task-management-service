@@ -149,7 +149,7 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
         return False
 
     act = fm.FileManager(
-        fpattern="*", action=fm.action_rm, age_threshold=0, precheck=bad_precheck
+        fpattern="*", action=fm.action_rm, age_threshold=0, precheck_async=bad_precheck
     )
 
     await act.act(f)
