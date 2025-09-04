@@ -139,7 +139,7 @@ class FileManager:
                 return
 
         if not self.is_old_enough(fpath):
-            LOGGER.info(
+            LOGGER.debug(
                 f"no action -- filepath not older than {self.age_threshold} seconds {fpath=}"
             )
             return
@@ -193,10 +193,10 @@ async def run() -> None:
         LOGGER.info("inspecting filepaths...")
 
         for fm in MAIN_LIST:
-            LOGGER.info(f"searching filepath pattern: {fm.fpattern}")
+            LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
 
             for fpath in glob.glob(fm.fpattern):
-                LOGGER.info(f"looking at {fpath=}")
+                LOGGER.debug(f"looking at {fpath=}")
                 try:
                     await fm.act(Path(fpath))
                 except Exception:
