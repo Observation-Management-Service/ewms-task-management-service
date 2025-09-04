@@ -175,7 +175,7 @@ class EWMSCaller:
 # Loops
 
 
-async def scalar_loop(
+async def run(
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
     # NOTE - ^^^^ can be used for the smart starter/stopper IF this decision is made on TMS.
     #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
