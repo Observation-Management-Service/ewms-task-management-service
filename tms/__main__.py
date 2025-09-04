@@ -12,7 +12,7 @@ from .scalar import scalar
 from .utils import AppendOnlyList, TaskforceMonitor
 from .watcher import watcher_loop
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__package__)  # not name b/c that's __main__
 
 
 async def main() -> None:
