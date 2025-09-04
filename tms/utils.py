@@ -58,12 +58,12 @@ class JELFileLogic:
             LOGGER.debug(
                 f"There are still non-completed taskforces using JEL {fpath} -- DON'T DELETE"
             )
-            return True
+            return False  # no -- this file *IS* still used
         else:
             LOGGER.warning(
                 f"There are no non-completed taskforces using JEL {fpath} -- POTENTIALLY DELETE"
             )
-            return False
+            return True  # yes -- this file is *NOT* being used
 
 
 class TaskforceDirLogic:
