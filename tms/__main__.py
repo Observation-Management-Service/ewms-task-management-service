@@ -70,8 +70,16 @@ async def main() -> None:
     # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
     # on task fail, cancel others then raise original exception(s)
     async with asyncio.TaskGroup() as tg:
+        # scalar
+        LOGGER.info("Starting scalar...")
         tg.create_task(scalar_loop(tmonitors))
+
+        # watcher
+        LOGGER.info("Starting watcher...")
         tg.create_task(watcher_loop(tmonitors))
+
+        # file manager
+        LOGGER.info("Starting file manager...")
         tg.create_task(file_manager.run())
 
     LOGGER.info("Done")
