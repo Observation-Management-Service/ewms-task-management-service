@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
-from rest_tools.client import ClientCredentialsAuth, RestClient
+from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
 from . import starter, stopper
@@ -175,24 +175,18 @@ class EWMSCaller:
 # Loops
 
 
-async def scalar_loop(
+async def run(
     tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
     # NOTE - ^^^^ can be used for the smart starter/stopper IF this decision is made on TMS.
     #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
+    ewms_rc: RestClient,
 ) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
-    LOGGER.info("Starting scalar...")
+    LOGGER.info("Activated.")
 
     # make connections -- do now so we don't have any surprises downstream
     LOGGER.info("Connecting to HTCondor...")
     schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
-    LOGGER.info("Connecting to EWMS...")
-    ewms_rc = ClientCredentialsAuth(
-        ENV.EWMS_ADDRESS,
-        ENV.EWMS_TOKEN_URL,
-        ENV.EWMS_CLIENT_ID,
-        ENV.EWMS_CLIENT_SECRET,
-    )
 
     timer = IntervalTimer(ENV.TMS_OUTER_LOOP_WAIT, f"{LOGGER.name}.timer")
 
