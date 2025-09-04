@@ -126,7 +126,7 @@ class FileManager:
             except FileNotFoundError:
                 return False
 
-    async def act(self, fpath: Path) -> None:
+    async def act(self, fpath: Path) -> bool:
         """Perform action on filepath, if the file is old enough."""
         if not fpath.exists():
             raise FileNotFoundError(fpath)
@@ -136,16 +136,17 @@ class FileManager:
                 LOGGER.warning(
                     f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
                 )
-                return
+                return False
 
         if not self.is_old_enough(fpath):
             LOGGER.debug(
                 f"no action -- filepath not older than {self.age_threshold} seconds {fpath=}"
             )
-            return
+            return False
 
         LOGGER.info(f"performing action {self.action} on {fpath}")
         self.action(fpath)
+        return True
 
 
 # -----------------------------------------------------------------------------
@@ -191,18 +192,24 @@ async def run() -> None:
     while True:
 
         LOGGER.info("inspecting filepaths...")
+        n_actions = 0
 
         for fm in MAIN_LIST:
             LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
 
-            for fpath in glob.glob(fm.fpattern):
+            for fpath in [Path(p) for p in glob.glob(fm.fpattern)]:
                 LOGGER.debug(f"looking at {fpath=}")
                 try:
-                    await fm.act(Path(fpath))
+                    n_actions += int(await fm.act(fpath))  # bool -> 1/0
                 except Exception:
                     LOGGER.exception(f"action failed for {fpath=}")
                     continue
                 else:
                     await asyncio.sleep(0)  # let the TMS do other scheduled things
+
+        LOGGER.info(
+            f"done with inspecting filepaths -- {n_actions} actions "
+            f"(next round in {ENV.TMS_FILE_MANAGER_INTERVAL}s)"
+        )
 
         await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
