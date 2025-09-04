@@ -214,7 +214,7 @@ async def run(ewms_rc: RestClient) -> None:
                     await asyncio.sleep(0)  # let the TMS do other scheduled things
 
         LOGGER.info(
-            f"done inspecting filepaths -- {n_actions} actions "
+            f"done inspecting filepaths -- performed {n_actions} actions "
             f"(next round in {ENV.TMS_FILE_MANAGER_INTERVAL}s)"
         )
 
