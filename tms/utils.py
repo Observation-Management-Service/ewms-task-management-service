@@ -54,11 +54,11 @@ class JELFileLogic:
         )
         if is_used := bool(resp["taskforces"]):
             LOGGER.debug(
-                "There are still non-completed taskforces using JEL -- DON'T DELETE"
+                f"There are still non-completed taskforces using JEL {fpath} -- DON'T DELETE"
             )
         else:
             LOGGER.warning(
-                "There are no non-completed taskforces using JEL -- POTENTIALLY DELETE"
+                f"There are no non-completed taskforces using JEL {fpath} -- POTENTIALLY DELETE"
             )
         return not is_used
 
