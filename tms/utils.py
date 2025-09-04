@@ -47,20 +47,23 @@ class JELFileLogic:
                     "job_event_log_fpath": str(fpath),
                     "collector": get_collector(),
                     "schedd": get_schedd(),
-                    "condor_complete_ts": {"$ne": None},
+                    "phase": {"$ne": "condor-complete"},  # only non-completed tfs
                 },
                 "projection": ["taskforce_uuid"],
             },
         )
-        if is_used := bool(resp["taskforces"]):
+        noncompleted_tfs = resp["taskforces"]
+
+        if noncompleted_tfs:
             LOGGER.debug(
                 f"There are still non-completed taskforces using JEL {fpath} -- DON'T DELETE"
             )
+            return True
         else:
             LOGGER.warning(
                 f"There are no non-completed taskforces using JEL {fpath} -- POTENTIALLY DELETE"
             )
-        return not is_used
+            return False
 
 
 class TaskforceDirLogic:
