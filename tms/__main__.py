@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
     """Watch over all JEL files and send EWMS taskforce updates."""
-    LOGGER.info("Starting watcher...")
+    LOGGER.info("Starting up...")
 
     in_progress: list[Path] = []
 

@@ -181,7 +181,7 @@ async def scalar_loop(
     #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
 ) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
-    LOGGER.info("Starting scalar...")
+    LOGGER.info("Starting up...")
 
     # make connections -- do now so we don't have any surprises downstream
     LOGGER.info("Connecting to HTCondor...")

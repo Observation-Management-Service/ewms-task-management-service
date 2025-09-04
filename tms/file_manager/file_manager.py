@@ -187,6 +187,7 @@ MAIN_LIST: list[FileManager] = [
 
 async def run() -> None:
     """Run the file manager loop."""
+    LOGGER.info("Starting up...")
     await asyncio.sleep(60)
 
     while True:
