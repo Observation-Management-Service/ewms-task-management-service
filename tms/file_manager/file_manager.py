@@ -135,9 +135,7 @@ class FileManager:
 
         if self.precheck_async is not None:
             if not await self.precheck_async(fpath):
-                LOGGER.warning(
-                    f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
-                )
+                LOGGER.debug(f"precheck returned 'False' for {fpath=}")
                 return False
 
         if not self.is_old_enough(fpath):
@@ -162,7 +160,7 @@ def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
         #
         # ex: 2025-8-26.tms.jel
         FileManager(
-            str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"),
+            str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
             action=action_rm,
             age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
             precheck_async=partial(JELFileLogic.is_no_longer_used, ewms_rc),

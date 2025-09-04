@@ -20,7 +20,8 @@ async def run(
     """Watch over all JEL files and send EWMS taskforce updates."""
     LOGGER.info("Activated.")
 
-    in_progress: list[Path] = []
+    # track which JEL paths are already being watched
+    in_progress: set[Path] = set()
 
     # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
     # on task fail, cancel others then raise original exception(s)
@@ -33,19 +34,24 @@ async def run(
                 if not JELFileLogic.is_valid(jel_fpath):
                     continue
 
-                # check/append
+                # skip if already in progress
                 if jel_fpath in in_progress:
                     continue
-                else:
-                    in_progress.append(jel_fpath)
+
+                # mark as in-progress
+                in_progress.add(jel_fpath)
 
                 # go!
-                LOGGER.info(f"Creating new JEL watcher for {jel_fpath}...")
+                LOGGER.info(f"Creating new watcher for JEL {jel_fpath}...")
                 jel_watcher = watcher.JobEventLogWatcher(
                     jel_fpath,
                     ewms_rc,
                     tmonitors,
                 )
-                tg.create_task(jel_watcher.start())
+                task = tg.create_task(jel_watcher.start())
 
-            await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
+                # when the watcher exits (normal/error), allow re-watching this path
+                task.add_done_callback(lambda _t, p=jel_fpath: in_progress.remove(p))
+
+            # wait before scanning for new logs again
+            await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)

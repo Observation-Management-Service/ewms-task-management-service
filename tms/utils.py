@@ -18,14 +18,14 @@ class JELFileLogic:
     """Logic for setting up and detecting job event log files."""
 
     parent = ENV.JOB_EVENT_LOG_DIR
-    suffix = ".tms.jel"
+    extension = ".tms.jel"
 
     @staticmethod
     def create_path() -> Path:
         """Generate a log file name and mkdir parents."""
         JELFileLogic.parent.mkdir(parents=True, exist_ok=True)
         # ex: .../tms-2024-1-27.log
-        return JELFileLogic.parent / f"{date.today()}{JELFileLogic.suffix}"
+        return JELFileLogic.parent / f"{date.today()}{JELFileLogic.extension}"
 
     @staticmethod
     def is_valid(fpath: Path) -> bool:
@@ -33,7 +33,7 @@ class JELFileLogic:
         return bool(
             fpath.parent == JELFileLogic.parent
             and fpath.is_file()
-            and fpath.suffix == JELFileLogic.suffix
+            and fpath.name.endswith(JELFileLogic.extension)  # fpath.suffix is '.jel'
         )
 
     @staticmethod
