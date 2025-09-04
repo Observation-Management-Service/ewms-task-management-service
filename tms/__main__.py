@@ -41,7 +41,7 @@ async def main() -> None:
     # on task fail, cancel others then raise original exception(s)
     async with asyncio.TaskGroup() as tg:
         # scalar
-        LOGGER.info("Firing off scalar loop...")
+        LOGGER.info("Firing off scalar...")
         tg.create_task(scalar.run(tmonitors, ewms_rc))
 
         # watcher
