@@ -51,7 +51,7 @@ async def run(
                 task = tg.create_task(jel_watcher.start())
 
                 # when the watcher exits (normal/error), allow re-watching this path
-                task.add_done_callback(lambda _t, p=jel_fpath: in_progress.remove(p))
+                task.add_done_callback(lambda _t, p=jel_fpath: in_progress.remove(p))  # type: ignore[arg-type]
 
             # wait before scanning for new logs again
             await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)

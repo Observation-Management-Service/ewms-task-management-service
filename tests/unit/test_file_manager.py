@@ -156,7 +156,7 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
 
     # File remains, log mentions precheck
     assert f.exists()
-    assert any("precheck failed" in rec.message for rec in caplog.records)
+    assert any("precheck returned 'False' for" in rec.message for rec in caplog.records)
 
 
 async def test_025_act_raises_if_missing(tmp_path):
