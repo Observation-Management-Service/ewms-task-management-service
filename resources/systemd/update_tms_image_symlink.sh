@@ -14,8 +14,8 @@ set -euo pipefail
 #
 # Exit Codes:
 #   1 - Invalid working directory or missing argument.
-#   2 - Specified image version not found on CVMFS.
-#   3 - `envfile` is missing, preventing symlink update.
+#   2 - `envfile` is missing, preventing symlink update.
+#   3 - Timed out waiting for specified image version on CVMFS.
 #
 # Example:
 #   ./update_tms_image_symlink.sh 0.1.52
@@ -38,21 +38,49 @@ fi
 readonly tms_image_tag="$1"
 
 ################################################################################
-# constants
+# if 'tms-prod': check for '--dev-too' option
 
-readonly envfile="./envfile"
-if [[ ! -f $envfile ]]; then
-    echo "Error: './envfile' is missing. Not updating symlink."
-    exit 2
+if [[ "$(basename "$PWD")" == "tms-prod" ]]; then
+    bonus_dev_update="$(
+        python -c '
+import argparse, sys
+
+p = argparse.ArgumentParser(
+    prog="update_tms_image_symlink.sh",
+    description="Require --dev-too yes|no when running in tms-prod",
+)
+p.add_argument(
+    "--dev-too",
+    dest="dev_too",
+    choices=["yes", "no"],
+    required=True,
+    help="also update ../tms-dev (yes|no)",
+)
+args = p.parse_args(sys.argv[1:])
+
+if args.dev_too == "yes":
+    print("true")
+else:
+    print("false")
+' "${@:2}"
+    )" || exit 1
+else
+    bonus_dev_update="false"
 fi
+
+################################################################################
+# constants
 
 readonly cvmfs_base="/cvmfs/icecube.opensciencegrid.org/containers/ewms/observation-management-service/ewms-task-management-service"
 readonly full_image_path="$cvmfs_base:$tms_image_tag"
-#
+
+################################################################################
+# wait for image to exist
+
 readonly sleep_interval=15  # seconds between retries
 readonly max_wait_minutes=30  # total wait time in minutes
 readonly max_attempts=$((max_wait_minutes * 60 / sleep_interval))
-#
+
 attempt=1
 while [[ ! -d "$full_image_path" ]]; do
     echo "Attempt $attempt/$max_attempts: Image not found on CVMFS: $full_image_path"
@@ -65,13 +93,37 @@ while [[ ! -d "$full_image_path" ]]; do
     ((attempt++))
 done
 
+################################################################################
+# function
+################################################################################
+finalize_update() {
+    local _full_image_path="$1"
+    local _envfile="./envfile"
+
+    if [[ ! -f "$_envfile" ]]; then
+        echo "Error: '${_envfile}' is missing. Not updating symlink."
+        exit 2
+    fi
+
+    ln -snf "$_full_image_path" "./apptainer_container_symlink"
+    touch "$_envfile"  # triggers systemd restart
+    echo "Successfully updated symlink in $(basename "$PWD") to: $(readlink -f ./apptainer_container_symlink)"
+}
 
 ################################################################################
-# update!
+# update symlink here
 
-ln -snf "$full_image_path" "./apptainer_container_symlink"
+finalize_update "$full_image_path"
 
-# Touch envfile so systemd restarts the app
-touch $envfile
+################################################################################
+# perform dev update if requested
 
-echo "Successfully updated symlink to: $(readlink -f ./apptainer_container_symlink)"
+if [[ "$bonus_dev_update" == "true" ]]; then
+    echo "Updating ../tms-dev..."
+    (
+        cd ../tms-dev
+        if ! finalize_update "$full_image_path"; then
+            echo "::warning::Failed to update ../tms-dev; prod is updated. Please check logs."
+        fi
+    )
+fi
