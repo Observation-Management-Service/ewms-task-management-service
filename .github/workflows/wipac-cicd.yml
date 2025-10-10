@@ -152,11 +152,9 @@ jobs:
           file: Dockerfile
           tags: ${{ env.DOCKER_IMAGE_NAME }}:local
           load: true
-      - name: install apptainer
-        run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
-          curl -fSL https://raw.githubusercontent.com/WIPACrepo/wipac-dev-tools/refs/heads/main/resources/install_apptainer.sh -o install_apptainer.sh
-          bash -x install_apptainer.sh
+      - uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.2
       - name: build apptainer image (.sif)
         run: |
           set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
