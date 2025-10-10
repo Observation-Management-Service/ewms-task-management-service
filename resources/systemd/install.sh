@@ -14,6 +14,11 @@ else
     UNIT_SUBDIR="${1%/}"  # remove trailing slash, if present
 fi
 
+if [[ "$(basename "$UNIT_SUBDIR")" != "tms-prod" && "$(basename "$UNIT_SUBDIR")" != "tms-dev" ]]; then
+    echo "ERROR: unit subdir must be 'tms-prod' or 'tms-dev', not '$UNIT_SUBDIR'"
+    exit 1
+fi
+
 SYSTEMD_INSTALL_DIR="$HOME/.config/systemd/user"
 
 ########################################################################################
