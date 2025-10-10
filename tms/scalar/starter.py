@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import htcondor  # type: ignore[import-untyped]
-import humanfriendly
+import humanfriendly  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from ..condor_tools import get_collector, get_schedd
