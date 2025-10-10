@@ -1,7 +1,6 @@
 """config.py."""
 
 import dataclasses as dc
-import logging
 from pathlib import Path
 from typing import Dict
 
@@ -106,14 +105,6 @@ def config_logging() -> None:
     This is separated into a function for consistency between app and
     testing environments.
     """
-    hand = logging.StreamHandler()
-    hand.setFormatter(
-        logging.Formatter(
-            "%(asctime)s.%(msecs)03d [%(levelname)8s] %(name)s %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    )
-    logging.getLogger().addHandler(hand)
     logging_tools.set_level(
         ENV.LOG_LEVEL,
         first_party_loggers=__name__.split(".", maxsplit=1)[0],

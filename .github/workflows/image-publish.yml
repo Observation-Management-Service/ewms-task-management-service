@@ -14,16 +14,17 @@ on:
 
 jobs:
   image-publish:
-    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.11
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/image-publish.yml@v1.16
     permissions: # for GITHUB_TOKEN
       packages: write
     with:
       image_registry: ghcr.io
       image_namespace: observation-management-service
       image_name: ewms-task-management-service
+      build_platforms_csv: 'linux/amd64'
       mode: ${{ github.event_name == 'delete' && 'CVMFS_REMOVE' || 'CVMFS_BUILD' }}
       cvmfs_dest_dir: ewms/observation-management-service  # in heinsight, this is verbose but we've got to live with it
       # only used if mode is CVMFS_REMOVE:
-      cvmfs_remove_tags: '${{ github.ref_name }}-[SHA]'
+      cvmfs_remove_tags: '${{ github.event.ref }}-[SHA]'
     secrets:
       cvmfs_github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

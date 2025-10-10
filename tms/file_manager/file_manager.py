@@ -11,6 +11,8 @@ from functools import partial
 from pathlib import Path
 from typing import Awaitable, Callable
 
+from rest_tools.client import RestClient
+
 from ..config import ENV
 from ..utils import JELFileLogic, TaskforceDirLogic
 
@@ -88,12 +90,12 @@ class FileManager:
         fpattern: str,
         action: Callable[[Path], None],
         age_threshold: int,
-        precheck: Callable[[Path], Awaitable[bool]] | None = None,
+        precheck_async: Callable[[Path], Awaitable[bool]] | None = None,
     ):
         self.fpattern = fpattern
         self.action = action
         self.age_threshold = age_threshold  # Only act if file is older than this
-        self.precheck = precheck
+        self.precheck_async = precheck_async
 
     def is_old_enough(self, fpath: Path) -> bool:
         """Is the file/dir older than the age_threshold?"""
@@ -126,57 +128,58 @@ class FileManager:
             except FileNotFoundError:
                 return False
 
-    async def act(self, fpath: Path) -> None:
+    async def act(self, fpath: Path) -> bool:
         """Perform action on filepath, if the file is old enough."""
         if not fpath.exists():
             raise FileNotFoundError(fpath)
 
-        if self.precheck is not None:
-            if not await self.precheck(fpath):
-                LOGGER.warning(
-                    f"precheck failed for {fpath=} -- will try again later in {ENV.TMS_FILE_MANAGER_INTERVAL}"
-                )
-                return
+        if self.precheck_async is not None:
+            if not await self.precheck_async(fpath):
+                LOGGER.debug(f"precheck returned 'False' for {fpath=}")
+                return False
 
         if not self.is_old_enough(fpath):
-            LOGGER.info(
+            LOGGER.debug(
                 f"no action -- filepath not older than {self.age_threshold} seconds {fpath=}"
             )
-            return
+            return False
 
         LOGGER.info(f"performing action {self.action} on {fpath}")
         self.action(fpath)
+        return True
 
 
 # -----------------------------------------------------------------------------
-# MAIN_LIST
+# File Managers
 # -----------------------------------------------------------------------------
 
 
-MAIN_LIST: list[FileManager] = [
-    #
-    # ex: 2025-8-26.tms.jel
-    FileManager(
-        str(JELFileLogic.parent / f"*{JELFileLogic.suffix}"),
-        action=action_rm,
-        age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
-        precheck=JELFileLogic.is_no_longer_used,
-    ),
-    #
-    # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
-    FileManager(
-        str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*"),
-        action=partial(action_tar_gz, dest=ENV.JOB_EVENT_LOG_DIR),
-        age_threshold=ENV.TASKFORCE_DIRS_EXPIRY,
-    ),
-    #
-    # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72.tar.gz
-    FileManager(
-        str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*.tar.gz"),
-        action=action_rm,
-        age_threshold=ENV.TASKFORCE_DIRS_TAR_EXPIRY,
-    ),
-]
+def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
+    """Build the list of file managers."""
+    return [
+        #
+        # ex: 2025-8-26.tms.jel
+        FileManager(
+            str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
+            action=action_rm,
+            age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
+            precheck_async=partial(JELFileLogic.is_no_longer_used, ewms_rc),
+        ),
+        #
+        # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
+        FileManager(
+            str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*"),
+            action=partial(action_tar_gz, dest=ENV.JOB_EVENT_LOG_DIR),
+            age_threshold=ENV.TASKFORCE_DIRS_EXPIRY,
+        ),
+        #
+        # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72.tar.gz
+        FileManager(
+            str(TaskforceDirLogic.parent / f"{TaskforceDirLogic.prefix}*.tar.gz"),
+            action=action_rm,
+            age_threshold=ENV.TASKFORCE_DIRS_TAR_EXPIRY,
+        ),
+    ]
 
 
 # -----------------------------------------------------------------------------
@@ -184,25 +187,33 @@ MAIN_LIST: list[FileManager] = [
 # -----------------------------------------------------------------------------
 
 
-async def run() -> None:
+async def run(ewms_rc: RestClient) -> None:
     """Run the file manager loop."""
+    LOGGER.info("Activated.")
+    file_managers = build_file_managers(ewms_rc)
+
     await asyncio.sleep(60)
 
     while True:
-
         LOGGER.info("inspecting filepaths...")
+        n_actions = 0
 
-        for fm in MAIN_LIST:
-            LOGGER.info(f"searching filepath pattern: {fm.fpattern}")
+        for fm in file_managers:
+            LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
 
-            for fpath in glob.glob(fm.fpattern):
-                LOGGER.info(f"looking at {fpath=}")
+            for fpath in [Path(p) for p in glob.glob(fm.fpattern)]:
+                LOGGER.debug(f"looking at {fpath=}")
                 try:
-                    await fm.act(Path(fpath))
+                    n_actions += int(await fm.act(fpath))  # bool -> 1/0
                 except Exception:
                     LOGGER.exception(f"action failed for {fpath=}")
                     continue
                 else:
                     await asyncio.sleep(0)  # let the TMS do other scheduled things
+
+        LOGGER.info(
+            f"done inspecting filepaths -- performed {n_actions} actions "
+            f"(next round in {ENV.TMS_FILE_MANAGER_INTERVAL}s)"
+        )
 
         await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)

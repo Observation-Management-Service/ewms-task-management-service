@@ -6,7 +6,7 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import htcondor  # type: ignore[import-untyped]
-import humanfriendly
+import humanfriendly  # type: ignore[import-untyped]
 
 from tms import config  # noqa: F401  # setup env vars
 from tms.scalar import starter

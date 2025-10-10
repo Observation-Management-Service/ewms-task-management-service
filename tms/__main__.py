@@ -2,60 +2,22 @@
 
 import asyncio
 import logging
-from pathlib import Path
 
 import htcondor  # type: ignore[import-untyped]
+from rest_tools.client import ClientCredentialsAuth
 
 from .config import ENV, config_logging
 from .file_manager import file_manager
-from .scalar.scalar import scalar_loop
-from .utils import AppendOnlyList, JELFileLogic, TaskforceMonitor, connect_to_ewms
-from .watcher import watcher
+from .scalar import scalar
+from .utils import AppendOnlyList, TaskforceMonitor
+from .watcher import watcher_loop
 
-LOGGER = logging.getLogger(__name__)
-
-
-async def watcher_loop(tmonitors: AppendOnlyList[TaskforceMonitor]) -> None:
-    """Watch over all JEL files and send EWMS taskforce updates."""
-    LOGGER.info("Starting watcher...")
-
-    in_progress: list[Path] = []
-
-    # make connections -- do now so we don't have any surprises downstream
-    ewms_rc = connect_to_ewms()
-
-    # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
-    # on task fail, cancel others then raise original exception(s)
-    async with asyncio.TaskGroup() as tg:
-        while True:
-            LOGGER.info(
-                f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
-            )
-            for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
-                if not JELFileLogic.is_valid(jel_fpath):
-                    continue
-
-                # check/append
-                if jel_fpath in in_progress:
-                    continue
-                else:
-                    in_progress.append(jel_fpath)
-
-                # go!
-                LOGGER.info(f"Creating new JEL watcher for {jel_fpath}...")
-                jel_watcher = watcher.JobEventLogWatcher(
-                    jel_fpath,
-                    ewms_rc,
-                    tmonitors,
-                )
-                tg.create_task(jel_watcher.start())
-
-            await asyncio.sleep(ENV.TMS_OUTER_LOOP_WAIT)  # start all above tasks
+LOGGER = logging.getLogger(__package__)  # not name b/c that's __main__
 
 
 async def main() -> None:
     """explain."""
-    LOGGER.info("Starting up...")
+    LOGGER.info("TMS Activated.")
 
     htcondor.set_subsystem("TOOL")
     htcondor.param["TOOL_DEBUG"] = "D_FULLDEBUG"
@@ -65,18 +27,33 @@ async def main() -> None:
 
     tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
 
+    LOGGER.info("Connecting to EWMS...")
+    ewms_rc = ClientCredentialsAuth(
+        ENV.EWMS_ADDRESS,
+        ENV.EWMS_TOKEN_URL,
+        ENV.EWMS_CLIENT_ID,
+        ENV.EWMS_CLIENT_SECRET,
+    )
+
     LOGGER.info("Starting tasks...")
 
     # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
     # on task fail, cancel others then raise original exception(s)
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(scalar_loop(tmonitors))
-        tg.create_task(watcher_loop(tmonitors))
-        tg.create_task(file_manager.run())
+        # scalar
+        LOGGER.info("Firing off scalar...")
+        tg.create_task(scalar.run(tmonitors, ewms_rc))
 
-    LOGGER.info("Done")
+        # watcher
+        LOGGER.info("Firing off watcher loop...")
+        tg.create_task(watcher_loop.run(tmonitors, ewms_rc))
+
+        # file manager
+        LOGGER.info("Firing off file manager...")
+        tg.create_task(file_manager.run(ewms_rc))
 
 
 if __name__ == "__main__":
     config_logging()
     asyncio.run(main())
+    LOGGER.info("Done.")

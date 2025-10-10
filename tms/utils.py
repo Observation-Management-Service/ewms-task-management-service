@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import TypeVar
 
-from rest_tools.client import ClientCredentialsAuth, RestClient
+from rest_tools.client import RestClient
 
 from . import types
 from .condor_tools import get_collector, get_schedd
@@ -14,29 +14,18 @@ from .config import ENV, WMS_URL_V_PREFIX
 LOGGER = logging.getLogger(__name__)
 
 
-def connect_to_ewms() -> RestClient:
-    """Connect to EWMS API."""
-    LOGGER.info("Connecting to EWMS...")
-    return ClientCredentialsAuth(
-        ENV.EWMS_ADDRESS,
-        ENV.EWMS_TOKEN_URL,
-        ENV.EWMS_CLIENT_ID,
-        ENV.EWMS_CLIENT_SECRET,
-    )
-
-
 class JELFileLogic:
     """Logic for setting up and detecting job event log files."""
 
     parent = ENV.JOB_EVENT_LOG_DIR
-    suffix = ".tms.jel"
+    extension = ".tms.jel"
 
     @staticmethod
     def create_path() -> Path:
         """Generate a log file name and mkdir parents."""
         JELFileLogic.parent.mkdir(parents=True, exist_ok=True)
         # ex: .../tms-2024-1-27.log
-        return JELFileLogic.parent / f"{date.today()}{JELFileLogic.suffix}"
+        return JELFileLogic.parent / f"{date.today()}{JELFileLogic.extension}"
 
     @staticmethod
     def is_valid(fpath: Path) -> bool:
@@ -44,14 +33,12 @@ class JELFileLogic:
         return bool(
             fpath.parent == JELFileLogic.parent
             and fpath.is_file()
-            and fpath.suffix == JELFileLogic.suffix
+            and fpath.name.endswith(JELFileLogic.extension)  # fpath.suffix is '.jel'
         )
 
     @staticmethod
-    async def is_no_longer_used(fpath: Path) -> bool:
+    async def is_no_longer_used(ewms_rc: RestClient, fpath: Path) -> bool:
         """Return whether there are no non-completed taskforces using JEL."""
-        ewms_rc = connect_to_ewms()
-
         resp = await ewms_rc.request(
             "POST",
             f"/{WMS_URL_V_PREFIX}/query/taskforces",
@@ -60,20 +47,23 @@ class JELFileLogic:
                     "job_event_log_fpath": str(fpath),
                     "collector": get_collector(),
                     "schedd": get_schedd(),
-                    "condor_complete_ts": {"$ne": None},
+                    "phase": {"$ne": "condor-complete"},  # only non-completed tfs
                 },
                 "projection": ["taskforce_uuid"],
             },
         )
-        if is_used := bool(resp["taskforces"]):
-            LOGGER.info(
-                "There are still non-completed taskforces using JEL -- DON'T DELETE"
+        noncompleted_tfs = resp["taskforces"]
+
+        if noncompleted_tfs:
+            LOGGER.debug(
+                f"There are still non-completed taskforces using JEL {fpath} -- DON'T DELETE"
             )
+            return False  # no -- this file *IS* still used
         else:
             LOGGER.warning(
-                "There are no non-completed taskforces using JEL -- CAN DELETE"
+                f"There are no non-completed taskforces using JEL {fpath} -- POTENTIALLY DELETE"
             )
-        return not is_used
+            return True  # yes -- this file is *NOT* being used
 
 
 class TaskforceDirLogic:
