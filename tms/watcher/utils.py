@@ -9,7 +9,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools, types
-from ..condor_tools import get_collector, get_schedd
+from ..condor_tools import get_schedd
 from ..config import WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
@@ -98,7 +98,6 @@ async def query_for_more_taskforces(
         f"/{WMS_URL_V_PREFIX}/query/taskforces",
         {
             "query": {
-                "collector": get_collector(),
                 "schedd": get_schedd(),
                 "job_event_log_fpath": str(jel_fpath),
             },

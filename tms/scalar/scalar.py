@@ -11,7 +11,7 @@ from wipac_dev_tools.timing_tools import IntervalTimer
 
 from . import starter, stopper
 from .. import utils
-from ..condor_tools import get_collector, get_schedd
+from ..condor_tools import get_schedd
 from ..config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class EWMSCaller:
         resp = await ewms_rc.request(
             "GET",
             f"/{WMS_URL_V_PREFIX}/tms/pending-starter/taskforces",
-            {"collector": get_collector(), "schedd": get_schedd()},
+            {"schedd": get_schedd()},
         )
         if not resp:
             return None
@@ -109,7 +109,7 @@ class EWMSCaller:
         resp = await ewms_rc.request(
             "GET",
             f"/{WMS_URL_V_PREFIX}/tms/pending-stopper/taskforces",
-            {"collector": get_collector(), "schedd": get_schedd()},
+            {"schedd": get_schedd()},
         )
         if not resp:
             return None
