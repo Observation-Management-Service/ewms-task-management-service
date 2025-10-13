@@ -11,7 +11,9 @@ if [[ -z "${1:-}" ]]; then
     echo "Usage: $0 <unit-subdir>" >&2
     exit 1
 else
-    UNIT_SUBDIR="${1%/}"  # remove trailing slash, if present
+    UNIT_SUBDIR="$1"
+    UNIT_SUBDIR=$(realpath "$UNIT_SUBDIR")
+    UNIT_SUBDIR="${UNIT_SUBDIR%/}"  # remove trailing slash, if present
 fi
 
 if [[ "$(basename "$UNIT_SUBDIR")" != "tms-prod" && "$(basename "$UNIT_SUBDIR")" != "tms-dev" ]]; then
@@ -52,11 +54,26 @@ cp -ux "$UNIT_SUBDIR"/*.service "$UNIT_SUBDIR"/*.path "$SYSTEMD_INSTALL_DIR"
 systemctl --user daemon-reload  # reload systemd to recognize new/updated unit files
 set +x
 
+
+########################################################################################
+# ensure log directories exist (for append:/ paths)
+
+logdir="/scratch/ewms/$(basename "$UNIT_SUBDIR")/logs/"
+unit_file="$UNIT_SUBDIR/ewms-$(basename "$UNIT_SUBDIR").service"
+if grep -q "$logdir" "$unit_file"; then
+    if [[ ! -d "$logdir" ]]; then
+        mkdir -p "$logdir"
+    fi
+else
+    echo "ERROR: $logdir not referenced in $unit_file"
+    exit 2
+fi
+
 ########################################################################################
 # enable & (re)start unit files
 
-for UNIT_PATH in "$UNIT_SUBDIR"/*; do
-    UNIT=$(basename "$UNIT_PATH")
+for unit_fpath in "$UNIT_SUBDIR"/*; do
+    UNIT=$(basename "$unit_fpath")
 
     # only process *.service and *.path files
     if [[ "$UNIT" != *.service && "$UNIT" != *.path ]]; then
