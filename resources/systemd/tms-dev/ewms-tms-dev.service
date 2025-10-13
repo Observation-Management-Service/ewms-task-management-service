@@ -15,7 +15,6 @@ WorkingDirectory=/scratch/ewms/tms-dev/
 ExecStart=/usr/bin/apptainer run \
     --mount type=bind,source=/scratch/ewms/tms-dev/,dst=/scratch/ewms/tms-dev/ \
     --mount type=bind,source=/etc/condor/,dst=/etc/condor/,ro \
-    --mount type=bind,source=/usr/local/libexec/condor,dst=/usr/local/libexec/condor,ro \
     --env LOG_LEVEL=INFO \
     --env LOG_LEVEL_REST_TOOLS=INFO \
     /home/ewms/resources/systemd/tms-dev/apptainer_container_symlink
