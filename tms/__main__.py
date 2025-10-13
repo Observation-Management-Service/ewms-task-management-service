@@ -6,6 +6,7 @@ import logging
 import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import ClientCredentialsAuth
 
+from .condor_tools import get_collector, get_schedd
 from .config import ENV, config_logging
 from .file_manager import file_manager
 from .scalar import scalar
@@ -24,6 +25,8 @@ async def main() -> None:
     # htcondor.param["TOOL_LOG"] = "log.txt"
     # htcondor.enable_log()
     htcondor.enable_debug()
+    LOGGER.info(f"htcondor collector: {get_collector()}")
+    LOGGER.info(f"htcondor schedd: {get_schedd()}")
 
     tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
 
