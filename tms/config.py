@@ -1,10 +1,13 @@
 """config.py."""
 
 import dataclasses as dc
+import logging
 from pathlib import Path
 from typing import Dict
 
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
+
+LOGGER = logging.getLogger(__name__)
 
 WATCHER_N_TOP_TASK_ERRORS = 10
 
@@ -94,6 +97,11 @@ class EnvConfig:
     LOG_LEVEL: logging_tools.LoggerLevel = "INFO"
     LOG_LEVEL_THIRD_PARTY: logging_tools.LoggerLevel = "WARNING"
     LOG_LEVEL_REST_TOOLS: logging_tools.LoggerLevel = "INFO"
+
+    def __post_init__(self):
+        if not self.JOB_EVENT_LOG_DIR.exists():
+            LOGGER.warning(f"JOB_EVENT_LOG_DIR: mkdir -p {self.JOB_EVENT_LOG_DIR}")
+            self.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 ENV = from_environment_as_dataclass(EnvConfig)
