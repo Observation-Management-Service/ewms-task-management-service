@@ -355,8 +355,8 @@ class JobEventLogWatcher:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
                 LOGGER.warning(
-                    f"Cluster found in JEL does not match any "
-                    f"known taskforce ({job_event.cluster}), skipping it"
+                    f"Cluster {job_event.cluster} found in JEL does not match any "
+                    f"known taskforce, skipping it"
                 )
                 continue
             except ReceivedClusterRemovedJobEvent as e:
