@@ -2,6 +2,7 @@
 
 import asyncio
 import collections
+import enum
 import logging
 import pprint
 from pathlib import Path
@@ -255,6 +256,14 @@ class JobEventLogDeleted(Exception):
     """Raised when a job event log file was deleted."""
 
 
+class _LCEnum(enum.Enum):
+    """Enum for the 'JobEventLogWatcher._logging_ctrs' entries."""
+
+    n_events: enum.auto()
+    updated_clusters: enum.auto()
+    mystery_clusters: enum.auto()
+
+
 class JobEventLogWatcher:
     """Used to watch and communicate job event log updates to ewms."""
 
@@ -268,8 +277,9 @@ class JobEventLogWatcher:
         self.ewms_rc = ewms_rc
         self.tmonitors = tmonitors
 
-        self._logging_counters: dict[str, dict[int, int]] = collections.defaultdict(
-            lambda: collections.defaultdict(int)
+        # strictly used for logging: a dict of int-counters for various types of events
+        self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
+            collections.defaultdict(lambda: collections.defaultdict(int))
         )
 
     async def start(self) -> None:
@@ -340,7 +350,7 @@ class JobEventLogWatcher:
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
-                self._logging_counters["n_events"][job_event.cluster] += 1
+                self._logging_ctrs[_LCEnum.n_events][job_event.cluster] += 1
                 await asyncio.sleep(0)  # since htcondor is not async
             except StopIteration:
                 break
@@ -358,11 +368,11 @@ class JobEventLogWatcher:
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
-                self._logging_counters["updated_clusters"][job_event.cluster] += 1
+                self._logging_ctrs[_LCEnum.updated_clusters][job_event.cluster] += 1
             except KeyError:
                 # Count & warn once per unknown cluster; suppress the rest this pass
-                self._logging_counters["mystery_clusters"][job_event.cluster] += 1
-                if self._logging_counters["mystery_clusters"][job_event.cluster] == 1:
+                self._logging_ctrs[_LCEnum.mystery_clusters][job_event.cluster] += 1
+                if self._logging_ctrs[_LCEnum.mystery_clusters][job_event.cluster] == 1:
                     LOGGER.warning(
                         f"Cluster {job_event.cluster} found in JEL does not match any "
                         f"known taskforce, skipping it"
@@ -382,16 +392,16 @@ class JobEventLogWatcher:
             LOGGER.info(
                 f"all caught up on {self.jel_fpath.name} "
                 "("
-                f"events: {sum(self._logging_counters['n_events'].values())}, "
+                f"events: {sum(self._logging_ctrs[_LCEnum.n_events].values())}, "
                 f"updated clusters: "
-                f"{len(self._logging_counters['updated_clusters'])} "
-                f"{dict(self._logging_counters['updated_clusters'])}, "
+                f"{len(self._logging_ctrs[_LCEnum.updated_clusters])} "
+                f"{dict(self._logging_ctrs[_LCEnum.updated_clusters])}, "
                 f"unknown/skipped clusters: "
-                f"{len(self._logging_counters['mystery_clusters'])} "
-                f"{dict(self._logging_counters['mystery_clusters'])}"
+                f"{len(self._logging_ctrs[_LCEnum.mystery_clusters])} "
+                f"{dict(self._logging_ctrs[_LCEnum.mystery_clusters])}"
                 ")"
             )
-            self._logging_counters.clear()  # reset counts
+            self._logging_ctrs.clear()  # reset counts
 
         # endgame check
         return await self._done_reading_events_for_now(cluster_infos, log_verbose)
