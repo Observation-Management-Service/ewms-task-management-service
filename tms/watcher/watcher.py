@@ -268,6 +268,10 @@ class JobEventLogWatcher:
         self.ewms_rc = ewms_rc
         self.tmonitors = tmonitors
 
+        self._logging_counters: dict[str, dict[int, int]] = collections.defaultdict(
+            lambda: collections.defaultdict(int)
+        )
+
     async def start(self) -> None:
         """Watch over one JEL file, containing multiple taskforces.
 
@@ -324,7 +328,6 @@ class JobEventLogWatcher:
 
         # get events -- exit when no more events
         got_new_events = False
-        _unknown_clusters: dict[str, int] = collections.defaultdict(int)
         LOGGER.debug(f"reading events from {self.jel_fpath}...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
@@ -337,6 +340,7 @@ class JobEventLogWatcher:
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
+                self._logging_counters["n_events"][job_event.cluster] += 1
                 await asyncio.sleep(0)  # since htcondor is not async
             except StopIteration:
                 break
@@ -354,10 +358,11 @@ class JobEventLogWatcher:
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
+                self._logging_counters["updated_clusters"][job_event.cluster] += 1
             except KeyError:
                 # Count & warn once per unknown cluster; suppress the rest this pass
-                _unknown_clusters[job_event.cluster] += 1
-                if _unknown_clusters[job_event.cluster] == 1:
+                self._logging_counters["mystery_clusters"][job_event.cluster] += 1
+                if self._logging_counters["mystery_clusters"][job_event.cluster] == 1:
                     LOGGER.warning(
                         f"Cluster {job_event.cluster} found in JEL does not match any "
                         f"known taskforce, skipping it"
@@ -374,12 +379,19 @@ class JobEventLogWatcher:
 
         # logging
         if log_verbose:
-            LOGGER.info(f"done reading all events from {self.jel_fpath}.")
             LOGGER.info(
-                f"{len(_unknown_clusters)} unknown clusters encountered on {sum(_unknown_clusters.values())} entry/ies."
+                f"all caught up on {self.jel_fpath.name} "
+                "("
+                f"events: {sum(self._logging_counters['n_events'].values())}, "
+                f"updated clusters: "
+                f"{len(self._logging_counters['updated_clusters'])} "
+                f"{dict(self._logging_counters['updated_clusters'])}, "
+                f"unknown/skipped clusters: "
+                f"{len(self._logging_counters['mystery_clusters'])} "
+                f"{dict(self._logging_counters['mystery_clusters'])}"
+                ")"
             )
-        if not got_new_events and log_verbose:
-            LOGGER.info("jel didn't contain any new events.")
+            self._logging_counters.clear()  # reset counts
 
         # endgame check
         return await self._done_reading_events_for_now(cluster_infos, log_verbose)
