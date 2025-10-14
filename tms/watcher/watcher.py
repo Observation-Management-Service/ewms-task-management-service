@@ -295,6 +295,7 @@ class JobEventLogWatcher:
         cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
         timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
         verbose_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
+        verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
         jel = htcondor.JobEventLog(str(self.jel_fpath))
 
         while True:
