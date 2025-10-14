@@ -405,20 +405,20 @@ class JobEventLogWatcher:
         if log_verbose:
             LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
             LOGGER.info(
-                f"progress report ({self._verbose_logging_timer_seconds / 60}-min)..."
+                f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
             )
-            LOGGER.info(
-                f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}, "
-            )
-            LOGGER.info(
-                f"events per cluster -- "
-                f"updates: "
-                f"{dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}, "
-                f"non-updates: "
-                f"{dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}, "
-                f"unknown/skipped-clusters: "
-                f"{dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
-            )
+            LOGGER.info(f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}")
+            # any events?
+            if sum(self._logging_ctrs[_LCEnum.N_EVENTS].values()):
+                LOGGER.info(
+                    f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
+                )
+                LOGGER.info(
+                    f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
+                )
+                LOGGER.info(
+                    f"events for unknown/skipped clusters: {dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
+                )
             self._logging_ctrs.clear()  # reset counts
 
         # endgame check
@@ -482,7 +482,7 @@ class JobEventLogWatcher:
         # (it's okay to send an empty sub-dict, but all empties is pointless)
         if patch_body := {k: v for k, v in patch_body.items() if v}:
             LOGGER.info(
-                f"SENDING UPDATES TO EWMS ("
+                f"SENDING BULK UPDATES TO EWMS ("
                 f"statuses={patch_body.get(_ALL_COMP_STAT_KEY,{})}, "
                 f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
@@ -491,7 +491,7 @@ class JobEventLogWatcher:
                 f"/{WMS_URL_V_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
-            LOGGER.info("updates sent.")
+            LOGGER.info("ewms updates sent.")
         else:
             if log_verbose:
                 LOGGER.info("no updates needed for ewms.")
