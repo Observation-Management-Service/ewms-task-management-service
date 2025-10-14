@@ -287,6 +287,7 @@ class JobEventLogWatcher:
         self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
             collections.defaultdict(lambda: collections.defaultdict(int))
         )
+        self._verbose_logging_timer_seconds = ENV.TMS_MAX_LOGGING_INTERVAL
 
     async def start(self) -> None:
         """Watch over one JEL file, containing multiple taskforces.
@@ -300,7 +301,7 @@ class JobEventLogWatcher:
 
         cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
         timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
-        verbose_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
+        verbose_logging_timer = IntervalTimer(self._verbose_logging_timer_seconds, None)
         verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
         jel = htcondor.JobEventLog(str(self.jel_fpath))
 
@@ -312,7 +313,7 @@ class JobEventLogWatcher:
                 await self._look_at_job_event_log(
                     cluster_infos,
                     jel,
-                    verbose_logging_timer,
+                    verbose_logging_timer.has_interval_elapsed(),
                 )
             except JobEventLogDeleted:
                 return
@@ -338,7 +339,7 @@ class JobEventLogWatcher:
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
         jel: htcondor.JobEventLog,
-        verbose_logging_timer: IntervalTimer,
+        log_verbose: bool,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
         await self._add_new_cluster_infos(cluster_infos)
@@ -401,10 +402,10 @@ class JobEventLogWatcher:
                 self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
         # logging
-        if verbose_logging_timer.has_interval_elapsed():
+        if log_verbose:
             LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
             LOGGER.info(
-                f"progress report ({verbose_logging_timer.seconds / 60}-min)..."
+                f"progress report ({self._verbose_logging_timer_seconds / 60}-min)..."
             )
             LOGGER.info(
                 f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}, "
@@ -421,10 +422,7 @@ class JobEventLogWatcher:
             self._logging_ctrs.clear()  # reset counts
 
         # endgame check
-        return await self._done_reading_events_for_now(
-            cluster_infos,
-            verbose_logging_timer.has_interval_elapsed(),
-        )
+        return await self._done_reading_events_for_now(cluster_infos, log_verbose)
 
     async def _done_reading_events_for_now(
         self,
