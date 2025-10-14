@@ -21,7 +21,12 @@ from .utils import (
     send_condor_complete,
 )
 from .. import condor_tools, types
-from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_URL_V_PREFIX
+from ..config import (
+    ENV,
+    WATCHER_N_TOP_TASK_ERRORS,
+    WMS_URL_V_PREFIX,
+    abbrev_dunder_name,
+)
 from ..utils import AppendOnlyList, TaskforceMonitor
 
 sdict = dict[str, Any]
@@ -30,7 +35,7 @@ _ALL_TOP_ERRORS_KEY = "top_task_errors_by_taskforce"
 _ALL_COMP_STAT_KEY = "compound_statuses_by_taskforce"
 
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(abbrev_dunder_name(__name__))
 
 
 class UnknownJobEvent(Exception):

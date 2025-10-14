@@ -7,10 +7,10 @@ from pathlib import Path
 from rest_tools.client import RestClient
 
 from . import watcher
-from ..config import ENV
+from ..config import ENV, abbrev_dunder_name
 from ..utils import AppendOnlyList, JELFileLogic, TaskforceMonitor
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(abbrev_dunder_name(__name__))
 
 
 async def run(

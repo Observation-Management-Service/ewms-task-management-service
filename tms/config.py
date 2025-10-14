@@ -124,3 +124,14 @@ def config_logging() -> None:
         formatter=logging_tools.WIPACDevToolsFormatter(include_line_location=False),
         utc=True,
     )
+
+
+def abbrev_dunder_name(name: str) -> str:
+    """This shortens logger names by remove subpackage names for '__name__'.
+
+    Ex: tms.watcher.watcher_loop -> tms.watcher_loop
+    """
+    parts = name.split(".")
+    if len(parts) > 2:
+        name = ".".join([parts[0], parts[-1]])
+    return name
