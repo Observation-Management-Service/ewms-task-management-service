@@ -324,6 +324,7 @@ class JobEventLogWatcher:
 
         # get events -- exit when no more events
         got_new_events = False
+        _unknown_clusters: dict[str, int] = collections.defaultdict(int)
         LOGGER.debug(f"reading events from {self.jel_fpath}...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
@@ -354,10 +355,13 @@ class JobEventLogWatcher:
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
             except KeyError:
-                LOGGER.warning(
-                    f"Cluster {job_event.cluster} found in JEL does not match any "
-                    f"known taskforce, skipping it"
-                )
+                # Count & warn once per unknown cluster; suppress the rest this pass
+                _unknown_clusters[job_event.cluster] += 1
+                if _unknown_clusters[job_event.cluster] == 1:
+                    LOGGER.warning(
+                        f"Cluster {job_event.cluster} found in JEL does not match any "
+                        f"known taskforce, skipping it"
+                    )
                 continue
             except ReceivedClusterRemovedJobEvent as e:
                 await send_condor_complete(
@@ -371,6 +375,9 @@ class JobEventLogWatcher:
         # logging
         if log_verbose:
             LOGGER.info(f"done reading all events from {self.jel_fpath}.")
+            LOGGER.info(
+                f"{len(_unknown_clusters)} unknown clusters encountered on {sum(_unknown_clusters.values())} entry/ies."
+            )
         if not got_new_events and log_verbose:
             LOGGER.info("jel didn't contain any new events.")
 
