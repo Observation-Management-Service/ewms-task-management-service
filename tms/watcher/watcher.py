@@ -43,7 +43,7 @@ class UnknownJobEvent(Exception):
 
 
 class ReceivedClusterRemovedJobEvent(Exception):
-    """Raise when a job event signally the cluster has been removed is seen."""
+    """Raise when a job event signaling the cluster has been removed is seen."""
 
     def __init__(self, timestamp: int):
         self.timestamp = timestamp
@@ -266,6 +266,7 @@ class _LCEnum(enum.Enum):
 
     N_EVENTS = enum.auto()
     UPDATED_CLUSTERS = enum.auto()
+    NONUPDATE_CLUSTERS = enum.auto()
     MYSTERY_CLUSTERS = enum.auto()
 
 
@@ -311,7 +312,7 @@ class JobEventLogWatcher:
                 await self._look_at_job_event_log(
                     cluster_infos,
                     jel,
-                    verbose_logging_timer.has_interval_elapsed(),
+                    verbose_logging_timer,
                 )
             except JobEventLogDeleted:
                 return
@@ -337,7 +338,7 @@ class JobEventLogWatcher:
         self,
         cluster_infos: dict[types.ClusterId, ClusterInfo],
         jel: htcondor.JobEventLog,
-        log_verbose: bool,
+        verbose_logging_timer: IntervalTimer,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
         await self._add_new_cluster_infos(cluster_infos)
@@ -374,7 +375,7 @@ class JobEventLogWatcher:
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
-                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
+            # unknown cluster
             except KeyError:
                 # Count & warn once per unknown cluster; suppress the rest this pass
                 self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] += 1
@@ -384,32 +385,46 @@ class JobEventLogWatcher:
                         f"known taskforce, skipping it"
                     )
                 continue
+            # cluster is done
             except ReceivedClusterRemovedJobEvent as e:
+                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
                 await send_condor_complete(
                     self.ewms_rc,
                     cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
+            # nothing important happened, too common to log
             except NoUpdateException:
-                pass  # nothing important happened, too common to log
+                self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS][job_event.cluster] += 1
+            # cluster update succeeded
+            else:
+                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
         # logging
-        if log_verbose:
+        if verbose_logging_timer.has_interval_elapsed():
             LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
             LOGGER.info(
-                "progress report -- "
+                f"progress report ({verbose_logging_timer.seconds / 60}-min)..."
+            )
+            LOGGER.info(
                 f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}, "
-                f"updated-clusters: "
-                f"{len(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])} "
+            )
+            LOGGER.info(
+                f"events per cluster -- "
+                f"updates: "
                 f"{dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}, "
+                f"non-updates: "
+                f"{dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}, "
                 f"unknown/skipped-clusters: "
-                f"{len(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])} "
                 f"{dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
             )
             self._logging_ctrs.clear()  # reset counts
 
         # endgame check
-        return await self._done_reading_events_for_now(cluster_infos, log_verbose)
+        return await self._done_reading_events_for_now(
+            cluster_infos,
+            verbose_logging_timer.has_interval_elapsed(),
+        )
 
     async def _done_reading_events_for_now(
         self,
