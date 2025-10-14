@@ -259,9 +259,9 @@ class JobEventLogDeleted(Exception):
 class _LCEnum(enum.Enum):
     """Enum for the 'JobEventLogWatcher._logging_ctrs' entries."""
 
-    n_events: enum.auto()
-    updated_clusters: enum.auto()
-    mystery_clusters: enum.auto()
+    N_EVENTS = enum.auto()
+    UPDATED_CLUSTERS = enum.auto()
+    MYSTERY_CLUSTERS = enum.auto()
 
 
 class JobEventLogWatcher:
@@ -350,7 +350,7 @@ class JobEventLogWatcher:
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
-                self._logging_ctrs[_LCEnum.n_events][job_event.cluster] += 1
+                self._logging_ctrs[_LCEnum.N_EVENTS][job_event.cluster] += 1
                 await asyncio.sleep(0)  # since htcondor is not async
             except StopIteration:
                 break
@@ -368,11 +368,11 @@ class JobEventLogWatcher:
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
-                self._logging_ctrs[_LCEnum.updated_clusters][job_event.cluster] += 1
+                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
             except KeyError:
                 # Count & warn once per unknown cluster; suppress the rest this pass
-                self._logging_ctrs[_LCEnum.mystery_clusters][job_event.cluster] += 1
-                if self._logging_ctrs[_LCEnum.mystery_clusters][job_event.cluster] == 1:
+                self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] += 1
+                if self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] == 1:
                     LOGGER.warning(
                         f"Cluster {job_event.cluster} found in JEL does not match any "
                         f"known taskforce, skipping it"
@@ -392,13 +392,13 @@ class JobEventLogWatcher:
             LOGGER.info(
                 f"all caught up on {self.jel_fpath.name} "
                 "("
-                f"events: {sum(self._logging_ctrs[_LCEnum.n_events].values())}, "
+                f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}, "
                 f"updated clusters: "
-                f"{len(self._logging_ctrs[_LCEnum.updated_clusters])} "
-                f"{dict(self._logging_ctrs[_LCEnum.updated_clusters])}, "
+                f"{len(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])} "
+                f"{dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}, "
                 f"unknown/skipped clusters: "
-                f"{len(self._logging_ctrs[_LCEnum.mystery_clusters])} "
-                f"{dict(self._logging_ctrs[_LCEnum.mystery_clusters])}"
+                f"{len(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])} "
+                f"{dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
                 ")"
             )
             self._logging_ctrs.clear()  # reset counts
