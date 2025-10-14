@@ -407,22 +407,29 @@ class JobEventLogWatcher:
             LOGGER.info(
                 f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
             )
-            LOGGER.info(f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}")
-            # any events?
-            if sum(self._logging_ctrs[_LCEnum.N_EVENTS].values()):
-                LOGGER.info(
-                    f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
-                )
-                LOGGER.info(
-                    f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
-                )
-                LOGGER.info(
-                    f"events for unknown/skipped clusters: {dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
-                )
-            self._logging_ctrs.clear()  # reset counts
+            self._verbose_log_event_counts()
 
         # endgame check
         return await self._done_reading_events_for_now(cluster_infos, log_verbose)
+
+    def _verbose_log_event_counts(self) -> None:
+        """Log a bunch of event count info."""
+        LOGGER.info(f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}")
+
+        # any events?
+        if sum(self._logging_ctrs[_LCEnum.N_EVENTS].values()):
+            LOGGER.info(
+                f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
+            )
+            LOGGER.info(
+                f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
+            )
+            LOGGER.info(
+                f"events for unknown/skipped clusters: {dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
+            )
+
+        # reset counts
+        self._logging_ctrs.clear()
 
     async def _done_reading_events_for_now(
         self,
