@@ -390,17 +390,16 @@ class JobEventLogWatcher:
 
         # logging
         if log_verbose:
+            LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
             LOGGER.info(
-                f"all caught up on {self.jel_fpath.name} "
-                "("
+                "progress report -- "
                 f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}, "
-                f"updated clusters: "
+                f"updated-clusters: "
                 f"{len(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])} "
                 f"{dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}, "
-                f"unknown/skipped clusters: "
+                f"unknown/skipped-clusters: "
                 f"{len(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])} "
                 f"{dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
-                ")"
             )
             self._logging_ctrs.clear()  # reset counts
 
