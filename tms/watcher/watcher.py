@@ -6,7 +6,7 @@ import enum
 import logging
 import pprint
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncIterator
 
 import htcondor  # type: ignore[import-untyped]
 from htcondor import classad  # type: ignore[import-untyped]
@@ -18,7 +18,7 @@ from .utils import (
     JobInfoVal,
     get_taskforce_uuid,
     job_info_val_to_string,
-    query_for_more_taskforces,
+    query_all_taskforces,
     send_condor_complete,
 )
 from .. import condor_tools, types
@@ -61,6 +61,8 @@ class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
     def __init__(self, cluster_id: ClusterId, taskforce_uuid: str) -> None:
+        LOGGER.info(f"Tracking new cluster/taskforce: {cluster_id}/{taskforce_uuid}")
+
         self.cluster_id = cluster_id
         self.taskforce_uuid = taskforce_uuid
 
@@ -79,6 +81,18 @@ class ClusterInfo:
         """Factory function to create instance without knowing taskforce_uuid."""
         taskforce_uuid = await get_taskforce_uuid(ewms_rc, cluster_id, jel_fpath)
         return ClusterInfo(cluster_id, taskforce_uuid)
+
+    @staticmethod
+    async def all_from_ewms(
+        ewms_rc: RestClient,
+        jel_fpath: Path,
+    ) -> AsyncIterator["ClusterInfo"]:
+        """Factory function to create instances for all taskforces on ewms w/ jel.
+
+        This is useful to call on startup prior to reading the JEL.
+        """
+        async for tf_uuid, cid in query_all_taskforces(ewms_rc, jel_fpath):
+            yield ClusterInfo(cid, tf_uuid)
 
     def aggregate_compound_statuses(
         self,
@@ -315,11 +329,17 @@ class JobEventLogWatcher:
         """
         LOGGER.info(f"This watcher will read {self.jel_fpath}")
 
+        # first, ingest from ewms -- optimization to save per-cluster call
+        async for c in ClusterInfo.all_from_ewms(self.ewms_rc, self.jel_fpath):
+            self.cluster_infos[c.cluster_id] = c
+
+        # timers
         jel_timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.jel_timer")
         verbose_logging_timer = IntervalTimer(self._verbose_logging_timer_seconds, None)
         verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
-        jel = htcondor.JobEventLog(str(self.jel_fpath))
 
+        # read jel until it is deleted
+        jel = htcondor.JobEventLog(str(self.jel_fpath))
         while True:
             # wait for JEL to populate more
             await jel_timer.wait_until_interval()
@@ -331,19 +351,6 @@ class JobEventLogWatcher:
                 )
             except JobEventLogDeleted:
                 return
-
-    async def _add_new_cluster_infos(self) -> None:
-        # query for new taskforces, so we wait for any
-        #   taskforces/clusters that are late to start by condor
-        #   (and are not yet in the JEL)
-
-        # TODO - call for initial ingestion
-        async for taskforce_uuid, cluster_id in query_for_more_taskforces(
-            self.ewms_rc,
-            self.jel_fpath,
-            list(c.taskforce_uuid for c in self.cluster_infos.values()),
-        ):
-            self.cluster_infos[cluster_id] = ClusterInfo(cluster_id, taskforce_uuid)
 
     async def _look_at_job_event_log(
         self,
