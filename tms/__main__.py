@@ -9,7 +9,6 @@ from rest_tools.client import ClientCredentialsAuth
 from .config import ENV, config_logging
 from .file_manager import file_manager
 from .scalar import scalar
-from .utils import AppendOnlyList, TaskforceMonitor
 from .watcher import watcher_loop
 
 LOGGER = logging.getLogger(__package__)  # not name b/c that's __main__
@@ -24,8 +23,6 @@ async def main() -> None:
     # htcondor.param["TOOL_LOG"] = "log.txt"
     # htcondor.enable_log()
     htcondor.enable_debug()
-
-    tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
 
     LOGGER.info("Connecting to EWMS...")
     ewms_rc = ClientCredentialsAuth(
@@ -42,11 +39,11 @@ async def main() -> None:
     async with asyncio.TaskGroup() as tg:
         # scalar
         LOGGER.info("Firing off scalar...")
-        tg.create_task(scalar.run(tmonitors, ewms_rc))
+        tg.create_task(scalar.run(ewms_rc))
 
         # watcher
         LOGGER.info("Firing off watcher loop...")
-        tg.create_task(watcher_loop.run(tmonitors, ewms_rc))
+        tg.create_task(watcher_loop.run(ewms_rc))
 
         # file manager
         LOGGER.info("Firing off file manager...")
