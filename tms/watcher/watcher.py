@@ -379,10 +379,6 @@ class JobEventLogWatcher:
 
             # logging
             if log_verbose := verbose_logging_timer.has_interval_elapsed():
-                self.logger.info("all caught up on jel")
-                self.logger.info(
-                    f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
-                )
                 self._verbose_log_event_counts()
 
             # update ewms
@@ -396,9 +392,11 @@ class JobEventLogWatcher:
         self.logger.debug("reading events from jel...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
+            # in case jel is flooded and this loop is taking hours, send intermittent updates
             await self.maybe_update_ewms(log_verbose=False)
 
-            # first: check if deleted (by file_manager module or other)
+            # check if deleted (by file_manager module or other)
+            # note -- in 'while-true' loop so this is checked even if no jel events to loop
             if not self.jel_fpath.exists():
                 raise JobEventLogDeleted()
 
@@ -452,12 +450,14 @@ class JobEventLogWatcher:
 
     def _verbose_log_event_counts(self) -> None:
         """Log a bunch of event count info."""
+        n_events = sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())
+
         self.logger.info(
-            f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}"
+            f"jel progress report ({self._verbose_logging_timer_seconds / 60} minute): {n_events=}"
         )
 
-        # any events?
-        if sum(self._logging_ctrs[_LCEnum.N_EVENTS].values()):
+        # event breakdown?
+        if n_events:
             self.logger.info(
                 f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
             )
