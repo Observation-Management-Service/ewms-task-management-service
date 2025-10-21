@@ -66,7 +66,6 @@ class ClusterInfo:
         self.cluster_id = cluster_id
         self.taskforce_uuid = taskforce_uuid
 
-        self.seen_in_jel = False
         self.aggregate_statuses: types.AggregateStatuses = {}
         self.top_task_errors: types.TopTaskErrors = {}
 
@@ -236,7 +235,6 @@ class ClusterInfo:
         job_event: htcondor.JobEvent,
     ) -> None:
         """Extract the meaningful info from the event for the cluster."""
-        self.seen_in_jel = True
 
         #
         # CHIRP -- pilot status
@@ -314,9 +312,10 @@ class JobEventLogWatcher:
         )
 
         # strictly used for logging: a dict of int-counters for various types of events
-        self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
-            collections.defaultdict(lambda: collections.defaultdict(int))
-        )
+        self._logging_ctrs: collections.defaultdict[
+            _LCEnum, collections.defaultdict[ClusterId, int]
+        ] = collections.defaultdict(lambda: collections.defaultdict(int))
+
         self._verbose_logging_timer_seconds = ENV.TMS_MAX_LOGGING_INTERVAL
 
     async def start(self) -> None:
@@ -343,20 +342,30 @@ class JobEventLogWatcher:
         while True:
             # wait for JEL to populate more
             await jel_timer.wait_until_interval()
+
             # parse & update
             try:
-                await self._look_at_job_event_log(
-                    jel,
-                    verbose_logging_timer.has_interval_elapsed(),
-                )
+                await self._look_at_job_event_log(jel)
             except JobEventLogDeleted:
+                # ensure we flush any pending state
+                await self.maybe_update_ewms(log_verbose=True, force=True)
+                LOGGER.info(
+                    "job event log was deleted; flushed final updates and stopping watcher."
+                )
                 return
 
-    async def _look_at_job_event_log(
-        self,
-        jel: htcondor.JobEventLog,
-        log_verbose: bool,
-    ) -> None:
+            # logging
+            if log_verbose := verbose_logging_timer.has_interval_elapsed():
+                LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
+                LOGGER.info(
+                    f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
+                )
+                self._verbose_log_event_counts()
+
+            # update ewms
+            await self.maybe_update_ewms(log_verbose, force=True)
+
+    async def _look_at_job_event_log(self, jel: htcondor.JobEventLog) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
 
         # get events -- exit when no more events
@@ -364,7 +373,7 @@ class JobEventLogWatcher:
         LOGGER.debug(f"reading events from {self.jel_fpath}...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
-            await self.maybe_update_ewms(log_verbose)
+            await self.maybe_update_ewms(log_verbose=False)
 
             # first: check if deleted (by file_manager module or other)
             if not self.jel_fpath.exists():
@@ -417,17 +426,6 @@ class JobEventLogWatcher:
             else:
                 self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
-        # logging
-        if log_verbose:
-            LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
-            LOGGER.info(
-                f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
-            )
-            self._verbose_log_event_counts()
-
-        # endgame
-        await self.maybe_update_ewms(log_verbose, force=True)
-
     def _verbose_log_event_counts(self) -> None:
         """Log a bunch of event count info."""
         LOGGER.info(f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}")
@@ -450,12 +448,14 @@ class JobEventLogWatcher:
             return
 
         LOGGER.debug("prepping update to ewms")
-        LOGGER.debug(
-            pprint.pformat(
-                {k: v._jobs for k, v in self.cluster_infos.items()},
-                indent=4,
+
+        if LOGGER.isEnabledFor(logging.DEBUG):  # optimization
+            LOGGER.debug(
+                pprint.pformat(
+                    {k: v._jobs for k, v in self.cluster_infos.items()},
+                    indent=4,
+                )
             )
-        )
 
         # aggregate cluster_infos, then update ewms
         patch_body = self._aggregate_cluster_infos(self.cluster_infos)
