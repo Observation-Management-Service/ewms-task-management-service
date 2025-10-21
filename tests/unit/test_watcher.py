@@ -98,18 +98,26 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     jel_file_wrapper.start_live_file_updates(n_updates)
 
     def mock_all_requests(*args, **kwargs):
-        # fmt: off
-        if args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
-            # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
-            return {"taskforces": []}
-        # fmt: on
-        elif args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces"):
-            return {
-                "taskforces": [
-                    {"taskforce_uuid": "abc123", "cluster_id": 104501503},
-                    {"taskforce_uuid": "def456", "cluster_id": 104500588},
-                ]
-            }
+        if args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces"):
+            # AKA - "is JEL expired?" check
+            if args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
+                # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
+                return {"taskforces": []}
+            # AKA - get all the taskforces
+            elif list(args[2]["query"].keys()) == [
+                "collector",
+                "schedd",
+                "job_event_log_fpath",
+            ]:
+                return {
+                    "taskforces": [
+                        {"taskforce_uuid": "abc123", "cluster_id": 104501503},
+                        {"taskforce_uuid": "def456", "cluster_id": 104500588},
+                    ]
+                }
+            # ???
+            else:
+                raise RuntimeError(f"missing ewms patch: {args=}")
         elif args[:2] == ("POST", f"/{_WMS_PREFIX}/tms/statuses/taskforces"):
             return {}
         else:
