@@ -57,24 +57,50 @@ def action_mv(fpath: Path, *, dest: Path) -> None:
 
 
 def action_tar_gz(fpath: Path, *, dest: Path) -> None:
-    """Tar+gzip the directory and remove the source afterwards."""
+    """
+    Tar+gzip the directory and remove the source afterwards (atomically).
+
+    Steps:
+    1. Create parent 'dest' directory if needed.
+    2. Write tar.gz to a temporary file (same filesystem).
+    3. Atomically rename temp → final archive using os.replace().
+    4. Remove original directory if archive was successfully created.
+    """
     if not dest:
         raise RuntimeError(f"destination not given for 'tar_gz' on {fpath=}")
     if not fpath.is_dir():
         raise NotADirectoryError(f"{fpath=}")
 
-    tar_dest = dest / f"{fpath.name}.tar.gz"
+    # Example: /archive_dir/my-taskforce.tar.gz
+    final_tar = dest / f"{fpath.name}.tar.gz"
+    # Temp file in same dir for atomic replace
+    temp_tar = dest / f".{fpath.name}.tar.gz.tmp"
 
-    if tar_dest.exists():
-        raise FileExistsError(f"archive already exists: {tar_dest}")
+    if final_tar.exists():
+        raise FileExistsError(f"archive already exists: {final_tar}")
 
     dest.mkdir(parents=True, exist_ok=True)
 
-    with tarfile.open(tar_dest, "w:gz") as tar:
-        tar.add(fpath, arcname=fpath.name)  # preserve top-level directory
+    try:
+        # Write to a temporary tar.gz first
+        with tarfile.open(temp_tar, "w:gz") as tar:
+            tar.add(fpath, arcname=fpath.name)  # keep top-level dir structure
 
-    shutil.rmtree(fpath)
-    LOGGER.info(f"done: tar.gz {fpath} → {tar_dest} + rm {fpath}")
+        # Atomically move temp → final
+        os.replace(temp_tar, final_tar)
+
+        # Now that archive is safely in place, delete original directory
+        shutil.rmtree(fpath)
+        LOGGER.info(f"done: tar.gz {fpath} → {final_tar} + rm {fpath}")
+
+    except Exception:
+        # If something failed before the atomic rename, ensure temp is removed
+        if temp_tar.exists():
+            try:
+                temp_tar.unlink()
+            except Exception:
+                pass
+        raise
 
 
 # -----------------------------------------------------------------------------
@@ -131,19 +157,23 @@ class FileManager:
     async def act(self, fpath: Path) -> bool:
         """Perform action on filepath, if the file is old enough."""
         if not fpath.exists():
-            raise FileNotFoundError(fpath)
+            LOGGER.info(f"ok: file deleted/moved before action ({self.action})")
+            return False
 
-        if self.precheck_async is not None:
-            if not await self.precheck_async(fpath):
-                LOGGER.debug(f"precheck returned 'False' for {fpath=}")
-                return False
-
+        # age check
         if not self.is_old_enough(fpath):
             LOGGER.debug(
                 f"no action -- filepath not older than {self.age_threshold} seconds {fpath=}"
             )
             return False
 
+        # do potentially expensive check after cheap age check
+        if self.precheck_async is not None:
+            if not await self.precheck_async(fpath):
+                LOGGER.debug(f"precheck returned 'False' for {fpath=}")
+                return False
+
+        # act
         LOGGER.info(f"performing action {self.action} on {fpath}")
         self.action(fpath)
         return True
@@ -159,11 +189,22 @@ def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
     return [
         #
         # ex: 2025-8-26.tms.jel
+        # -> does check if no noncompleted taskforces
         FileManager(
             str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
             action=action_rm,
-            age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY,
-            precheck_async=partial(JELFileLogic.is_no_longer_used, ewms_rc),
+            age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT,
+            precheck_async=partial(
+                JELFileLogic.has_no_noncompleted_taskforces, ewms_rc
+            ),
+        ),
+        #
+        # ex: 2025-8-26.tms.jel
+        # -> does *NOT* check if no noncompleted taskforces
+        FileManager(
+            str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
+            action=action_rm,
+            age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG,
         ),
         #
         # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
@@ -192,8 +233,6 @@ async def run(ewms_rc: RestClient) -> None:
     LOGGER.info("Activated.")
     file_managers = build_file_managers(ewms_rc)
 
-    await asyncio.sleep(60)
-
     while True:
         LOGGER.info("inspecting filepaths...")
         n_actions = 0
@@ -201,7 +240,8 @@ async def run(ewms_rc: RestClient) -> None:
         for fm in file_managers:
             LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
 
-            for fpath in [Path(p) for p in glob.glob(fm.fpattern)]:
+            for p in glob.iglob(fm.fpattern):
+                fpath = Path(p)
                 LOGGER.debug(f"looking at {fpath=}")
                 try:
                     n_actions += int(await fm.act(fpath))  # bool -> 1/0
