@@ -115,7 +115,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                         {"taskforce_uuid": "def456", "cluster_id": 104500588},
                     ]
                 }
-            # AKA - get all the taskforces
+            # AKA - match cluster to taskforce
             elif list(args[2]["query"].keys()) == [
                 "collector",
                 "schedd",
@@ -141,7 +141,18 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             timeout=int(os.environ["TMS_WATCHER_INTERVAL"]) * n_updates * 3,  # cushion
         )
 
-    assert len(jel_watcher.cluster_infos) == 2  # check that collection is still here
+    assert len(jel_watcher.cluster_infos) == 3  # check that collection is still here
+    assert sorted(
+        (x.taskforce_uuid, x.cluster_id) for x in jel_watcher.cluster_infos.values()
+    ) == sorted(
+        [
+            # from initial ingestion (ewms)
+            ("abc123", 104501503),
+            ("def456", 104500588),
+            # from JEL (cluster id from ewms)
+            ("ghi789", 123),
+        ]
+    )
 
     # assert POST calls
     post_calls = [
