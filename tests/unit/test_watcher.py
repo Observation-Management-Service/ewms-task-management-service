@@ -115,6 +115,14 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                         {"taskforce_uuid": "def456", "cluster_id": 104500588},
                     ]
                 }
+            # AKA - get all the taskforces
+            elif list(args[2]["query"].keys()) == [
+                "collector",
+                "schedd",
+                "job_event_log_fpath",
+                "cluster_id",
+            ]:
+                return {"taskforces": [{"taskforce_uuid": "ghi789"}]}
             # ???
             else:
                 raise RuntimeError(f"missing ewms patch: {args=}")
