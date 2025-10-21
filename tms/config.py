@@ -115,7 +115,6 @@ class EnvConfig:
             self.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-
 ENV = from_environment_as_dataclass(EnvConfig)
 
 
