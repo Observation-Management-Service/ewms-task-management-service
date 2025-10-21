@@ -115,10 +115,9 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
 
-    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=mock_all_requests)
-    jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc, tmonitors)
+    jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc)
     with pytest.raises(asyncio.TimeoutError):
         # use timeout otherwise this would run forever
         await asyncio.wait_for(

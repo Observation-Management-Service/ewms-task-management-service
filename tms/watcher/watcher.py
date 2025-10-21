@@ -26,7 +26,7 @@ from ..config import (
     WATCHER_N_TOP_TASK_ERRORS,
     WMS_URL_V_PREFIX,
 )
-from ..utils import AppendOnlyList, TaskforceMonitor
+from ..types import ClusterId
 
 sdict = dict[str, Any]
 
@@ -59,10 +59,15 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(self, tmonitor: TaskforceMonitor) -> None:
-        self.tmonitor = tmonitor
-        self.taskforce_uuid = tmonitor.taskforce_uuid
+    def __init__(
+        self, cluster_id: ClusterId, taskforce_uuid: str | None = None
+    ) -> None:
+        self.cluster_id = cluster_id
+        self.taskforce_uuid = taskforce_uuid
+
         self.seen_in_jel = False
+        self.aggregate_statuses: types.AggregateStatuses = {}
+        self.top_task_errors: types.TopTaskErrors = {}
 
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
 
@@ -115,9 +120,9 @@ class ClusterInfo:
         LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
-        if self.tmonitor.aggregate_statuses == job_pilot_compound_statuses:
+        if self.aggregate_statuses == job_pilot_compound_statuses:
             raise NoUpdateException("compound statuses did not change")
-        self.tmonitor.aggregate_statuses = job_pilot_compound_statuses
+        self.aggregate_statuses = job_pilot_compound_statuses
 
         if not job_pilot_compound_statuses:
             raise NoUpdateException("compound statuses dict is empty")
@@ -147,9 +152,9 @@ class ClusterInfo:
         # is this an update?
         LOGGER.debug(pprint.pformat(errors, indent=4))
 
-        if self.tmonitor.top_task_errors == errors:
+        if self.top_task_errors == errors:
             raise NoUpdateException("errors did not change")
-        self.tmonitor.top_task_errors = errors
+        self.top_task_errors = errors
 
         if not errors:
             raise NoUpdateException("errors dict is empty")
@@ -275,11 +280,9 @@ class JobEventLogWatcher:
         self,
         jel_fpath: Path,
         ewms_rc: RestClient,
-        tmonitors: AppendOnlyList[TaskforceMonitor],
     ):
         self.jel_fpath = jel_fpath
         self.ewms_rc = ewms_rc
-        self.tmonitors = tmonitors
 
         # strictly used for logging: a dict of int-counters for various types of events
         self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
@@ -328,10 +331,7 @@ class JobEventLogWatcher:
             self.jel_fpath,
             list(c.taskforce_uuid for c in cluster_infos.values()),
         ):
-            cluster_infos[cluster_id] = ClusterInfo(
-                TaskforceMonitor(taskforce_uuid, cluster_id)
-            )
-            self.tmonitors.append(cluster_infos[cluster_id].tmonitor)
+            cluster_infos[cluster_id] = ClusterInfo(cluster_id, taskforce_uuid)
 
     async def _look_at_job_event_log(
         self,
@@ -415,9 +415,6 @@ class JobEventLogWatcher:
             )
             LOGGER.info(
                 f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
-            )
-            LOGGER.info(
-                f"events for unknown/skipped clusters: {dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
             )
 
         # reset counts
