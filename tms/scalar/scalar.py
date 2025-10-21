@@ -83,7 +83,7 @@ class EWMSCaller:
 
     @staticmethod
     async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any] | None:
-        """Get the next taskforce requested for this collector + schedd.
+        """Get the next taskforce requested for this schedd.
 
         Returns 'None' when there is no taskforce to start.
         """
@@ -101,7 +101,7 @@ class EWMSCaller:
 
     @staticmethod
     async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any] | None:
-        """Get the next taskforce requested for this collector + schedd.
+        """Get the next taskforce requested for this schedd.
 
         Returns 'None' when there is no taskforce to stop.
         """
