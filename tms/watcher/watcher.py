@@ -379,7 +379,7 @@ class JobEventLogWatcher:
 
             # logging
             if log_verbose := verbose_logging_timer.has_interval_elapsed():
-                self.logger.info(f"all caught up on '{self.jel_fpath.name}' ")
+                self.logger.info("all caught up on jel")
                 self.logger.info(
                     f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
                 )
@@ -393,7 +393,7 @@ class JobEventLogWatcher:
 
         # get events -- exit when no more events
         got_new_events = False
-        self.logger.debug(f"reading events from {self.jel_fpath}...")
+        self.logger.debug("reading events from jel...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
             await self.maybe_update_ewms(log_verbose=False)
@@ -418,7 +418,7 @@ class JobEventLogWatcher:
 
             # initial logging?
             if not got_new_events:  # aka the first time
-                self.logger.info(f"got events from jel ({self.jel_fpath})")
+                self.logger.info("got events from jel")
             got_new_events = True
 
             # new cluster? add it
