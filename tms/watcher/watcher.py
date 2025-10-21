@@ -139,7 +139,8 @@ class ClusterInfo:
                 )
             )
 
-        LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
+        if LOGGER.isEnabledFor(logging.DEBUG):  # optimization
+            LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
         if self.aggregate_statuses == job_pilot_compound_statuses:
@@ -172,7 +173,9 @@ class ClusterInfo:
         errors: types.TopTaskErrors = dict(counts.most_common(WATCHER_N_TOP_TASK_ERRORS))  # type: ignore[arg-type]
 
         # is this an update?
-        LOGGER.debug(pprint.pformat(errors, indent=4))
+
+        if LOGGER.isEnabledFor(logging.DEBUG):  # optimization
+            LOGGER.debug(pprint.pformat(errors, indent=4))
 
         if self.top_task_errors == errors:
             raise NoUpdateException("errors did not change")
