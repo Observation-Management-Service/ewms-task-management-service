@@ -284,6 +284,8 @@ class JobEventLogWatcher:
         self.jel_fpath = jel_fpath
         self.ewms_rc = ewms_rc
 
+        self.cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
+
         # strictly used for logging: a dict of int-counters for various types of events
         self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
             collections.defaultdict(lambda: collections.defaultdict(int))
@@ -300,7 +302,6 @@ class JobEventLogWatcher:
         """
         LOGGER.info(f"This watcher will read {self.jel_fpath}")
 
-        cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
         timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
         verbose_logging_timer = IntervalTimer(self._verbose_logging_timer_seconds, None)
         verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
@@ -312,35 +313,30 @@ class JobEventLogWatcher:
             # parse & update
             try:
                 await self._look_at_job_event_log(
-                    cluster_infos,
                     jel,
                     verbose_logging_timer.has_interval_elapsed(),
                 )
             except JobEventLogDeleted:
                 return
 
-    async def _add_new_cluster_infos(
-        self,
-        cluster_infos: dict[types.ClusterId, ClusterInfo],
-    ) -> None:
+    async def _add_new_cluster_infos(self) -> None:
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the JEL)
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             self.ewms_rc,
             self.jel_fpath,
-            list(c.taskforce_uuid for c in cluster_infos.values()),
+            list(c.taskforce_uuid for c in self.cluster_infos.values()),
         ):
-            cluster_infos[cluster_id] = ClusterInfo(cluster_id, taskforce_uuid)
+            self.cluster_infos[cluster_id] = ClusterInfo(cluster_id, taskforce_uuid)
 
     async def _look_at_job_event_log(
         self,
-        cluster_infos: dict[types.ClusterId, ClusterInfo],
         jel: htcondor.JobEventLog,
         log_verbose: bool,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
-        await self._add_new_cluster_infos(cluster_infos)
+        await self._add_new_cluster_infos()  # TODO - only on new cluster
 
         # get events -- exit when no more events
         got_new_events = False
@@ -372,18 +368,18 @@ class JobEventLogWatcher:
             got_new_events = True
 
             # new cluster? add it
-            if job_event.cluster not in cluster_infos:
-                cluster_infos[job_event.cluster] = ClusterInfo(job_event.cluster)
+            if job_event.cluster not in self.cluster_infos:
+                self.cluster_infos[job_event.cluster] = ClusterInfo(job_event.cluster)
 
             # update logic
             try:
-                cluster_infos[job_event.cluster].update_from_event(job_event)
+                self.cluster_infos[job_event.cluster].update_from_event(job_event)
             # cluster is done
             except ReceivedClusterRemovedJobEvent as e:
                 self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
                 await send_condor_complete(
                     self.ewms_rc,
-                    cluster_infos[job_event.cluster].taskforce_uuid,
+                    self.cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
             # nothing important happened, too common to log
@@ -402,7 +398,7 @@ class JobEventLogWatcher:
             self._verbose_log_event_counts()
 
         # endgame check
-        return await self._done_reading_events_for_now(cluster_infos, log_verbose)
+        return await self._done_reading_events_for_now(log_verbose)
 
     def _verbose_log_event_counts(self) -> None:
         """Log a bunch of event count info."""
@@ -420,17 +416,16 @@ class JobEventLogWatcher:
         # reset counts
         self._logging_ctrs.clear()
 
-    async def _done_reading_events_for_now(
-        self,
-        cluster_infos: dict[types.ClusterId, ClusterInfo],
-        log_verbose: bool,
-    ) -> None:
+    async def _done_reading_events_for_now(self, log_verbose: bool) -> None:
         LOGGER.debug("Done reading events for now")
         LOGGER.debug(
-            pprint.pformat({k: v._jobs for k, v in cluster_infos.items()}, indent=4)
+            pprint.pformat(
+                {k: v._jobs for k, v in self.cluster_infos.items()},
+                indent=4,
+            )
         )
         # aggregate cluster_infos, then update ewms
-        patch_body = self._aggregate_cluster_infos(cluster_infos)
+        patch_body = self._aggregate_cluster_infos(self.cluster_infos)
         await self._update_ewms(patch_body, log_verbose)
 
     @staticmethod
