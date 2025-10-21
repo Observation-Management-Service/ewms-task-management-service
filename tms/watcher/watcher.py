@@ -266,7 +266,6 @@ class _LCEnum(enum.Enum):
     N_EVENTS = enum.auto()
     UPDATED_CLUSTERS = enum.auto()
     NONUPDATE_CLUSTERS = enum.auto()
-    MYSTERY_CLUSTERS = enum.auto()
 
 
 class JobEventLogWatcher:
@@ -372,19 +371,13 @@ class JobEventLogWatcher:
                 LOGGER.info(f"got events from jel ({self.jel_fpath})")
             got_new_events = True
 
+            # new cluster? add it
+            if job_event.cluster not in cluster_infos:
+                cluster_infos[job_event.cluster] = ClusterInfo(job_event.cluster)
+
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
-            # unknown cluster
-            except KeyError:
-                # Count & warn once per unknown cluster; suppress the rest this pass
-                self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] += 1
-                if self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] == 1:
-                    LOGGER.warning(
-                        f"Cluster {job_event.cluster} found in JEL does not match any "
-                        f"known taskforce, skipping it"
-                    )
-                continue
             # cluster is done
             except ReceivedClusterRemovedJobEvent as e:
                 self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
@@ -396,7 +389,7 @@ class JobEventLogWatcher:
             # nothing important happened, too common to log
             except NoUpdateException:
                 self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS][job_event.cluster] += 1
-            # cluster update succeeded
+            # no exception -> cluster update succeeded
             else:
                 self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
