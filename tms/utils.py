@@ -35,7 +35,7 @@ class JELFileLogic:
         )
 
     @staticmethod
-    async def is_no_longer_used(ewms_rc: RestClient, fpath: Path) -> bool:
+    async def has_no_noncompleted_taskforces(ewms_rc: RestClient, fpath: Path) -> bool:
         """Return whether there are no non-completed taskforces using JEL."""
         resp = await ewms_rc.request(
             "POST",

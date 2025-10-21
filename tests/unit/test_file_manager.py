@@ -159,11 +159,81 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
     assert any("precheck returned 'False' for" in rec.message for rec in caplog.records)
 
 
-async def test_025_act_raises_if_missing(tmp_path):
+async def test_025_act_not_raises_if_missing(tmp_path):
     f = tmp_path / "does_not_exist"
     act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=0)
+    await act.act(f)  # does not raise exception
+
+
+def test_030_gzip_creates_gz_and_removes_source(tmp_path, caplog):
+    """A regular file should be gzipped in-place and the source removed."""
+    f = tmp_path / "job.tms.jel"
+    f.write_text("payload")
+
+    fm.action_gzip(f)
+
+    gz = tmp_path / "job.tms.jel.gz"
+    assert gz.exists()
+    assert not f.exists()
+    # quick content sanity (gunzip via python gzip)
+    import gzip
+
+    with gzip.open(gz, "rb") as gzf:
+        assert gzf.read().decode() == "payload"
+
+    assert any("compressed" in rec.message for rec in caplog.records)
+
+
+def test_031_gzip_raises_if_src_not_file(tmp_path):
+    """Directories are not valid inputs for action_gzip."""
+    d = tmp_path / "not_a_file"
+    d.mkdir()
     with pytest.raises(FileNotFoundError):
-        await act.act(f)
+        fm.action_gzip(d)
+
+
+def test_032_gzip_raises_if_final_exists(tmp_path):
+    """If the .gz already exists, action_gzip should refuse to overwrite."""
+    f = tmp_path / "job.tms.jel"
+    gz = tmp_path / "job.tms.jel.gz"
+    f.write_text("data")
+    gz.write_bytes(b"already here")
+
+    with pytest.raises(FileExistsError):
+        fm.action_gzip(f)
+
+
+def test_033_gzip_cleans_tmp_on_failure(tmp_path, monkeypatch):
+    """
+    If compression fails after creating a temp file, ensure the .tmp is cleaned up.
+    We simulate failure by making copyfileobj raise, which happens after gzip.open().
+    """
+    f = tmp_path / "job.tms.jel"
+    f.write_text("payload")
+
+    # Compute the temp name the implementation will use:
+    # final = f.with_suffix(f.suffix + ".gz") -> "job.tms.jel.gz"
+    # tmp   = final.with_name(f".{final.name}.tmp") -> ".job.tms.jel.gz.tmp"
+    final = f.with_suffix(f.suffix + ".gz")
+    expected_tmp = final.with_name(f".{final.name}.tmp")
+
+    # Force failure during the copy
+    def boom_copyfileobj(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        "tms.file_manager.file_manager.shutil.copyfileobj", boom_copyfileobj
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        fm.action_gzip(f)
+
+    # Source file should remain (since finalize never happened)
+    assert f.exists()
+    # Temp should be cleaned up
+    assert not expected_tmp.exists()
+    # Final should not exist
+    assert not final.exists()
 
 
 def test_1000_is_old_enough_true_and_false(tmp_path):
