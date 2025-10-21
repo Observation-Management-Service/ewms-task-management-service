@@ -237,14 +237,14 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
     ]
 
-    # check that aggregates are not lost
+    # check that snapshots are not lost
     # - has last (non-null novel) value that was sent to EWMS
     cluster_info = next(
         v for v in jel_watcher.cluster_infos.values() if v.taskforce_uuid == "abc123"
     )
     assert cluster_info.cluster_id == 104501503
     assert cluster_info.top_task_errors == {}
-    assert cluster_info.aggregate_statuses == {
+    assert cluster_info.compound_statuses == {
         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
         "REMOVED": {None: 1},
         "COMPLETED": {"Done": 5},
@@ -255,4 +255,4 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     )
     assert cluster_info.cluster_id == 104500588
     assert cluster_info.top_task_errors == {}
-    assert cluster_info.aggregate_statuses == {"REMOVED": {None: 1}}
+    assert cluster_info.compound_statuses == {"REMOVED": {None: 1}}

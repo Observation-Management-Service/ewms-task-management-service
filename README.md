@@ -10,7 +10,7 @@ The TMS is the central component responsible for communication between the [WMS]
 
 - **Starts** condor clusters for new taskforces (1:1), see [taskforce](#taskforce).
 - **Stops** condor clusters (`condor_rm`) when necessary.
-- **Watches** condor clusters, aggregates taskforce-level stats, and relays information to the WMS.
+- **Watches** condor clusters, snapshots taskforce-level stats, and relays information to the WMS.
 
 ## Overview
 
@@ -24,7 +24,7 @@ Internally, the service makes routine calls to the WMS to determine whether to s
 
 Concurrently, the service sends updates to the WMS for each taskforce in a job event log. Taskforces share a job event log if they start on the same day. A new file is created as needed, and files are deleted after a period of inactivity.
 
-For statelessness, when the TMS restarts, aggregated taskforce updates will be re-sent to the WMS, which handles these appropriately.
+For statelessness, when the TMS restarts, snapshot'd taskforce updates will be re-sent to the WMS, which handles these appropriately.
 
 ## How to Build
 

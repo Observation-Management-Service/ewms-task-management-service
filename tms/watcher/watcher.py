@@ -66,13 +66,13 @@ class ClusterInfo:
         self.cluster_id = cluster_id
         self.taskforce_uuid = taskforce_uuid
 
-        self.aggregate_statuses: types.AggregateStatuses = {}
+        self.compound_statuses: types.CompoundStatuses = {}
         self.top_task_errors: types.TopTaskErrors = {}
 
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
 
     @staticmethod
-    async def from_clusterid(
+    async def from_cluster_id(
         ewms_rc: RestClient,
         cluster_id: ClusterId,
         jel_fpath: Path,
@@ -93,10 +93,10 @@ class ClusterInfo:
         async for tf_uuid, cid in query_all_taskforces(ewms_rc, jel_fpath):
             yield ClusterInfo(cid, tf_uuid)
 
-    def aggregate_compound_statuses(
+    def snapshot_compound_statuses_if_changed(
         self,
-    ) -> types.AggregateStatuses:
-        """Aggregate jobs using a count of each job status & pilot status pair.
+    ) -> types.CompoundStatuses:
+        """Snapshot jobs using a count of each job status & pilot status pair.
 
         Return value is in a human-readable format, so do not persist for long.
 
@@ -115,7 +115,7 @@ class ClusterInfo:
         Raises:
             `NoUpdateException` -- if there is no update
         """
-        job_pilot_compound_statuses: types.AggregateStatuses = {}
+        job_pilot_compound_statuses: types.CompoundStatuses = {}
 
         # get counts of each
         for job_status in set(
@@ -143,19 +143,19 @@ class ClusterInfo:
             LOGGER.debug(pprint.pformat(job_pilot_compound_statuses, indent=4))
 
         # is this an update?
-        if self.aggregate_statuses == job_pilot_compound_statuses:
+        if self.compound_statuses == job_pilot_compound_statuses:
             raise NoUpdateException("compound statuses did not change")
-        self.aggregate_statuses = job_pilot_compound_statuses
+        self.compound_statuses = job_pilot_compound_statuses
 
         if not job_pilot_compound_statuses:
             raise NoUpdateException("compound statuses dict is empty")
 
         return job_pilot_compound_statuses
 
-    def get_top_task_errors(
+    def snapshot_top_task_errors_if_changed(
         self,
     ) -> types.TopTaskErrors:
-        """Aggregate top X errors of jobs.
+        """Snapshot top X errors of jobs.
 
         Return value is in a human-readable format, so do not persist for long.
 
@@ -224,13 +224,16 @@ class ClusterInfo:
     ) -> None:
         if job_event.proc not in self._jobs:
             self._jobs[job_event.proc] = {}
-        LOGGER.debug(
-            f"new job status: "
-            f"cluster={job_event.cluster} / "
-            f"proc={job_event.proc} / "
-            f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
-            f"{jie.name} -> {value_code_tuple}"
-        )
+
+        if LOGGER.isEnabledFor(logging.DEBUG):
+            LOGGER.debug(
+                f"new job status: "
+                f"cluster={job_event.cluster} / "
+                f"proc={job_event.proc} / "
+                f"event={job_event.get('EventTypeNumber','?')} ({job_event.type.name}) / "
+                f"{jie.name} -> {value_code_tuple}"
+            )
+
         self._jobs[job_event.proc][jie] = value_code_tuple
 
     def update_from_event(
@@ -404,7 +407,7 @@ class JobEventLogWatcher:
             # new cluster? add it
             if job_event.cluster not in self.cluster_infos:
                 self.cluster_infos[job_event.cluster] = (
-                    await ClusterInfo.from_clusterid(
+                    await ClusterInfo.from_cluster_id(
                         self.ewms_rc,
                         job_event.cluster,
                         self.jel_fpath,
@@ -460,12 +463,12 @@ class JobEventLogWatcher:
                 )
             )
 
-        # aggregate cluster_infos, then update ewms
-        patch_body = self._aggregate_cluster_infos(self.cluster_infos)
+        # snapshot cluster_infos, then update ewms
+        patch_body = self._snapshot_cluster_infos_per_taskforce(self.cluster_infos)
         await self._update_ewms(self.ewms_rc, patch_body, log_verbose)
 
     @staticmethod
-    def _aggregate_cluster_infos(
+    def _snapshot_cluster_infos_per_taskforce(
         cluster_infos: dict[types.ClusterId, ClusterInfo],
     ) -> sdict:
         patch_body: sdict = {
@@ -473,27 +476,27 @@ class JobEventLogWatcher:
             _ALL_COMP_STAT_KEY: {},
         }
 
-        # NOTE: We unfortunately cannot reduce the data after aggregating.
-        #  Once we aggregate we lose job-level granularity, which is
+        # NOTE: We unfortunately cannot reduce the data after snapshotting.
+        #  Once we snapshot we lose job-level granularity, which is
         #  needed for replacing/updating individual jobs' status(es).
         #  Alternatively, we could re-parse the entire JEL every time.
         for cid, info in cluster_infos.items():
             try:
                 LOGGER.debug(
-                    f"Getting top task errors {info.taskforce_uuid=} / {cid=}..."
+                    f"Snapshotting top task errors {info.taskforce_uuid=} / {cid=}..."
                 )
                 patch_body[_ALL_TOP_ERRORS_KEY][
                     info.taskforce_uuid
-                ] = info.get_top_task_errors()
+                ] = info.snapshot_top_task_errors_if_changed()
             except NoUpdateException:
                 pass
             try:
                 LOGGER.debug(
-                    f"Aggregating compound statuses {info.taskforce_uuid=} / {cid=}..."
+                    f"Snapshotting compound statuses {info.taskforce_uuid=} / {cid=}..."
                 )
                 patch_body[_ALL_COMP_STAT_KEY][
                     info.taskforce_uuid
-                ] = info.aggregate_compound_statuses()
+                ] = info.snapshot_compound_statuses_if_changed()
             except NoUpdateException:
                 pass
 
