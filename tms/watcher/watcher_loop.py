@@ -24,7 +24,7 @@ async def run(ewms_rc: RestClient) -> None:
     # on task fail, cancel others then raise original exception(s)
     async with asyncio.TaskGroup() as tg:
         while True:
-            LOGGER.info(
+            LOGGER.debug(  # very chatty
                 f"Analyzing JEL directory for new logs ({ENV.JOB_EVENT_LOG_DIR})..."
             )
             for jel_fpath in ENV.JOB_EVENT_LOG_DIR.iterdir():
