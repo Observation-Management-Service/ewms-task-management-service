@@ -2,6 +2,7 @@
 
 import asyncio
 import collections
+import enum
 import logging
 import pprint
 from pathlib import Path
@@ -20,7 +21,11 @@ from .utils import (
     send_condor_complete,
 )
 from .. import condor_tools, types
-from ..config import ENV, WATCHER_N_TOP_TASK_ERRORS, WMS_URL_V_PREFIX
+from ..config import (
+    ENV,
+    WATCHER_N_TOP_TASK_ERRORS,
+    WMS_URL_V_PREFIX,
+)
 from ..utils import AppendOnlyList, TaskforceMonitor
 
 sdict = dict[str, Any]
@@ -37,7 +42,7 @@ class UnknownJobEvent(Exception):
 
 
 class ReceivedClusterRemovedJobEvent(Exception):
-    """Raise when a job event signally the cluster has been removed is seen."""
+    """Raise when a job event signaling the cluster has been removed is seen."""
 
     def __init__(self, timestamp: int):
         self.timestamp = timestamp
@@ -255,6 +260,15 @@ class JobEventLogDeleted(Exception):
     """Raised when a job event log file was deleted."""
 
 
+class _LCEnum(enum.Enum):
+    """Enum for the 'JobEventLogWatcher._logging_ctrs' entries."""
+
+    N_EVENTS = enum.auto()
+    UPDATED_CLUSTERS = enum.auto()
+    NONUPDATE_CLUSTERS = enum.auto()
+    MYSTERY_CLUSTERS = enum.auto()
+
+
 class JobEventLogWatcher:
     """Used to watch and communicate job event log updates to ewms."""
 
@@ -268,6 +282,12 @@ class JobEventLogWatcher:
         self.ewms_rc = ewms_rc
         self.tmonitors = tmonitors
 
+        # strictly used for logging: a dict of int-counters for various types of events
+        self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
+            collections.defaultdict(lambda: collections.defaultdict(int))
+        )
+        self._verbose_logging_timer_seconds = ENV.TMS_MAX_LOGGING_INTERVAL
+
     async def start(self) -> None:
         """Watch over one JEL file, containing multiple taskforces.
 
@@ -280,7 +300,8 @@ class JobEventLogWatcher:
 
         cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
         timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
-        verbose_logging_timer = IntervalTimer(ENV.TMS_MAX_LOGGING_INTERVAL, None)
+        verbose_logging_timer = IntervalTimer(self._verbose_logging_timer_seconds, None)
+        verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
         jel = htcondor.JobEventLog(str(self.jel_fpath))
 
         while True:
@@ -336,6 +357,7 @@ class JobEventLogWatcher:
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
+                self._logging_ctrs[_LCEnum.N_EVENTS][job_event.cluster] += 1
                 await asyncio.sleep(0)  # since htcondor is not async
             except StopIteration:
                 break
@@ -353,29 +375,60 @@ class JobEventLogWatcher:
             # update logic
             try:
                 cluster_infos[job_event.cluster].update_from_event(job_event)
+            # unknown cluster
             except KeyError:
-                LOGGER.warning(
-                    f"Cluster found in JEL does not match any "
-                    f"known taskforce ({job_event.cluster}), skipping it"
-                )
+                # Count & warn once per unknown cluster; suppress the rest this pass
+                self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] += 1
+                if self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS][job_event.cluster] == 1:
+                    LOGGER.warning(
+                        f"Cluster {job_event.cluster} found in JEL does not match any "
+                        f"known taskforce, skipping it"
+                    )
                 continue
+            # cluster is done
             except ReceivedClusterRemovedJobEvent as e:
+                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
                 await send_condor_complete(
                     self.ewms_rc,
                     cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
+            # nothing important happened, too common to log
             except NoUpdateException:
-                pass  # nothing important happened, too common to log
+                self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS][job_event.cluster] += 1
+            # cluster update succeeded
+            else:
+                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
         # logging
         if log_verbose:
-            LOGGER.info(f"done reading all events from {self.jel_fpath}.")
-        if not got_new_events and log_verbose:
-            LOGGER.info("jel didn't contain any new events.")
+            LOGGER.info(f"all caught up on '{self.jel_fpath.name}' ")
+            LOGGER.info(
+                f"progress report ({self._verbose_logging_timer_seconds / 60} minute)..."
+            )
+            self._verbose_log_event_counts()
 
         # endgame check
         return await self._done_reading_events_for_now(cluster_infos, log_verbose)
+
+    def _verbose_log_event_counts(self) -> None:
+        """Log a bunch of event count info."""
+        LOGGER.info(f"events: {sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())}")
+
+        # any events?
+        if sum(self._logging_ctrs[_LCEnum.N_EVENTS].values()):
+            LOGGER.info(
+                f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
+            )
+            LOGGER.info(
+                f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
+            )
+            LOGGER.info(
+                f"events for unknown/skipped clusters: {dict(self._logging_ctrs[_LCEnum.MYSTERY_CLUSTERS])}"
+            )
+
+        # reset counts
+        self._logging_ctrs.clear()
 
     async def _done_reading_events_for_now(
         self,
@@ -435,7 +488,7 @@ class JobEventLogWatcher:
         # (it's okay to send an empty sub-dict, but all empties is pointless)
         if patch_body := {k: v for k, v in patch_body.items() if v}:
             LOGGER.info(
-                f"SENDING UPDATES TO EWMS ("
+                f"SENDING BULK UPDATES TO EWMS ("
                 f"statuses={patch_body.get(_ALL_COMP_STAT_KEY,{})}, "
                 f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
@@ -444,7 +497,7 @@ class JobEventLogWatcher:
                 f"/{WMS_URL_V_PREFIX}/tms/statuses/taskforces",
                 patch_body,
             )
-            LOGGER.info("updates sent.")
+            LOGGER.info("ewms updates sent.")
         else:
             if log_verbose:
                 LOGGER.info("no updates needed for ewms.")
