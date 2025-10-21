@@ -82,7 +82,7 @@ class ClusterInfo:
         return ClusterInfo(cluster_id, taskforce_uuid)
 
     @staticmethod
-    async def all_from_ewms(
+    async def iter_from_ewms(
         ewms_rc: RestClient,
         jel_fpath: Path,
     ) -> AsyncIterator["ClusterInfo"]:
@@ -332,7 +332,7 @@ class JobEventLogWatcher:
         LOGGER.info(f"This watcher will read {self.jel_fpath}")
 
         # first, ingest from ewms -- optimization to save per-cluster call
-        async for c in ClusterInfo.all_from_ewms(self.ewms_rc, self.jel_fpath):
+        async for c in ClusterInfo.iter_from_ewms(self.ewms_rc, self.jel_fpath):
             self.cluster_infos[c.cluster_id] = c
 
         # timers
