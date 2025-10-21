@@ -159,11 +159,10 @@ async def test_024_act_skips_if_precheck_fails(tmp_path, caplog):
     assert any("precheck returned 'False' for" in rec.message for rec in caplog.records)
 
 
-async def test_025_act_raises_if_missing(tmp_path):
+async def test_025_act_not_raises_if_missing(tmp_path):
     f = tmp_path / "does_not_exist"
     act = fm.FileManager(fpattern="*", action=fm.action_rm, age_threshold=0)
-    with pytest.raises(FileNotFoundError):
-        await act.act(f)
+    await act.act(f)  # does not raise exception
 
 
 def test_1000_is_old_enough_true_and_false(tmp_path):
