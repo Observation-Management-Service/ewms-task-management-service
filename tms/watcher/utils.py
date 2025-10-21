@@ -112,6 +112,32 @@ async def query_for_more_taskforces(
         yield dicto["taskforce_uuid"], dicto["cluster_id"]
 
 
+async def get_taskforce_uuid(
+    ewms_rc: RestClient,
+    cluster_id: types.ClusterId,
+    jel_fpath: Path,
+) -> str:
+    """Get the taskforce uuid for the given cluster id + jel."""
+    LOGGER.debug(f"Querying for taskforce id for {cluster_id=}...")
+    res = await ewms_rc.request(
+        "POST",
+        f"/{WMS_URL_V_PREFIX}/query/taskforces",
+        {
+            "query": {
+                "collector": get_collector(),  # TODO: remove w/ PR #58
+                "schedd": get_schedd(),
+                "job_event_log_fpath": str(jel_fpath),
+                "cluster_id": cluster_id,
+            },
+            "projection": ["taskforce_uuid"],
+        },
+    )
+    try:
+        return res["taskforces"][0]["taskforce_uuid"]
+    except KeyError as e:
+        raise RuntimeError(f"failed to get taskforce uuid for {cluster_id=}") from e
+
+
 async def send_condor_complete(
     ewms_rc: RestClient,
     taskforce_uuid: str,

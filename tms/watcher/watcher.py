@@ -16,6 +16,7 @@ from wipac_dev_tools.timing_tools import IntervalTimer
 from .utils import (
     JobInfoKey,
     JobInfoVal,
+    get_taskforce_uuid,
     job_info_val_to_string,
     query_for_more_taskforces,
     send_condor_complete,
@@ -59,9 +60,7 @@ class NoUpdateException(Exception):
 class ClusterInfo:
     """Encapsulates statuses and info of a Condor cluster."""
 
-    def __init__(
-        self, cluster_id: ClusterId, taskforce_uuid: str | None = None
-    ) -> None:
+    def __init__(self, cluster_id: ClusterId, taskforce_uuid: str) -> None:
         self.cluster_id = cluster_id
         self.taskforce_uuid = taskforce_uuid
 
@@ -70,6 +69,16 @@ class ClusterInfo:
         self.top_task_errors: types.TopTaskErrors = {}
 
         self._jobs: dict[int, dict[JobInfoKey, JobInfoVal]] = {}
+
+    @staticmethod
+    async def from_clusterid(
+        ewms_rc: RestClient,
+        cluster_id: ClusterId,
+        jel_fpath: Path,
+    ) -> "ClusterInfo":
+        """Factory function to create instance without knowing taskforce_uuid."""
+        taskforce_uuid = await get_taskforce_uuid(ewms_rc, cluster_id, jel_fpath)
+        return ClusterInfo(cluster_id, taskforce_uuid)
 
     def aggregate_compound_statuses(
         self,
@@ -286,6 +295,10 @@ class JobEventLogWatcher:
 
         self.cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
 
+        self._update_ewms_timer = IntervalTimer(
+            ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.update_ewms"
+        )
+
         # strictly used for logging: a dict of int-counters for various types of events
         self._logging_ctrs: dict[_LCEnum, dict[types.ClusterId, int]] = (
             collections.defaultdict(lambda: collections.defaultdict(int))
@@ -302,14 +315,14 @@ class JobEventLogWatcher:
         """
         LOGGER.info(f"This watcher will read {self.jel_fpath}")
 
-        timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.timer")
+        jel_timer = IntervalTimer(ENV.TMS_WATCHER_INTERVAL, f"{LOGGER.name}.jel_timer")
         verbose_logging_timer = IntervalTimer(self._verbose_logging_timer_seconds, None)
         verbose_logging_timer.fastforward()  # this way we will start w/ a verbose log
         jel = htcondor.JobEventLog(str(self.jel_fpath))
 
         while True:
             # wait for JEL to populate more
-            await timer.wait_until_interval()
+            await jel_timer.wait_until_interval()
             # parse & update
             try:
                 await self._look_at_job_event_log(
@@ -323,6 +336,8 @@ class JobEventLogWatcher:
         # query for new taskforces, so we wait for any
         #   taskforces/clusters that are late to start by condor
         #   (and are not yet in the JEL)
+
+        # TODO - call for initial ingestion
         async for taskforce_uuid, cluster_id in query_for_more_taskforces(
             self.ewms_rc,
             self.jel_fpath,
@@ -336,13 +351,13 @@ class JobEventLogWatcher:
         log_verbose: bool,
     ) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
-        await self._add_new_cluster_infos()  # TODO - only on new cluster
 
         # get events -- exit when no more events
         got_new_events = False
         LOGGER.debug(f"reading events from {self.jel_fpath}...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
+            await self.maybe_update_ewms(log_verbose)
 
             # first: check if deleted (by file_manager module or other)
             if not self.jel_fpath.exists():
@@ -369,7 +384,13 @@ class JobEventLogWatcher:
 
             # new cluster? add it
             if job_event.cluster not in self.cluster_infos:
-                self.cluster_infos[job_event.cluster] = ClusterInfo(job_event.cluster)
+                self.cluster_infos[job_event.cluster] = (
+                    await ClusterInfo.from_clusterid(
+                        self.ewms_rc,
+                        job_event.cluster,
+                        self.jel_fpath,
+                    )
+                )
 
             # update logic
             try:
@@ -397,8 +418,8 @@ class JobEventLogWatcher:
             )
             self._verbose_log_event_counts()
 
-        # endgame check
-        return await self._done_reading_events_for_now(log_verbose)
+        # endgame
+        await self.maybe_update_ewms(log_verbose, force=True)
 
     def _verbose_log_event_counts(self) -> None:
         """Log a bunch of event count info."""
@@ -416,17 +437,22 @@ class JobEventLogWatcher:
         # reset counts
         self._logging_ctrs.clear()
 
-    async def _done_reading_events_for_now(self, log_verbose: bool) -> None:
-        LOGGER.debug("Done reading events for now")
+    async def maybe_update_ewms(self, log_verbose: bool, force: bool = False) -> None:
+        """Send an update to EWMS if timer has elapsed (or force=True)."""
+        if not force and not self._update_ewms_timer.has_interval_elapsed():
+            return
+
+        LOGGER.debug("prepping update to ewms")
         LOGGER.debug(
             pprint.pformat(
                 {k: v._jobs for k, v in self.cluster_infos.items()},
                 indent=4,
             )
         )
+
         # aggregate cluster_infos, then update ewms
         patch_body = self._aggregate_cluster_infos(self.cluster_infos)
-        await self._update_ewms(patch_body, log_verbose)
+        await self._update_ewms(self.ewms_rc, patch_body, log_verbose)
 
     @staticmethod
     def _aggregate_cluster_infos(
@@ -463,8 +489,9 @@ class JobEventLogWatcher:
 
         return patch_body
 
+    @staticmethod
     async def _update_ewms(
-        self,
+        ewms_rc: RestClient,
         patch_body: sdict,
         log_verbose: bool,
     ) -> None:
@@ -477,7 +504,7 @@ class JobEventLogWatcher:
                 f"statuses={patch_body.get(_ALL_COMP_STAT_KEY,{})}, "
                 f"errors={list(patch_body.get(_ALL_TOP_ERRORS_KEY,{}).keys())})"
             )
-            await self.ewms_rc.request(
+            await ewms_rc.request(
                 "POST",
                 f"/{WMS_URL_V_PREFIX}/tms/statuses/taskforces",
                 patch_body,
