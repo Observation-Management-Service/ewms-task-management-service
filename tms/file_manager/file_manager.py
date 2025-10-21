@@ -228,32 +228,50 @@ def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
 # -----------------------------------------------------------------------------
 
 
+async def run_once(
+    ewms_rc: RestClient,
+    file_managers: list[FileManager] | None = None,
+) -> int:
+    """
+    Execute a single inspection pass over all file managers.
+
+    Returns:
+        int: number of actions performed in this pass.
+    """
+    if file_managers is None:
+        file_managers = build_file_managers(ewms_rc)
+
+    LOGGER.info("inspecting filepaths...")
+    n_actions = 0
+
+    for fm in file_managers:
+        LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
+
+        for p in glob.iglob(fm.fpattern):  # streaming
+            fpath = Path(p)
+            LOGGER.debug(f"looking at {fpath=}")
+            try:
+                n_actions += int(await fm.act(fpath))  # bool -> 1/0
+            except Exception:
+                LOGGER.exception(f"action failed for {fpath=}")
+                continue
+            else:
+                # let the TMS do other scheduled things
+                await asyncio.sleep(0)
+
+    LOGGER.info(f"done inspecting filepaths -- performed {n_actions} actions")
+    return n_actions
+
+
 async def run(ewms_rc: RestClient) -> None:
-    """Run the file manager loop."""
+    """Run the file manager loop.
+
+    NOTE - waits 'TMS_FILE_MANAGER_INTERVAL' seconds at top
+    """
     LOGGER.info("Activated.")
     file_managers = build_file_managers(ewms_rc)
 
     while True:
-        LOGGER.info("inspecting filepaths...")
-        n_actions = 0
-
-        for fm in file_managers:
-            LOGGER.debug(f"searching filepath pattern: {fm.fpattern}")
-
-            for p in glob.iglob(fm.fpattern):
-                fpath = Path(p)
-                LOGGER.debug(f"looking at {fpath=}")
-                try:
-                    n_actions += int(await fm.act(fpath))  # bool -> 1/0
-                except Exception:
-                    LOGGER.exception(f"action failed for {fpath=}")
-                    continue
-                else:
-                    await asyncio.sleep(0)  # let the TMS do other scheduled things
-
-        LOGGER.info(
-            f"done inspecting filepaths -- performed {n_actions} actions "
-            f"(next round in {ENV.TMS_FILE_MANAGER_INTERVAL}s)"
-        )
-
+        LOGGER.info(f"next round in {ENV.TMS_FILE_MANAGER_INTERVAL}s")
         await asyncio.sleep(ENV.TMS_FILE_MANAGER_INTERVAL)  # O(hours)
+        await run_once(ewms_rc, file_managers)

@@ -32,10 +32,11 @@ async def main() -> None:
         ENV.EWMS_CLIENT_SECRET,
     )
 
-    LOGGER.info("Starting tasks...")
+    # run one-time file manager so other tasks don't touch to-be-deleted files
+    LOGGER.info("Starting one-time file manager before other tasks...")
+    await file_manager.run_once(ewms_rc)
 
-    # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
-    # on task fail, cancel others then raise original exception(s)
+    LOGGER.info("Starting tasks...")
     async with asyncio.TaskGroup() as tg:
         # scalar
         LOGGER.info("Firing off scalar...")
