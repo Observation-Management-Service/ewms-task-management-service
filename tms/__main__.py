@@ -10,7 +10,6 @@ from .condor_tools import get_schedd
 from .config import ENV, config_logging
 from .file_manager import file_manager
 from .scalar import scalar
-from .utils import AppendOnlyList, TaskforceMonitor
 from .watcher import watcher_loop
 
 LOGGER = logging.getLogger(__package__)  # not name b/c that's __main__
@@ -27,8 +26,6 @@ async def main() -> None:
     htcondor.enable_debug()
     LOGGER.info(f"htcondor schedd: {get_schedd()}")
 
-    tmonitors: AppendOnlyList[TaskforceMonitor] = AppendOnlyList()
-
     LOGGER.info("Connecting to EWMS...")
     ewms_rc = ClientCredentialsAuth(
         ENV.EWMS_ADDRESS,
@@ -37,18 +34,19 @@ async def main() -> None:
         ENV.EWMS_CLIENT_SECRET,
     )
 
-    LOGGER.info("Starting tasks...")
+    # run one-time file manager so other tasks don't touch to-be-deleted files
+    LOGGER.info("Starting one-time file manager before other tasks...")
+    await file_manager.run_once(ewms_rc)
 
-    # https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
-    # on task fail, cancel others then raise original exception(s)
+    LOGGER.info("Starting tasks...")
     async with asyncio.TaskGroup() as tg:
         # scalar
         LOGGER.info("Firing off scalar...")
-        tg.create_task(scalar.run(tmonitors, ewms_rc))
+        tg.create_task(scalar.run(ewms_rc))
 
         # watcher
         LOGGER.info("Firing off watcher loop...")
-        tg.create_task(watcher_loop.run(tmonitors, ewms_rc))
+        tg.create_task(watcher_loop.run(ewms_rc))
 
         # file manager
         LOGGER.info("Firing off file manager...")

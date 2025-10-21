@@ -9,7 +9,7 @@ import htcondor  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
 from .. import condor_tools, types
-from ..condor_tools import get_schedd
+from ..condor_tools import get_collector, get_schedd
 from ..config import WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
@@ -86,18 +86,18 @@ def job_info_val_to_string(
 ########################################################################################
 
 
-async def query_for_more_taskforces(
+async def query_all_taskforces(
     ewms_rc: RestClient,
     jel_fpath: Path,
-    taskforce_uuids: list[str],
 ) -> AsyncIterator[tuple[str, types.ClusterId]]:
-    """Get new taskforce uuids."""
-    LOGGER.debug("Querying for more taskforces from EWMS...")
+    """Get all taskforce uuids for jel."""
+    LOGGER.debug(f"Querying all taskforce_uuids from EWMS for '{jel_fpath.name}'...")
     res = await ewms_rc.request(
         "POST",
         f"/{WMS_URL_V_PREFIX}/query/taskforces",
         {
             "query": {
+                "collector": get_collector(),  # TODO: remove w/ PR #58
                 "schedd": get_schedd(),
                 "job_event_log_fpath": str(jel_fpath),
             },
@@ -105,10 +105,35 @@ async def query_for_more_taskforces(
         },
     )
     for dicto in res["taskforces"]:
-        if dicto["taskforce_uuid"] in taskforce_uuids:
-            continue
-        LOGGER.info(f"Tracking new taskforce: {dicto}")
         yield dicto["taskforce_uuid"], dicto["cluster_id"]
+
+
+async def get_taskforce_uuid(
+    ewms_rc: RestClient,
+    cluster_id: types.ClusterId,
+    jel_fpath: Path,
+) -> str:
+    """Get the taskforce uuid for the given cluster id + jel."""
+    LOGGER.debug(
+        f"Querying for taskforce_uuid for {cluster_id=} in '{jel_fpath.name}'..."
+    )
+    res = await ewms_rc.request(
+        "POST",
+        f"/{WMS_URL_V_PREFIX}/query/taskforces",
+        {
+            "query": {
+                "collector": get_collector(),  # TODO: remove w/ PR #58
+                "schedd": get_schedd(),
+                "job_event_log_fpath": str(jel_fpath),
+                "cluster_id": cluster_id,
+            },
+            "projection": ["taskforce_uuid"],
+        },
+    )
+    try:
+        return res["taskforces"][0]["taskforce_uuid"]
+    except KeyError as e:
+        raise RuntimeError(f"failed to get taskforce uuid for {cluster_id=}") from e
 
 
 async def send_condor_complete(

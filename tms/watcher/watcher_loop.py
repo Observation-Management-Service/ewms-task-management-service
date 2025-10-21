@@ -7,16 +7,13 @@ from pathlib import Path
 from rest_tools.client import RestClient
 
 from . import watcher
-from ..config import ENV, abbrev_dunder_name
-from ..utils import AppendOnlyList, JELFileLogic, TaskforceMonitor
+from ..config import ENV
+from ..utils import JELFileLogic
 
-LOGGER = logging.getLogger(abbrev_dunder_name(__name__))
+LOGGER = logging.getLogger(__name__)
 
 
-async def run(
-    tmonitors: AppendOnlyList[TaskforceMonitor],
-    ewms_rc: RestClient,
-) -> None:
+async def run(ewms_rc: RestClient) -> None:
     """Watch over all JEL files and send EWMS taskforce updates."""
     LOGGER.info("Activated.")
 
@@ -43,11 +40,7 @@ async def run(
 
                 # go!
                 LOGGER.info(f"Creating new watcher for JEL {jel_fpath}...")
-                jel_watcher = watcher.JobEventLogWatcher(
-                    jel_fpath,
-                    ewms_rc,
-                    tmonitors,
-                )
+                jel_watcher = watcher.JobEventLogWatcher(jel_fpath, ewms_rc)
                 task = tg.create_task(jel_watcher.start())
 
                 # when the watcher exits (normal/error), allow re-watching this path

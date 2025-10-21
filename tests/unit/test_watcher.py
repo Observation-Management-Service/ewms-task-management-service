@@ -98,27 +98,42 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
     jel_file_wrapper.start_live_file_updates(n_updates)
 
     def mock_all_requests(*args, **kwargs):
-        # fmt: off
-        if args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces") and args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
-            # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
-            return {"taskforces": []}
-        # fmt: on
-        elif args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces"):
-            return {
-                "taskforces": [
-                    {"taskforce_uuid": "abc123", "cluster_id": 104501503},
-                    {"taskforce_uuid": "def456", "cluster_id": 104500588},
-                ]
-            }
+        if args[:2] == ("POST", f"/{_WMS_PREFIX}/query/taskforces"):
+            # AKA - "is JEL expired?" check
+            if args[2]["query"].get("condor_complete_ts") == {"$ne": None}:
+                # this call only happens after the JEL is expired, so for these tests, ignoring it is fine
+                return {"taskforces": []}
+            # AKA - get all the taskforces
+            elif list(args[2]["query"].keys()) == [
+                "collector",
+                "schedd",
+                "job_event_log_fpath",
+            ]:
+                return {
+                    "taskforces": [
+                        {"taskforce_uuid": "abc123", "cluster_id": 104501503},
+                        {"taskforce_uuid": "def456", "cluster_id": 104500588},
+                    ]
+                }
+            # AKA - match cluster to taskforce
+            elif list(args[2]["query"].keys()) == [
+                "collector",
+                "schedd",
+                "job_event_log_fpath",
+                "cluster_id",
+            ]:
+                return {"taskforces": [{"taskforce_uuid": "ghi789"}]}
+            # ???
+            else:
+                raise RuntimeError(f"missing ewms patch: {args=}")
         elif args[:2] == ("POST", f"/{_WMS_PREFIX}/tms/statuses/taskforces"):
             return {}
         else:
             return Exception(f"unexpected request arguments: {args=}, {kwargs=}")
 
-    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor] = utils.AppendOnlyList()
     rc = MagicMock()
     rc.request = AsyncMock(side_effect=mock_all_requests)
-    jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc, tmonitors)
+    jel_watcher = watcher.JobEventLogWatcher(jel_file_wrapper.live_file, rc)
     with pytest.raises(asyncio.TimeoutError):
         # use timeout otherwise this would run forever
         await asyncio.wait_for(
@@ -126,7 +141,18 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             timeout=int(os.environ["TMS_WATCHER_INTERVAL"]) * n_updates * 3,  # cushion
         )
 
-    assert len(tmonitors) == 2  # check that the taskforce monitors is still here
+    assert len(jel_watcher.cluster_infos) == 3  # check that collection is still here
+    assert sorted(
+        (x.taskforce_uuid, x.cluster_id) for x in jel_watcher.cluster_infos.values()
+    ) == sorted(
+        [
+            # from initial ingestion (ewms)
+            ("abc123", 104501503),
+            ("def456", 104500588),
+            # from JEL (cluster id from ewms)
+            ("ghi789", 123),
+        ]
+    )
 
     # assert POST calls
     post_calls = [
@@ -211,18 +237,22 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
         ),
     ]
 
-    # check that aggregates are not lost
+    # check that snapshots are not lost
     # - has last (non-null novel) value that was sent to EWMS
-    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "abc123")
-    assert tmonitor.cluster_id == 104501503
-    assert tmonitor.top_task_errors == {}
-    assert tmonitor.aggregate_statuses == {
+    cluster_info = next(
+        v for v in jel_watcher.cluster_infos.values() if v.taskforce_uuid == "abc123"
+    )
+    assert cluster_info.cluster_id == 104501503
+    assert cluster_info.top_task_errors == {}
+    assert cluster_info.compound_statuses == {
         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
         "REMOVED": {None: 1},
         "COMPLETED": {"Done": 5},
     }
     # - has last (non-null novel) value that was sent to EWMS
-    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "def456")
-    assert tmonitor.cluster_id == 104500588
-    assert tmonitor.top_task_errors == {}
-    assert tmonitor.aggregate_statuses == {"REMOVED": {None: 1}}
+    cluster_info = next(
+        v for v in jel_watcher.cluster_infos.values() if v.taskforce_uuid == "def456"
+    )
+    assert cluster_info.cluster_id == 104500588
+    assert cluster_info.top_task_errors == {}
+    assert cluster_info.compound_statuses == {"REMOVED": {None: 1}}

@@ -71,7 +71,9 @@ class EnvConfig:
     # ex: "foo=1 bar=barbar baz=1"
     TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT: Dict[str, str] = dc.field(default_factory=dict)
 
-    JOB_EVENT_LOG_MODIFICATION_EXPIRY: int = 60 * 60 * 24  # 24 hours
+    JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT: int = 1 * 60 * 60 * 24  # 1 day
+    JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG: int = 7 * 60 * 60 * 24  # 7 days
+    JOB_EVENT_LOG_ARCHIVE_DELETE_EXPIRY: int = 7 * 60 * 60 * 24  # 7 days
 
     TASKFORCE_DIRS_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
     TASKFORCE_DIRS_TAR_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
@@ -99,9 +101,19 @@ class EnvConfig:
     LOG_LEVEL_REST_TOOLS: logging_tools.LoggerLevel = "INFO"
 
     def __post_init__(self):
+        if (
+            self.JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG
+            < self.JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT
+        ):
+            raise ValueError(
+                "'JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG' must be >= "
+                "'JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT'"
+            )
+
         if not self.JOB_EVENT_LOG_DIR.exists():
             LOGGER.warning(f"JOB_EVENT_LOG_DIR: mkdir -p {self.JOB_EVENT_LOG_DIR}")
             self.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 
 
 ENV = from_environment_as_dataclass(EnvConfig)

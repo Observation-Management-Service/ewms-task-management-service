@@ -10,7 +10,6 @@ from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
 from . import starter, stopper
-from .. import utils
 from ..condor_tools import get_schedd
 from ..config import ENV, WMS_URL_V_PREFIX
 
@@ -175,12 +174,7 @@ class EWMSCaller:
 # Loops
 
 
-async def run(
-    tmonitors: utils.AppendOnlyList[utils.TaskforceMonitor],
-    # NOTE - ^^^^ can be used for the smart starter/stopper IF this decision is made on TMS.
-    #        if the decision is made by the WMS, then this is not needed (I'm leaning toward this)
-    ewms_rc: RestClient,
-) -> None:
+async def run(ewms_rc: RestClient) -> None:
     """Listen to EWMS and start and/or designated taskforces."""
     LOGGER.info("Activated.")
 
