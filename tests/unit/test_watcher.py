@@ -125,7 +125,7 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
             timeout=int(os.environ["TMS_WATCHER_INTERVAL"]) * n_updates * 3,  # cushion
         )
 
-    assert len(tmonitors) == 2  # check that the taskforce monitors is still here
+    assert len(jel_watcher.cluster_infos) == 2  # check that collection is still here
 
     # assert POST calls
     post_calls = [
@@ -212,16 +212,20 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
 
     # check that aggregates are not lost
     # - has last (non-null novel) value that was sent to EWMS
-    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "abc123")
-    assert tmonitor.cluster_id == 104501503
-    assert tmonitor.top_task_errors == {}
-    assert tmonitor.aggregate_statuses == {
+    cluster_info = next(
+        v for v in jel_watcher.cluster_infos.values() if v.taskforce_uuid == "abc123"
+    )
+    assert cluster_info.cluster_id == 104501503
+    assert cluster_info.top_task_errors == {}
+    assert cluster_info.aggregate_statuses == {
         "HELD: Memory usage exceeds a memory limit": {"Tasking": 1},
         "REMOVED": {None: 1},
         "COMPLETED": {"Done": 5},
     }
     # - has last (non-null novel) value that was sent to EWMS
-    tmonitor = next(t for t in tmonitors if t.taskforce_uuid == "def456")
-    assert tmonitor.cluster_id == 104500588
-    assert tmonitor.top_task_errors == {}
-    assert tmonitor.aggregate_statuses == {"REMOVED": {None: 1}}
+    cluster_info = next(
+        v for v in jel_watcher.cluster_infos.values() if v.taskforce_uuid == "def456"
+    )
+    assert cluster_info.cluster_id == 104500588
+    assert cluster_info.top_task_errors == {}
+    assert cluster_info.aggregate_statuses == {"REMOVED": {None: 1}}
