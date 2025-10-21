@@ -70,6 +70,7 @@ class EnvConfig:
 
     JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT: int = 1 * 60 * 60 * 24  # 1 day
     JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG: int = 7 * 60 * 60 * 24  # 7 days
+    JOB_EVENT_LOG_ARCHIVE_DELETE_EXPIRY: int = 7 * 60 * 60 * 24  # 7 days
 
     TASKFORCE_DIRS_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days
     TASKFORCE_DIRS_TAR_EXPIRY: int = 60 * 60 * 24 * 5  # 5 days

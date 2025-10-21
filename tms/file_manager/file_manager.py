@@ -2,6 +2,7 @@
 
 import asyncio
 import glob
+import gzip
 import logging
 import os
 import shutil
@@ -56,51 +57,73 @@ def action_mv(fpath: Path, *, dest: Path) -> None:
     LOGGER.info(f"done: mv {fpath} → {final}")
 
 
+def _atomic_write_then_replace(final: Path, writer: Callable[[Path], None]) -> None:
+    """
+    Write content to a temp file next to `final`, then atomically replace `final`.
+    Ensures parent dirs exist; removes temp on failure.
+    """
+    final.parent.mkdir(parents=True, exist_ok=True)
+
+    # Put tmp alongside final: ".<final>.tmp"
+    tmp = final.with_name(f".{final.name}.tmp")
+
+    if final.exists():
+        raise FileExistsError(f"archive already exists: {final}")
+
+    try:
+        writer(tmp)  # user-supplied writer must write to `tmp`
+        os.replace(tmp, final)  # atomic on same filesystem
+    except Exception:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except Exception:
+                pass
+        raise
+
+
+def action_gzip(fpath: Path) -> None:
+    """
+    gzip the file *in the same directory*, then delete the original.
+    Uses atomic temp write + replace.
+    """
+    if not fpath.is_file():
+        raise FileNotFoundError(f"{fpath=} is not a regular file")
+
+    final = fpath.with_suffix(fpath.suffix + ".gz")  # e.g., job.tms.jel.gz
+
+    def _writer(tmp: Path) -> None:
+        with open(fpath, "rb") as src, gzip.open(tmp, "wb") as out:
+            shutil.copyfileobj(src, out)
+
+    _atomic_write_then_replace(final, _writer)
+
+    # Only remove source after successful finalize
+    fpath.unlink()
+    LOGGER.info(f"compressed {fpath} → {final}")
+
+
 def action_tar_gz(fpath: Path, *, dest: Path) -> None:
     """
-    Tar+gzip the directory and remove the source afterwards (atomically).
-
-    Steps:
-    1. Create parent 'dest' directory if needed.
-    2. Write tar.gz to a temporary file (same filesystem).
-    3. Atomically rename temp → final archive using os.replace().
-    4. Remove original directory if archive was successfully created.
+    Tar+gzip the directory to `dest/<dirname>.tar.gz` and remove the source dir.
+    Uses atomic temp write + replace.
     """
     if not dest:
         raise RuntimeError(f"destination not given for 'tar_gz' on {fpath=}")
     if not fpath.is_dir():
         raise NotADirectoryError(f"{fpath=}")
 
-    # Example: /archive_dir/my-taskforce.tar.gz
-    final_tar = dest / f"{fpath.name}.tar.gz"
-    # Temp file in same dir for atomic replace
-    temp_tar = dest / f".{fpath.name}.tar.gz.tmp"
+    final = dest / f"{fpath.name}.tar.gz"
 
-    if final_tar.exists():
-        raise FileExistsError(f"archive already exists: {final_tar}")
+    def _writer(tmp: Path) -> None:
+        with tarfile.open(tmp, "w:gz") as tar:
+            tar.add(fpath, arcname=fpath.name)  # preserve top-level dir
 
-    dest.mkdir(parents=True, exist_ok=True)
+    _atomic_write_then_replace(final, _writer)
 
-    try:
-        # Write to a temporary tar.gz first
-        with tarfile.open(temp_tar, "w:gz") as tar:
-            tar.add(fpath, arcname=fpath.name)  # keep top-level dir structure
-
-        # Atomically move temp → final
-        os.replace(temp_tar, final_tar)
-
-        # Now that archive is safely in place, delete original directory
-        shutil.rmtree(fpath)
-        LOGGER.info(f"done: tar.gz {fpath} → {final_tar} + rm {fpath}")
-
-    except Exception:
-        # If something failed before the atomic rename, ensure temp is removed
-        if temp_tar.exists():
-            try:
-                temp_tar.unlink()
-            except Exception:
-                pass
-        raise
+    # Only remove source after successful finalize
+    shutil.rmtree(fpath)
+    LOGGER.info(f"done: tar.gz {fpath} → {final} + rm {fpath}")
 
 
 # -----------------------------------------------------------------------------
@@ -187,12 +210,16 @@ class FileManager:
 def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
     """Build the list of file managers."""
     return [
+        # =========================================================================
+        # JEL FILES: compress first, delete much later
+        # =========================================================================
         #
         # ex: 2025-8-26.tms.jel
         # -> does check if no noncompleted taskforces
+        #    (When quiet and unused: gzip in-place; the original .tms.jel is removed)
         FileManager(
             str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
-            action=action_rm,
+            action=action_gzip,  # compress to *.tms.jel.gz atomically, then remove source
             age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT,
             precheck_async=partial(
                 JELFileLogic.has_no_noncompleted_taskforces, ewms_rc
@@ -201,11 +228,23 @@ def build_file_managers(ewms_rc: RestClient) -> list[FileManager]:
         #
         # ex: 2025-8-26.tms.jel
         # -> does *NOT* check if no noncompleted taskforces
+        #    (Absolute quiet-age: gzip even if TF view is uncertain)
         FileManager(
             str(JELFileLogic.parent / f"*{JELFileLogic.extension}"),
-            action=action_rm,
+            action=action_gzip,  # compress to *.tms.jel.gz atomically, then remove source
             age_threshold=ENV.JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG,
         ),
+        #
+        # ex: 2025-8-26.tms.jel.gz
+        # -> delete archived gzip after long retention
+        FileManager(
+            str(JELFileLogic.parent / f"*{JELFileLogic.extension}.gz"),
+            action=action_rm,
+            age_threshold=ENV.JOB_EVENT_LOG_ARCHIVE_DELETE_EXPIRY,  # retention for gzipped JELs
+        ),
+        # =========================================================================
+        # TASKFORCE DIRECTORIES: tar.gz then delete old archives
+        # =========================================================================
         #
         # ex: ewms-taskforce-TF-685e6219-e85461b3-f8dc0d3c-6e4a5d72
         FileManager(
