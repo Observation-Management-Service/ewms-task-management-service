@@ -9,7 +9,7 @@ import htcondor  # type: ignore[import-untyped]
 import humanfriendly  # type: ignore[import-untyped]
 from rest_tools.client import RestClient
 
-from ..condor_tools import get_collector, get_schedd
+from ..condor_tools import get_schedd
 from ..config import (
     DEFAULT_CONDOR_REQUIREMENTS,
     ENV,
@@ -241,9 +241,7 @@ async def start(
 
     Returns attrs for sending to EWMS.
     """
-    LOGGER.info(
-        f"Starting {n_workers} EWMS taskforce workers on {get_collector()} / {get_schedd()}"
-    )
+    LOGGER.info(f"Starting {n_workers} EWMS taskforce workers on {get_schedd()}")
 
     # prep
     submit_dict, output_subdir = make_condor_job_description(

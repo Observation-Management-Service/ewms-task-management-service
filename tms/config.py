@@ -1,10 +1,13 @@
 """config.py."""
 
 import dataclasses as dc
+import logging
 from pathlib import Path
 from typing import Dict
 
 from wipac_dev_tools import from_environment_as_dataclass, logging_tools
+
+LOGGER = logging.getLogger(__name__)
 
 WATCHER_N_TOP_TASK_ERRORS = 10
 
@@ -107,6 +110,10 @@ class EnvConfig:
                 "'JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT'"
             )
 
+        if not self.JOB_EVENT_LOG_DIR.exists():
+            LOGGER.warning(f"JOB_EVENT_LOG_DIR: mkdir -p {self.JOB_EVENT_LOG_DIR}")
+            self.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 
 ENV = from_environment_as_dataclass(EnvConfig)
 
@@ -128,3 +135,14 @@ def config_logging() -> None:
         formatter=logging_tools.WIPACDevToolsFormatter(include_line_location=False),
         utc=True,
     )
+
+
+def abbrev_dunder_name(name: str) -> str:
+    """This shortens logger names by remove subpackage names for '__name__'.
+
+    Ex: tms.watcher.watcher_loop -> tms.watcher_loop
+    """
+    parts = name.split(".")
+    if len(parts) > 2:
+        name = ".".join([parts[0], parts[-1]])
+    return name

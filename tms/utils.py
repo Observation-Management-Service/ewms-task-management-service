@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rest_tools.client import RestClient
 
-from .condor_tools import get_collector, get_schedd
+from .condor_tools import get_schedd
 from .config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +43,6 @@ class JELFileLogic:
             {
                 "query": {
                     "job_event_log_fpath": str(fpath),
-                    "collector": get_collector(),
                     "schedd": get_schedd(),
                     "phase": {"$ne": "condor-complete"},  # only non-completed tfs
                 },

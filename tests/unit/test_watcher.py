@@ -105,7 +105,6 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                 return {"taskforces": []}
             # AKA - get all the taskforces
             elif list(args[2]["query"].keys()) == [
-                "collector",
                 "schedd",
                 "job_event_log_fpath",
             ]:
@@ -117,7 +116,6 @@ async def test_000(jel_file_wrapper: JobEventLogFileWrapper) -> None:
                 }
             # AKA - match cluster to taskforce
             elif list(args[2]["query"].keys()) == [
-                "collector",
                 "schedd",
                 "job_event_log_fpath",
                 "cluster_id",

@@ -10,7 +10,7 @@ from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
 from . import starter, stopper
-from ..condor_tools import get_collector, get_schedd
+from ..condor_tools import get_schedd
 from ..config import ENV, WMS_URL_V_PREFIX
 
 LOGGER = logging.getLogger(__name__)
@@ -83,14 +83,14 @@ class EWMSCaller:
 
     @staticmethod
     async def get_next_to_start(ewms_rc: RestClient) -> dict[str, Any] | None:
-        """Get the next taskforce requested for this collector + schedd.
+        """Get the next taskforce requested for this schedd.
 
         Returns 'None' when there is no taskforce to start.
         """
         resp = await ewms_rc.request(
             "GET",
             f"/{WMS_URL_V_PREFIX}/tms/pending-starter/taskforces",
-            {"collector": get_collector(), "schedd": get_schedd()},
+            {"schedd": get_schedd()},
         )
         if not resp:
             return None
@@ -101,14 +101,14 @@ class EWMSCaller:
 
     @staticmethod
     async def get_next_to_stop(ewms_rc: RestClient) -> dict[str, Any] | None:
-        """Get the next taskforce requested for this collector + schedd.
+        """Get the next taskforce requested for this schedd.
 
         Returns 'None' when there is no taskforce to stop.
         """
         resp = await ewms_rc.request(
             "GET",
             f"/{WMS_URL_V_PREFIX}/tms/pending-stopper/taskforces",
-            {"collector": get_collector(), "schedd": get_schedd()},
+            {"schedd": get_schedd()},
         )
         if not resp:
             return None

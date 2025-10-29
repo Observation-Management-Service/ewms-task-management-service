@@ -14,10 +14,10 @@ from typing import Awaitable, Callable
 
 from rest_tools.client import RestClient
 
-from ..config import ENV
+from ..config import ENV, abbrev_dunder_name
 from ..utils import JELFileLogic, TaskforceDirLogic
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(abbrev_dunder_name(__name__))
 
 
 # -----------------------------------------------------------------------------

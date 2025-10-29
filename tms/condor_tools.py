@@ -1,6 +1,5 @@
 """Util functions wrapping common htcondor actions."""
 
-
 import logging
 from typing import TypedDict
 
@@ -8,11 +7,6 @@ import htcondor  # type: ignore[import-untyped]
 from typing_extensions import Required  # Required new to py3.11
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_collector() -> str:
-    """Get get_collector() dns."""
-    return str(htcondor.param["CONDOR_HOST"])
 
 
 def get_schedd() -> str:
