@@ -116,7 +116,7 @@ jobs:
           file: ./Dockerfile
           tags: tms:py-dep-this
           load: true
-      - uses: WIPACrepo/wipac-dev-py-dependencies-action@v3.1
+      - uses: WIPACrepo/wipac-dev-py-dependencies-action@v3.2
 
 
   #############################################################################
