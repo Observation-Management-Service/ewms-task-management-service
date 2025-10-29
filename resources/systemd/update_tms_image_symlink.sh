@@ -42,7 +42,7 @@ readonly tms_image_tag="$1"
 
 if [[ "$(basename "$PWD")" == "tms-prod" ]]; then
     bonus_dev_update="$(
-        python -c '
+        python3 -c '
 import argparse, sys
 
 p = argparse.ArgumentParser(
