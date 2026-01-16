@@ -104,8 +104,8 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
     Note: ProcId is a range between [0, n_workers] -- integers
 
     Example: init_priority=100, n_workers=2000, PRIORITY_FLOOR_PCT=0.5
-      - job #1    -> 100
-      - job #2000 -> 50
+      - first job (0)    -> 100
+      - last  job (1999) -> 50
     """
     if n_workers <= 1:
         return str(init_priority)
