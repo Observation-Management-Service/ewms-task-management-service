@@ -114,23 +114,23 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
     #
     # step 0:
     # Start (real-valued ramp):
-    #   P = P0 - ( (Id / (N-1)) * (P0*f) )
+    #   P = P0 - [ (ProcId / [N-1]) * (P0*f) ]
     #
     # step 1:
     # Let MAX_DROP = P0*f:
     # Let Denom = N-1:
-    #   P = P0 - ( (Id / Denom) * MAX_DROP )
+    #   P = P0 - [ (ProcId / Denom) * MAX_DROP ]
     #
     # step 2:
     # Rearrange (same algebra):
-    #   P = P0 - ( Id*MAX_DROP / Denom )
+    #   P = P0 - [ ProcId * MAX_DROP / Denom ]
     #
     # step 3:
-    # Integer-safe submit expression (avoid "Id/Denom" truncating to 0):
-    #   P_int = P0 - ( (Id*MAX_DROP_int) / Denom )
-    # where MAX_DROP_int = round(P0*f) (or floor) and "/" is integer division.
+    # Integer-safe expression (avoid "ProcId/Denom" truncating to 0):
+    #   P_int = P0 - [ (ProcId * MAX_DROP_int) / Denom ]
+    # where MAX_DROP_int is floored and "/" is integer division.
 
-    max_drop = int(round(init_priority * PRIORITY_MAX_DEDUCTION_FACTOR))
+    max_drop = int(init_priority * PRIORITY_MAX_DEDUCTION_FACTOR)
     denom = n_workers - 1
     return f"{init_priority} - ( ($(ProcId) * {max_drop}) / {denom})"
 
