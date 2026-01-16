@@ -94,17 +94,18 @@ def assemble_pilot_fully_qualified_image(image_source: str, tag: str) -> str:
 
 
 def _get_priority_equation(init_priority: int, n_workers: int) -> str:
-    """Get the condor equation for dynamically setting the job priority.
+    """Return a ClassAd expression that linearly ramps JobPrio down by ProcId.
 
-    JobPrio = TF_PRIORITY - ( (ProcId / (NUM_JOBS - 1)) * (TF_PRIORITY * PRIORITY_FLOOR_PCT) )
+    Purpose:
+      - Prevent an earlier taskflow/cluster from being preferentially
+        allocated ahead of others when priorities and requirements match.
+        **This enables parallel execution in EWMS.**
 
-    Ex:
-        params:
-            init_priority=100, n_workers=2000, PRIORITY_FLOOR_PCT=0.5
-        result:
-            job 1: 100
-            ...
-            job 2000: 50
+    Note: ProcId is a range between [0, n_workers] -- integers
+
+    Example: init_priority=100, n_workers=2000, PRIORITY_FLOOR_PCT=0.5
+      - job #1    -> 100
+      - job #2000 -> 50
     """
     if n_workers <= 1:
         return str(init_priority)
