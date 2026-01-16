@@ -13,6 +13,7 @@ from ..condor_tools import get_schedd
 from ..config import (
     DEFAULT_CONDOR_REQUIREMENTS,
     ENV,
+    PRIORITY_FLOOR_PCT,
     WMS_URL_V_PREFIX,
 )
 from ..utils import JELFileLogic, TaskforceDirLogic
@@ -92,10 +93,28 @@ def assemble_pilot_fully_qualified_image(image_source: str, tag: str) -> str:
     return f"{pilot_image_sources[image_source.lower()]}:{tag}"
 
 
+def _get_priority_equation(init_priority: int, n_workers: int) -> str:
+    """Get the condor equation for dynamically setting the job priority.
+
+    JobPrio = TF_PRIORITY - ( (ProcId / NUM_JOBS) *  (TF_PRIORITY /  2) )
+
+    Ex:
+        params:
+            init_priority=100, n_workers=2000, PRIORITY_FLOOR_PCT=0.5
+        result:
+            job 1: 100
+            ...
+            job 2000: 50
+    """
+    deduction = f"( (ProcId / {n_workers}) * ({init_priority} * {PRIORITY_FLOOR_PCT}) )"
+    return f"{init_priority} - {deduction}"
+
+
 def make_condor_job_description(
     taskforce_uuid: str,
     pilot_config: dict,
     worker_config: dict,
+    n_workers: int,
 ) -> tuple[dict[str, Any], Path | None]:
     """Make the condor job description (dict).
 
@@ -178,7 +197,7 @@ def make_condor_job_description(
             binary=True,
         ).replace("i", ""),
         #
-        "priority": int(worker_config["priority"]),
+        "priority": _get_priority_equation(int(worker_config["priority"]), n_workers),
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": worker_config[
             # Execution time limit -- 1 hour default on OSG
@@ -248,6 +267,7 @@ async def start(
         taskforce_uuid,
         pilot_config,
         worker_config,
+        n_workers,
     )
 
     # final checks
