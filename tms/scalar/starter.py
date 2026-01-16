@@ -110,9 +110,9 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
     if n_workers <= 1:
         return str(init_priority)
 
-    deduction = f"( (real(ProcId) / {n_workers - 1}) * ({init_priority} * {PRIORITY_FLOOR_PCT}) )"
+    deduction = f"( ($REAL($(ProcId)) / {n_workers - 1}.0) * ({init_priority} * {PRIORITY_FLOOR_PCT}) )"
 
-    return f"int({init_priority} - {deduction})"
+    return f"$INT({init_priority} - {deduction})"
 
 
 def make_condor_job_description(
