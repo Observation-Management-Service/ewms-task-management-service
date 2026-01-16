@@ -13,7 +13,7 @@ from ..condor_tools import get_schedd
 from ..config import (
     DEFAULT_CONDOR_REQUIREMENTS,
     ENV,
-    PRIORITY_FLOOR_PCT,
+    PRIORITY_MAX_DEDUCTION_FACTOR,
     WMS_URL_V_PREFIX,
 )
 from ..utils import JELFileLogic, TaskforceDirLogic
@@ -110,9 +110,29 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
     if n_workers <= 1:
         return str(init_priority)
 
-    deduction = f"( ($REAL($(ProcId)) / {n_workers - 1}.0) * ({init_priority} * {PRIORITY_FLOOR_PCT}) )"
+    # Integer-only arithmetic -- multiply before dividing to not lose fractional resolution
+    #
+    # step 0:
+    # Start (real-valued ramp):
+    #   P = P0 - ( (Id / (N-1)) * (P0*f) )
+    #
+    # step 1:
+    # Let MAX_DROP = P0*f:
+    # Let Denom = N-1:
+    #   P = P0 - ( (Id / Denom) * MAX_DROP )
+    #
+    # step 2:
+    # Rearrange (same algebra):
+    #   P = P0 - ( Id*MAX_DROP / Denom )
+    #
+    # step 3:
+    # Integer-safe submit expression (avoid "Id/Denom" truncating to 0):
+    #   P_int = P0 - ( (Id*MAX_DROP_int) / Denom )
+    # where MAX_DROP_int = round(P0*f) (or floor) and "/" is integer division.
 
-    return f"$INT({init_priority} - {deduction})"
+    max_drop = int(round(init_priority * PRIORITY_MAX_DEDUCTION_FACTOR))
+    denom = n_workers - 1
+    return f"{init_priority} - ( ($(ProcId) * {max_drop}) / {denom})"
 
 
 def make_condor_job_description(
