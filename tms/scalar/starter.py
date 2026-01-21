@@ -107,12 +107,19 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
       - first job (0)    -> 100
       - last  job (1999) -> 50
     """
-    if n_workers <= 1:
+    if n_workers <= 1:  # no ramp needed
+        return str(init_priority)
+
+    # negative values -> stay fixed (otherwise equation would ramp upward)
+    # 0               -> 0; equation would give, ex: "0 - ( ($(ProcId) * 0) / 88 )"
+    # 1               -> 1; equation would give, ex: "1 - ( ($(ProcId) * 0) / 88 )"
+    if init_priority <= 1:
         return str(init_priority)
 
     # Integer-only arithmetic -- multiply before dividing to not lose fractional resolution
     #
     # step 0:
+    # Assume: P0>1 (int); N>1 (int); f is (0,1];
     # Start (real-valued ramp):
     #   P = P0 - [ (ProcId / [N-1]) * (P0*f) ]
     #
@@ -132,7 +139,7 @@ def _get_priority_equation(init_priority: int, n_workers: int) -> str:
 
     max_drop = int(init_priority * PRIORITY_MAX_DEDUCTION_FACTOR)
     denom = n_workers - 1
-    return f"{init_priority} - ( ($(ProcId) * {max_drop}) / {denom})"
+    return f"{init_priority} - ( ($(ProcId) * {max_drop}) / {denom} )"
 
 
 def make_condor_job_description(
