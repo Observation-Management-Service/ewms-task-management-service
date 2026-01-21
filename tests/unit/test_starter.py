@@ -86,7 +86,7 @@ async def test_000(htcs_mock: MagicMock, itsps_mock: AsyncMock) -> None:
             85461235, binary=True
         ).replace("i", ""),
         #
-        "priority": int(100),
+        "priority": "100 - ( ($(ProcId) * 50) / 122)",
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": 95487,  # Execution time limit -- 1 hour default on OSG
         #

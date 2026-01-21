@@ -13,6 +13,7 @@ from ..condor_tools import get_schedd
 from ..config import (
     DEFAULT_CONDOR_REQUIREMENTS,
     ENV,
+    PRIORITY_MAX_DEDUCTION_FACTOR,
     WMS_URL_V_PREFIX,
 )
 from ..utils import JELFileLogic, TaskforceDirLogic
@@ -92,10 +93,53 @@ def assemble_pilot_fully_qualified_image(image_source: str, tag: str) -> str:
     return f"{pilot_image_sources[image_source.lower()]}:{tag}"
 
 
+def _get_priority_equation(init_priority: int, n_workers: int) -> str:
+    """Return a ClassAd expression that linearly ramps JobPrio down by ProcId.
+
+    Purpose:
+      - Prevent an earlier taskflow/cluster from being preferentially
+        allocated ahead of others when priorities and requirements match.
+        **This enables parallel execution in EWMS.**
+
+    Note: ProcId is a range between [0, n_workers] -- integers
+
+    Example: init_priority=100, n_workers=2000, PRIORITY_FLOOR_PCT=0.5
+      - first job (0)    -> 100
+      - last  job (1999) -> 50
+    """
+    if n_workers <= 1:
+        return str(init_priority)
+
+    # Integer-only arithmetic -- multiply before dividing to not lose fractional resolution
+    #
+    # step 0:
+    # Start (real-valued ramp):
+    #   P = P0 - [ (ProcId / [N-1]) * (P0*f) ]
+    #
+    # step 1:
+    # Let MAX_DROP = P0*f:
+    # Let Denom = N-1:
+    #   P = P0 - [ (ProcId / Denom) * MAX_DROP ]
+    #
+    # step 2:
+    # Rearrange (same algebra):
+    #   P = P0 - [ ProcId * MAX_DROP / Denom ]
+    #
+    # step 3:
+    # Integer-safe expression (avoid "ProcId/Denom" truncating to 0):
+    #   P_int = P0 - [ (ProcId * MAX_DROP_int) / Denom ]
+    # where MAX_DROP_int is floored and "/" is integer division.
+
+    max_drop = int(init_priority * PRIORITY_MAX_DEDUCTION_FACTOR)
+    denom = n_workers - 1
+    return f"{init_priority} - ( ($(ProcId) * {max_drop}) / {denom})"
+
+
 def make_condor_job_description(
     taskforce_uuid: str,
     pilot_config: dict,
     worker_config: dict,
+    n_workers: int,
 ) -> tuple[dict[str, Any], Path | None]:
     """Make the condor job description (dict).
 
@@ -178,7 +222,7 @@ def make_condor_job_description(
             binary=True,
         ).replace("i", ""),
         #
-        "priority": int(worker_config["priority"]),
+        "priority": _get_priority_equation(int(worker_config["priority"]), n_workers),
         "+WantIOProxy": "true",  # for HTChirp
         "+OriginalTime": worker_config[
             # Execution time limit -- 1 hour default on OSG
@@ -248,6 +292,7 @@ async def start(
         taskforce_uuid,
         pilot_config,
         worker_config,
+        n_workers,
     )
 
     # final checks
