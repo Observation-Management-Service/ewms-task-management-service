@@ -4,14 +4,12 @@
 
 # Task Management Service
 
-A Task Management Service for EWMS
+EWMS's Task Management Service (TMS): The HTCondor Interface
 <!--- Top of README Metadata Section (automated) --->
 
 <!--- note: this information is pulled from the pyproject.toml --->
 
 <dl>
-    <dt><sub>Description</sub></dt>
-    <dd><sub>EWMS's Task Management Service (TMS): The HTCondor Interface</sub></dd>
     <dt><sub>Keywords</sub></dt>
     <dd><sub>WIPAC&nbsp;&nbsp;·&nbsp;&nbsp;IceCube&nbsp;&nbsp;·&nbsp;&nbsp;Observation Management Service&nbsp;&nbsp;·&nbsp;&nbsp;Event Workflow Management System&nbsp;&nbsp;·&nbsp;&nbsp;EWMS&nbsp;&nbsp;·&nbsp;&nbsp;task&nbsp;&nbsp;·&nbsp;&nbsp;Task Management Service</sub></dd>
     <dt><sub>URLs</sub></dt>
