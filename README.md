@@ -1,10 +1,25 @@
 <!--- Top of README Badges (automated) --->
-[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
 <!--- End of README Badges (automated) --->
 
 # Task Management Service
 
 A Task Management Service for EWMS
+<!--- Top of README Metadata Section (automated) --->
+
+<!--- note: this information is pulled from the pyproject.toml --->
+
+<dl>
+    <dt><sub>Description</sub></dt>
+    <dd><sub>EWMS's Task Management Service (TMS): The HTCondor Interface</sub></dd>
+    <dt><sub>Keywords</sub></dt>
+    <dd><sub>WIPAC&nbsp;&nbsp;·&nbsp;&nbsp;IceCube&nbsp;&nbsp;·&nbsp;&nbsp;Observation Management Service&nbsp;&nbsp;·&nbsp;&nbsp;Event Workflow Management System&nbsp;&nbsp;·&nbsp;&nbsp;EWMS&nbsp;&nbsp;·&nbsp;&nbsp;task&nbsp;&nbsp;·&nbsp;&nbsp;Task Management Service</sub></dd>
+    <dt><sub>URLs</sub></dt>
+    <dd><sub><a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service/issues'>Tracker</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Source</a></sub></dd>
+</dl>
+
+<br>
+<!--- End of README Metadata Section (automated) --->
 
 The TMS is the central component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. It runs on an HTCondor Access Point (AP). This service:
 
