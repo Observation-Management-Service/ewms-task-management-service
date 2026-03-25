@@ -13,7 +13,7 @@ EWMS's Task Management Service (TMS): The HTCondor Interface
     <dt><sub>Keywords</sub></dt>
     <dd><sub>WIPAC&nbsp;&nbsp;·&nbsp;&nbsp;IceCube&nbsp;&nbsp;·&nbsp;&nbsp;Observation Management Service&nbsp;&nbsp;·&nbsp;&nbsp;Event Workflow Management System&nbsp;&nbsp;·&nbsp;&nbsp;EWMS&nbsp;&nbsp;·&nbsp;&nbsp;task&nbsp;&nbsp;·&nbsp;&nbsp;Task Management Service</sub></dd>
     <dt><sub>URLs</sub></dt>
-    <dd><sub><a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service/issues'>Tracker</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Source</a></sub></dd>
+    <dd><sub><a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service/issues'>Tracker</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Source</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://observation-management-service.github.io/ewms-docs/internal/tms.html'>Documentation</a></sub></dd>
 </dl>
 
 <br>
