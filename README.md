@@ -85,7 +85,7 @@ _Is not relevant to the TMS._ _[Compare to WMS.](https://observation-management-
 
 ### Taskforce
 
-The **taskforce** is the primary object within the TMS. It is associated with one HTCondor cluster. See Taskforce's [`cluster_id`](https://observation-management-service.github.io/ewms-docs/services/wms.html/blob/main/Docs/Models/TaskforceObject.md).  
+The **taskforce** is the primary object within the TMS. It is associated with one HTCondor cluster. See Taskforce's [`cluster_id`](https://observation-management-service.github.io/ewms-docs/apis/_generated/wms-objects.html#taskforceobject).  
 _[Compare to WMS.](https://observation-management-service.github.io/ewms-docs/services/wms.html#taskforce)_
 
 #### Cluster
