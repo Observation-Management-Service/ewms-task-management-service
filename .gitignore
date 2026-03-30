@@ -165,3 +165,4 @@ cython_debug/
 
 tms-*env
 envfile
+apptainer_container_symlink

@@ -36,12 +36,12 @@ jobs:
     outputs:
       matrix: ${{ steps.versions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - id: versions
-        uses: WIPACrepo/wipac-dev-py-versions-action@v2.7
+        uses: WIPACrepo/wipac-dev-py-versions-action@v2.8
 
 
   #############################################################################
@@ -56,7 +56,7 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
@@ -75,7 +75,7 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit ('github.ref is dynamic)
@@ -92,12 +92,12 @@ jobs:
   py-setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           ref: ${{ github.ref }}  # dont lock to sha (action needs to push)
-      - uses: WIPACrepo/wipac-dev-py-setup-action@v5.8
+      - uses: WIPACrepo/wipac-dev-py-setup-action@v5.12
         with:
           mode: PACKAGING
           python_min: 3.11
@@ -108,12 +108,12 @@ jobs:
     needs: [ flake8 ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
@@ -129,12 +129,12 @@ jobs:
   test-build-docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           cache-from: type=gha
@@ -146,12 +146,12 @@ jobs:
     needs: test-build-docker
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           cache-from: type=gha
@@ -161,17 +161,17 @@ jobs:
           load: true
       - name: install apptainer
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           curl -fsSL "$CI_SCRIPT_URL_INSTALL_APPTAINER" -o install-apptainer.sh && chmod +x install-apptainer.sh
           ./install-apptainer.sh --sif yes  # we will run .sif files
       - name: build apptainer image (.sif)
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           apptainer build $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif docker-daemon://${{ env.DOCKER_IMAGE_NAME }}:local
           ls -lh $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif
       - name: run apptainer container
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           apptainer run $(basename ${{ env.DOCKER_IMAGE_NAME }}).sif \
             ls
 
@@ -183,7 +183,7 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
@@ -192,22 +192,22 @@ jobs:
           python-version: ${{ matrix.py3 }}
       - name: pip install
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           pip install .[tests]
       - name: pytest
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           pytest -vvv tests/unit/
 
   integration-test-ish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # setuptools-scm needs to access git tags
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           cache-from: type=gha
@@ -217,7 +217,7 @@ jobs:
           load: true           # make the image available to `docker run` on this runner
       - name: test
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
+          set -euo pipefail
           set -ex
           
           docker run --rm \
@@ -253,7 +253,7 @@ jobs:
       unit-test,
       integration-test-ish,
     ]
-    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/tag-and-release.yml@v1.20
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/tag-and-release.yml@v1.24
     permissions: # for GITHUB_TOKEN
       contents: write
     with:

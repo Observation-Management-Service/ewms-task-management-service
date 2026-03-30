@@ -7,4 +7,4 @@ Type=oneshot
 ExecStart=/usr/bin/systemctl --user restart ewms-tms-prod.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

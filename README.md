@@ -1,20 +1,33 @@
 <!--- Top of README Badges (automated) --->
-[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service/) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
+[![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/Observation-Management-Service/ewms-task-management-service?include_prereleases)](https://github.com/Observation-Management-Service/ewms-task-management-service) [![GitHub issues](https://img.shields.io/github/issues/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/issues?q=is%3Aissue+sort%3Aupdated-desc+is%3Aopen) [![GitHub pull requests](https://img.shields.io/github/issues-pr/Observation-Management-Service/ewms-task-management-service)](https://github.com/Observation-Management-Service/ewms-task-management-service/pulls?q=is%3Apr+sort%3Aupdated-desc+is%3Aopen)
 <!--- End of README Badges (automated) --->
 
-# ewms-task-management-service v1
+# Task Management Service
 
-A Task Management Service for EWMS
+EWMS's Task Management Service (TMS): The HTCondor Interface
+<!--- Top of README Metadata Section (automated) --->
 
-The TMS is the central component responsible for communication between the [WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service) and an [HTCondor](https://htcondor.org/) pool. It runs on an HTCondor Access Point (AP). This service:
+<!--- note: this information is pulled from the pyproject.toml --->
 
-- **Starts** condor clusters for new taskforces (1:1), see [taskforce](#taskforce).
-- **Stops** condor clusters (`condor_rm`) when necessary.
-- **Watches** condor clusters, snapshots taskforce-level stats, and relays information to the WMS.
+<dl>
+    <dt><sub>Keywords</sub></dt>
+    <dd><sub>WIPAC&nbsp;&nbsp;·&nbsp;&nbsp;IceCube&nbsp;&nbsp;·&nbsp;&nbsp;Observation Management Service&nbsp;&nbsp;·&nbsp;&nbsp;Event Workflow Management System&nbsp;&nbsp;·&nbsp;&nbsp;EWMS&nbsp;&nbsp;·&nbsp;&nbsp;task&nbsp;&nbsp;·&nbsp;&nbsp;Task Management Service</sub></dd>
+    <dt><sub>URLs</sub></dt>
+    <dd><sub><a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Homepage</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service/issues'>Tracker</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://github.com/Observation-Management-Service/ewms-task-management-service'>Source</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href='https://observation-management-service.github.io/ewms-docs/internal/tms.html'>Documentation</a></sub></dd>
+</dl>
+
+<br>
+<!--- End of README Metadata Section (automated) --->
+
+The TMS is the central component responsible for communication between the [WMS](https://observation-management-service.github.io/ewms-docs/services/wms.html) and an [HTCondor](https://htcondor.org/) pool. It runs on an HTCondor Access Point (AP). This service:
+
+- **Starts** HTCondor clusters for new taskforces (1:1), see [taskforce](#taskforce).
+- **Stops** HTCondor clusters (`condor_rm`) when necessary.
+- **Watches** HTCondor clusters, snapshots taskforce-level stats, and relays information to the WMS.
 
 ## Overview
 
-In short, the TMS receives its instructions from the Workflow Management Service ([WMS](https://github.com/Observation-Management-Service/ewms-workflow-management-service)).
+In short, the TMS receives its instructions from the Workflow Management Service ([WMS](https://observation-management-service.github.io/ewms-docs/services/wms.html)).
 
 ### Starting and Stopping Taskforces/Clusters
 
@@ -32,7 +45,7 @@ The `image-publish.yml` GitHub Actions workflow publishes this package as an App
 
 ## How to Run
 
-In production, the TMS runs on an HTCondor Access Point (AP) using systemd. Files for this are in [tms-prod/](./resources/systemd/tms-prod) and [tms-dev/](./resources/systemd/tms-dev), as well as additional helper scripts in [resources/systemd/](./resources/systemd/).
+**In production, a TMS instance runs on an HTCondor Access Point (AP) using systemd.** Files for this are in [tms-prod/](./resources/systemd/tms-prod) and [tms-dev/](./resources/systemd/tms-dev), as well as additional helper scripts in [resources/systemd/](./resources/systemd/).
 
 Whichever systemd variant you choose, a `envfile` is required. The file for `tms-prod` looks something like (minus the redactions):
 
@@ -60,20 +73,20 @@ ewms@sub-2 ~/resources/systemd/tms-dev $ ./update_tms_image_symlink.sh v1.2.3
 
 ### Workflow
 
-_Does not exist within the TMS._ _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#workflow)_
+_Is not relevant to the TMS._ _[Compare to WMS.](https://observation-management-service.github.io/ewms-docs/services/wms.html#workflow)_
 
 ### Task
 
-A **task** is not a first-order object in the TMS. However, each taskforce holds a reference to a container, arguments, environment variables, etc. Collectively, these comprise a task. _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task)_
+A **task** is not a first-order object in the TMS. However, each taskforce holds references to a container, arguments, environment variables, etc. In other words, the WMS supplies the TMS with only the task's relevant information. _[Compare to WMS.](https://observation-management-service.github.io/ewms-docs/services/wms.html#task)_
 
 ### Task Directive
 
-_Does not exist within the TMS._ _[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#task-directive)_
+_Is not relevant to the TMS._ _[Compare to WMS.](https://observation-management-service.github.io/ewms-docs/services/wms.html#task-directive)_
 
 ### Taskforce
 
-The **taskforce** is the primary object within the TMS. It is associated with one condor cluster. See Taskforce's [`cluster_id`](https://github.com/Observation-Management-Service/ewms-workflow-management-service/blob/main/Docs/Models/TaskforceObject.md).  
-_[Compare to WMS.](https://github.com/Observation-Management-Service/ewms-workflow-management-service#taskforce)_
+The **taskforce** is the primary object within the TMS. It is associated with one HTCondor cluster. See Taskforce's [`cluster_id`](https://observation-management-service.github.io/ewms-docs/apis/_generated/wms-objects.html#taskforceobject).  
+_[Compare to WMS.](https://observation-management-service.github.io/ewms-docs/services/wms.html#taskforce)_
 
 #### Cluster
 

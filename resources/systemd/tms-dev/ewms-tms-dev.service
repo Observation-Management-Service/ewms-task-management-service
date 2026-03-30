@@ -4,7 +4,7 @@ Wants=basic.target
 After=basic.target network.target condor.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 
 [Service]
 # Load environment variables from a file
