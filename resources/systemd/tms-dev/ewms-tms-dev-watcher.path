@@ -2,4 +2,4 @@
 PathModified=/home/ewms/resources/systemd/tms-dev/envfile
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
