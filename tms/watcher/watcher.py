@@ -388,7 +388,7 @@ class JobEventLogWatcher:
         """The main logic for parsing a job event log and sending updates to EWMS."""
 
         # get events -- exit when no more events
-        got_new_events = False
+        got_new_events__for_logging = False
         self.logger.debug("reading events from jel...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
@@ -400,7 +400,7 @@ class JobEventLogWatcher:
             if not self.jel_fpath.exists():
                 raise JobEventLogDeleted()
 
-            # loop logic
+            # LOOP LOGIC -- read next event
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
@@ -415,20 +415,30 @@ class JobEventLogWatcher:
                 continue
 
             # initial logging?
-            if not got_new_events:  # aka the first time
+            if not got_new_events__for_logging:  # aka the first time
                 self.logger.info("got events from jel")
-            got_new_events = True
+            got_new_events__for_logging = True
 
             # new cluster? add it
             if job_event.cluster not in self.cluster_infos:
-                self.cluster_infos[job_event.cluster] = (
-                    await ClusterInfo.from_cluster_id(
-                        self.ewms_rc,
-                        job_event.cluster,
-                        self.jel_fpath,
-                        self.logger,
+                self.logger.info(f"new cluster found in JEL: {job_event.cluster}")
+                try:
+                    self.cluster_infos[job_event.cluster] = (
+                        await ClusterInfo.from_cluster_id(
+                            self.ewms_rc,
+                            job_event.cluster,
+                            self.jel_fpath,
+                            self.logger,
+                        )
                     )
-                )
+                except Exception:
+                    self.logger.exception(
+                        f"NON-FATAL: Could not find cluster id in EWMS: {job_event.cluster}"
+                        f" -- skipping this cluster and continuing with the rest of the JEL"
+                        " (note: this same cluster id may show up again in the JEL and the "
+                        "stderr log -- we are not blacklisting this cluster id in any way)."
+                    )
+                    continue
 
             # update logic
             try:
