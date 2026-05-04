@@ -15,6 +15,7 @@ from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
 from .utils import (
+    ClusterNotTrackedByEWMSError,
     JobInfoKey,
     JobInfoVal,
     get_taskforce_uuid,
@@ -325,6 +326,7 @@ class JobEventLogWatcher:
         )
 
         self.cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
+        self.skip_clusters: list[ClusterId] = []
 
         self._update_ewms_timer = IntervalTimer(
             ENV.TMS_WATCHER_INTERVAL, f"{self.logger.name}.ewms_timer"
@@ -386,9 +388,9 @@ class JobEventLogWatcher:
 
     async def _look_at_job_event_log(self, jel: htcondor.JobEventLog) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
+        got_new_events__for_logging = False
 
         # get events -- exit when no more events
-        got_new_events__for_logging = False
         self.logger.debug("reading events from jel...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
@@ -410,7 +412,7 @@ class JobEventLogWatcher:
                 break
             except htcondor.HTCondorIOError as e:
                 self.logger.warning(
-                    f"HTCondorIOError while reading JEL: {e}, skipping corrupt event."
+                    f"NON-FATAL: HTCondorIOError while reading JEL: {e!r}, skipping corrupt event."
                 )
                 continue
 
@@ -420,7 +422,9 @@ class JobEventLogWatcher:
             got_new_events__for_logging = True
 
             # new cluster? add it
-            if job_event.cluster not in self.cluster_infos:
+            if (job_event.cluster not in self.cluster_infos) and (
+                job_event.cluster not in self.skip_clusters
+            ):
                 self.logger.info(f"new cluster found in JEL: {job_event.cluster}")
                 try:
                     self.cluster_infos[job_event.cluster] = (
@@ -431,12 +435,18 @@ class JobEventLogWatcher:
                             self.logger,
                         )
                     )
-                except Exception:
+                except ClusterNotTrackedByEWMSError:
                     self.logger.exception(
-                        f"NON-FATAL: Could not find cluster id in EWMS: {job_event.cluster}"
-                        f" -- skipping this event and continuing with the rest of the JEL"
-                        " (note: this same cluster id may show up again in the JEL and the "
-                        "stderr log -- we are not blacklisting this cluster id in any way)."
+                        f"NON-FATAL: Cluster {job_event.cluster} not found in EWMS, blacklisting "
+                        f"cluster. If the TMS is restarted, this cluster will be reassessed "
+                        "for tracking, IOW blacklisting is not persisted across restarts."
+                    )
+                    self.skip_clusters.append(job_event.cluster)
+                    continue
+                except Exception as e:
+                    self.logger.exception(
+                        f"NON-FATAL: Unknown error while mapping {job_event.cluster} -- "
+                        f"skipping event (not blacklisting cluster): {e!r}"
                     )
                     continue
 
