@@ -434,7 +434,7 @@ class JobEventLogWatcher:
                 except Exception:
                     self.logger.exception(
                         f"NON-FATAL: Could not find cluster id in EWMS: {job_event.cluster}"
-                        f" -- skipping this cluster and continuing with the rest of the JEL"
+                        f" -- skipping this event and continuing with the rest of the JEL"
                         " (note: this same cluster id may show up again in the JEL and the "
                         "stderr log -- we are not blacklisting this cluster id in any way)."
                     )
