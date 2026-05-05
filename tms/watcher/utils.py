@@ -18,6 +18,14 @@ LOGGER = logging.getLogger(__name__)
 ########################################################################################
 
 
+class ClusterNotTrackedByEWMSError(Exception):
+    """Raised when a cluster is not tracked by EWMS."""
+
+    def __init__(self, cluster_id: types.ClusterId):
+        super().__init__(f"Cluster {cluster_id} is not tracked by EWMS")
+        self.cluster_id = cluster_id
+
+
 JobInfoVal = tuple[int, ...] | str
 
 
@@ -130,8 +138,8 @@ async def get_taskforce_uuid(
     )
     try:
         return res["taskforces"][0]["taskforce_uuid"]
-    except KeyError as e:
-        raise RuntimeError(f"failed to get taskforce uuid for {cluster_id=}") from e
+    except Exception as e:
+        raise ClusterNotTrackedByEWMSError(cluster_id) from e
 
 
 async def send_condor_complete(

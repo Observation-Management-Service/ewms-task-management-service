@@ -15,6 +15,7 @@ from rest_tools.client import RestClient
 from wipac_dev_tools.timing_tools import IntervalTimer
 
 from .utils import (
+    ClusterNotTrackedByEWMSError,
     JobInfoKey,
     JobInfoVal,
     get_taskforce_uuid,
@@ -306,6 +307,7 @@ class _LCEnum(enum.Enum):
     N_EVENTS = enum.auto()
     UPDATED_CLUSTERS = enum.auto()
     NONUPDATE_CLUSTERS = enum.auto()
+    NON_EWMS_TRACKED_CLUSTERS = enum.auto()
 
 
 class JobEventLogWatcher:
@@ -325,13 +327,14 @@ class JobEventLogWatcher:
         )
 
         self.cluster_infos: dict[types.ClusterId, ClusterInfo] = {}  # LARGE
+        self.skip_clusters: list[ClusterId] = []
 
         self._update_ewms_timer = IntervalTimer(
             ENV.TMS_WATCHER_INTERVAL, f"{self.logger.name}.ewms_timer"
         )
 
         # strictly used for logging: a dict of int-counters for various types of events
-        self._logging_ctrs: collections.defaultdict[
+        self._logging_summary: collections.defaultdict[
             _LCEnum, collections.defaultdict[ClusterId, int]
         ] = collections.defaultdict(lambda: collections.defaultdict(int))
 
@@ -386,9 +389,9 @@ class JobEventLogWatcher:
 
     async def _look_at_job_event_log(self, jel: htcondor.JobEventLog) -> None:
         """The main logic for parsing a job event log and sending updates to EWMS."""
+        got_new_events__for_logging = False
 
         # get events -- exit when no more events
-        got_new_events__for_logging = False
         self.logger.debug("reading events from jel...")
         events_iter = jel.events(stop_after=0)  # separate b/c try-except w/ next()
         while True:
@@ -404,13 +407,13 @@ class JobEventLogWatcher:
             try:
                 await asyncio.sleep(0)  # since htcondor is not async
                 job_event = next(events_iter)
-                self._logging_ctrs[_LCEnum.N_EVENTS][job_event.cluster] += 1
+                self._logging_summary[_LCEnum.N_EVENTS][job_event.cluster] += 1
                 await asyncio.sleep(0)  # since htcondor is not async
             except StopIteration:
                 break
             except htcondor.HTCondorIOError as e:
                 self.logger.warning(
-                    f"HTCondorIOError while reading JEL: {e}, skipping corrupt event."
+                    f"NON-FATAL: HTCondorIOError while reading JEL: {e!r}, skipping corrupt event."
                 )
                 continue
 
@@ -418,6 +421,11 @@ class JobEventLogWatcher:
             if not got_new_events__for_logging:  # aka the first time
                 self.logger.info("got events from jel")
             got_new_events__for_logging = True
+
+            # is this a cluster we care about?
+            if job_event.cluster in self.skip_clusters:
+                self._logging_summary[_LCEnum.NON_EWMS_TRACKED_CLUSTERS][job_event.cluster] += 1  # fmt: skip
+                continue
 
             # new cluster? add it
             if job_event.cluster not in self.cluster_infos:
@@ -431,36 +439,43 @@ class JobEventLogWatcher:
                             self.logger,
                         )
                     )
-                except Exception:
+                except ClusterNotTrackedByEWMSError:
                     self.logger.exception(
-                        f"NON-FATAL: Could not find cluster id in EWMS: {job_event.cluster}"
-                        f" -- skipping this event and continuing with the rest of the JEL"
-                        " (note: this same cluster id may show up again in the JEL and the "
-                        "stderr log -- we are not blacklisting this cluster id in any way)."
+                        f"NON-FATAL: Cluster {job_event.cluster} not found in EWMS, blacklisting "
+                        f"cluster. If the TMS is restarted, this cluster will be reassessed "
+                        "for tracking, IOW blacklisting is not persisted across restarts."
+                    )
+                    self.skip_clusters.append(job_event.cluster)
+                    self._logging_summary[_LCEnum.NON_EWMS_TRACKED_CLUSTERS][job_event.cluster] += 1  # fmt: skip
+                    continue
+                except Exception as e:
+                    self.logger.exception(
+                        f"NON-FATAL: Unknown error while mapping {job_event.cluster} -- "
+                        f"skipping event (not blacklisting cluster): {e!r}"
                     )
                     continue
 
-            # update logic
+            # cluster update logic
             try:
                 self.cluster_infos[job_event.cluster].update_from_event(job_event)
-            # cluster is done
+            # -- cluster is done
             except ReceivedClusterRemovedJobEvent as e:
-                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
+                self._logging_summary[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
                 await send_condor_complete(
                     self.ewms_rc,
                     self.cluster_infos[job_event.cluster].taskforce_uuid,
                     e.timestamp,
                 )
-            # nothing important happened, too common to log
+            # -- nothing important happened, too common to log
             except NoUpdateException:
-                self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS][job_event.cluster] += 1
-            # no exception -> cluster update succeeded
+                self._logging_summary[_LCEnum.NONUPDATE_CLUSTERS][job_event.cluster] += 1  # fmt: skip
+            # -- no exception -> cluster update succeeded
             else:
-                self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
+                self._logging_summary[_LCEnum.UPDATED_CLUSTERS][job_event.cluster] += 1
 
     def _verbose_log_event_counts(self) -> None:
         """Log a bunch of event count info."""
-        n_events = sum(self._logging_ctrs[_LCEnum.N_EVENTS].values())
+        n_events = sum(self._logging_summary[_LCEnum.N_EVENTS].values())
 
         self.logger.info(
             f"jel progress report ({self._verbose_logging_timer_seconds / 60} minute): {n_events=}"
@@ -469,14 +484,14 @@ class JobEventLogWatcher:
         # event breakdown?
         if n_events:
             self.logger.info(
-                f"update-events by cluster: {dict(self._logging_ctrs[_LCEnum.UPDATED_CLUSTERS])}"
+                f"update-events by cluster: {dict(self._logging_summary[_LCEnum.UPDATED_CLUSTERS])}"
             )
             self.logger.info(
-                f"non-update-events by cluster: {dict(self._logging_ctrs[_LCEnum.NONUPDATE_CLUSTERS])}"
+                f"non-update-events by cluster: {dict(self._logging_summary[_LCEnum.NONUPDATE_CLUSTERS])}"
             )
 
         # reset counts
-        self._logging_ctrs.clear()
+        self._logging_summary.clear()
 
     async def maybe_update_ewms(self, log_verbose: bool, force: bool = False) -> None:
         """Send an update to EWMS if timer has elapsed (or force=True)."""
