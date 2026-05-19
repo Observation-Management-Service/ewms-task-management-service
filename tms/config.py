@@ -70,6 +70,10 @@ class EnvConfig:
 
     # OPTIONAL
 
+    # -- both or neither ("")
+    TMS_CONDOR_COLLECTOR: str = "glidein-cm.icecube.wisc.edu"
+    TMS_CONDOR_SCHEDD: str = "grid-submitter"
+
     # ex: "foo=1 bar=barbar baz=1"
     TMS_ENV_VARS_AND_VALS_ADD_TO_PILOT: Dict[str, str] = dc.field(default_factory=dict)
 
@@ -103,6 +107,7 @@ class EnvConfig:
     LOG_LEVEL_REST_TOOLS: logging_tools.LoggerLevel = "INFO"
 
     def __post_init__(self):
+        # check long expiry is >= short expiry
         if (
             self.JOB_EVENT_LOG_MODIFICATION_EXPIRY_LONG
             < self.JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT
@@ -112,9 +117,20 @@ class EnvConfig:
                 "'JOB_EVENT_LOG_MODIFICATION_EXPIRY_SHORT'"
             )
 
+        # auto-create dir
         if not self.JOB_EVENT_LOG_DIR.exists():
             LOGGER.warning(f"JOB_EVENT_LOG_DIR: mkdir -p {self.JOB_EVENT_LOG_DIR}")
             self.JOB_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+        # check that COLLECTOR and SCHEDD vars are set together
+        if self.TMS_CONDOR_COLLECTOR and not self.TMS_CONDOR_SCHEDD:
+            raise ValueError(
+                "'TMS_CONDOR_COLLECTOR' is set but 'TMS_CONDOR_SCHEDD' is not"
+            )
+        elif self.TMS_CONDOR_SCHEDD and not self.TMS_CONDOR_COLLECTOR:
+            raise ValueError(
+                "'TMS_CONDOR_SCHEDD' is set but 'TMS_CONDOR_COLLECTOR' is not"
+            )
 
 
 ENV = from_environment_as_dataclass(EnvConfig)

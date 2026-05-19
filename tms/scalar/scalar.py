@@ -180,7 +180,15 @@ async def run(ewms_rc: RestClient) -> None:
 
     # make connections -- do now so we don't have any surprises downstream
     LOGGER.info("Connecting to HTCondor...")
-    schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
+    if ENV.TMS_CONDOR_COLLECTOR and ENV.TMS_CONDOR_SCHEDD:
+        LOGGER.info(f"Using HTCondor collector: {ENV.TMS_CONDOR_COLLECTOR}")
+        coll = htcondor.Collector(ENV.TMS_CONDOR_COLLECTOR)
+        LOGGER.info(f"Using HTCondor schedd: {ENV.TMS_CONDOR_SCHEDD}")
+        schedd_loc = coll.locate(htcondor.DaemonTypes.Schedd, ENV.TMS_CONDOR_SCHEDD)
+        schedd_obj = htcondor.Schedd(schedd_loc)  # no auth need b/c we're on AP
+    else:
+        LOGGER.info("Using default HTCondor schedd.")
+        schedd_obj = htcondor.Schedd()  # no auth need b/c we're on AP
 
     timer = IntervalTimer(ENV.TMS_OUTER_LOOP_WAIT, f"{LOGGER.name}.timer")
 
