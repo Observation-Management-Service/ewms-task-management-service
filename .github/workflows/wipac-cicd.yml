@@ -230,7 +230,7 @@ jobs:
               2>&1 | tee docker.out || true
           
           # check that we get the start up errors that we expect 
-          grep -Fq "htcondor.HTCondorLocateError: Unable to locate local daemon|htcondor.HTCondorLocateError: Unable to locate local daemon" docker.out || (echo "Not found" && exit 1) 
+          grep -Fq "htcondor.HTCondorLocateError: Unable to locate local daemon|htcondor.HTCondorLocateError: Unable to find daemon" docker.out || (echo "Not found" && exit 1) 
           grep -Fq "requests.exceptions.MissingSchema: Invalid URL" docker.out || (echo "Not found" && exit 1)
           
           echo "found all the expected startup errors :)"
